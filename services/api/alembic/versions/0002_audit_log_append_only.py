@@ -18,6 +18,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     # Spec §10: the audit log must be impossible to modify. The hash chain detects tampering;
     # this trigger prevents it at the database level. (SQLite dev DBs rely on the hash chain only.)
+    # One statement per execute(): asyncpg runs each as a prepared statement.
     if op.get_bind().dialect.name != "postgresql":
         return
     op.execute(
@@ -26,10 +27,13 @@ def upgrade() -> None:
         BEGIN
             RAISE EXCEPTION 'audit_log is append-only';
         END;
-        $$ LANGUAGE plpgsql;
-
+        $$ LANGUAGE plpgsql
+        """
+    )
+    op.execute(
+        """
         CREATE TRIGGER audit_log_no_update BEFORE UPDATE OR DELETE ON audit_log
-            FOR EACH ROW EXECUTE FUNCTION audit_log_immutable();
+            FOR EACH ROW EXECUTE FUNCTION audit_log_immutable()
         """
     )
 
@@ -37,4 +41,5 @@ def upgrade() -> None:
 def downgrade() -> None:
     if op.get_bind().dialect.name != "postgresql":
         return
-    op.execute("DROP TRIGGER IF EXISTS audit_log_no_update ON audit_log; DROP FUNCTION IF EXISTS audit_log_immutable();")
+    op.execute("DROP TRIGGER IF EXISTS audit_log_no_update ON audit_log")
+    op.execute("DROP FUNCTION IF EXISTS audit_log_immutable()")

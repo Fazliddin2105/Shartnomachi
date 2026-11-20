@@ -17,7 +17,7 @@ from app.core.ratelimit import get_limiter
 from app.modules.anchoring import service as anchoring
 from app.modules.anchoring.models import LeafKind
 from app.modules.approvals import service as approvals
-from app.modules.contracts import negotiation, service
+from app.modules.contracts import generator, negotiation, service
 from app.modules.contracts.models import (
     ApprovalMethod,
     Contract,
@@ -457,7 +457,14 @@ async def download(
     file_id = v.file_id if format_ == "docx" else await service.version_pdf(db, v, user)
     assert file_id is not None
     row = await files.get_file(db, file_id)
-    data = await files.read_bytes(row)
+    try:
+        data = await files.read_bytes(row)
+    except FileNotFoundError:
+        if format_ != "docx":
+            raise
+        # Stored file is gone (ephemeral disk on serverless hosts): rebuild the DOCX from the signed content —
+        # the content hash (what the parties approved) is unchanged.
+        data = generator.build_docx(v.content, version=v.number, sha256=v.sha256)
     return Response(
         content=data,
         media_type=row.mime,

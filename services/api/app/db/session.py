@@ -42,6 +42,7 @@ def _create_engine(url: str) -> AsyncEngine:
         pool_size=s.db_pool_size,
         max_overflow=s.db_max_overflow,
         pool_pre_ping=True,
+        pool_recycle=s.db_pool_recycle_seconds,
     )
 
 

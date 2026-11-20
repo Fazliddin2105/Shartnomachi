@@ -212,3 +212,14 @@ def test_db_transaction_commits_before_response() -> None:
     from app.api.deps import DB
 
     assert get_args(DB)[1].scope == "function"
+
+
+def test_hosted_postgres_url_is_normalized_for_asyncpg() -> None:
+    from app.core.config import normalize_db_url
+
+    neon = "postgres://u:p@ep-x-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+    assert (
+        normalize_db_url(neon) == "postgresql+asyncpg://u:p@ep-x-pooler.eu-central-1.aws.neon.tech/neondb?ssl=require"
+    )
+    assert normalize_db_url("postgresql://u:p@h/db") == "postgresql+asyncpg://u:p@h/db"
+    assert normalize_db_url("sqlite+aiosqlite:///./x.db") == "sqlite+aiosqlite:///./x.db"

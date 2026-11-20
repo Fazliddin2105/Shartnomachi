@@ -55,6 +55,29 @@ class SchedulerMode(StrEnum):
     OFF = "off"
 
 
+_LIBPQ_ONLY = frozenset({"channel_binding", "options", "target_session_attrs", "gssencmode", "sslrootcert"})
+
+
+def normalize_db_url(url: str) -> str:
+    """Hosted Postgres (Neon, Vercel, Heroku…) hands out `postgres://…?sslmode=require`; the async driver needs
+    `postgresql+asyncpg://…?ssl=require` and rejects libpq-only options."""
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            url = "postgresql+asyncpg://" + url[len(prefix) :]
+            break
+    if not url.startswith("postgresql+asyncpg://"):
+        return url
+    base, _, query = url.partition("?")
+    params: list[str] = []
+    for p in (x for x in query.split("&") if x):
+        key, _, value = p.partition("=")
+        if key == "sslmode":
+            params.append(f"ssl={value}")
+        elif key not in _LIBPQ_ONLY:
+            params.append(p)
+    return base + ("?" + "&".join(params) if params else "")
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore", case_sensitive=False)
 
@@ -73,6 +96,13 @@ class Settings(BaseSettings):
     db_echo: bool = False
     db_pool_size: int = 10
     db_max_overflow: int = 20
+    # hosted Postgres (Neon) closes idle connections; recycle before that happens
+    db_pool_recycle_seconds: int = 1800
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _async_driver(cls, v: object) -> object:
+        return normalize_db_url(v) if isinstance(v, str) else v
 
     redis_url: str | None = None
 
@@ -143,6 +173,9 @@ class Settings(BaseSettings):
 
     # --- workers / reminders ----------------------------------------------
     scheduler_mode: SchedulerMode = SchedulerMode.INPROCESS
+    inline_jobs: bool = Field(
+        default=False, description="Run background jobs inside the request (serverless hosts freeze after response)"
+    )
     scheduler_interval_seconds: int = 60
     reminder_offsets_days: Annotated[list[int], NoDecode] = Field(default_factory=lambda: [6, 3, 2, 1, 0])
     reminder_send_hour: int = 9

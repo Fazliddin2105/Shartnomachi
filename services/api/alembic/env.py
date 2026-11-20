@@ -16,7 +16,8 @@ from app.core.config import get_settings
 from app.db.base import Base
 
 config = context.config
-config.set_main_option("sqlalchemy.url", get_settings().database_url)
+# "%" must be escaped for ConfigParser (URL-encoded passwords)
+config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("%", "%%"))
 target_metadata = Base.metadata
 
 
@@ -54,8 +55,9 @@ def _do_run(connection: Connection) -> None:
 
 
 async def run_migrations_online() -> None:
-    engine = async_engine_from_config(config.get_section(config.config_ini_section, {}),
-                                      prefix="sqlalchemy.", poolclass=pool.NullPool)
+    engine = async_engine_from_config(
+        config.get_section(config.config_ini_section, {}), prefix="sqlalchemy.", poolclass=pool.NullPool
+    )
     async with engine.connect() as connection:
         await connection.run_sync(_do_run)
     await engine.dispose()

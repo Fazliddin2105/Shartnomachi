@@ -48,6 +48,15 @@ async def enqueue(name: str, *args: Any) -> None:
         return
     fn = _registry()[name]
 
+    if s.inline_jobs:
+        # Serverless (e.g. Vercel): the process may be frozen right after the response, so the job runs
+        # inside the request. Callers commit before enqueueing, so the job's own session sees the data.
+        try:
+            await fn(*args)
+        except Exception:
+            log.exception("inline_task_failed", extra={"task": name})
+        return
+
     async def _run() -> None:
         try:
             await fn(*args)

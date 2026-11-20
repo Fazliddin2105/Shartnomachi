@@ -16,3 +16,8 @@ node_modules/
 # old integration copy (superseded by apps/web + packages/web-sdk)
 /web/
 /backups/
+
+# Vercel deployment (local secrets, snapshot, CLI link)
+services/api/.env.vercel
+services/api/vercel/seed.db
+.vercel/

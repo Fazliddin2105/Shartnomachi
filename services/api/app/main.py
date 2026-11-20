@@ -10,6 +10,7 @@ import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -41,6 +42,21 @@ from app.modules.users.router import admin as admin_users_router
 from app.modules.users.router import companies as companies_router
 from app.modules.users.router import router as users_router
 from app.workers import queue, scheduler
+
+
+class PublicStaticFiles(StaticFiles):
+    """Serves the web app folder but never source code, databases, secrets or dotfiles that may sit next to it
+    (e.g. a prototype server.py / *.db in the designer's folder)."""
+
+    _BLOCKED_SUFFIXES = frozenset({".py", ".pyc", ".db", ".sqlite", ".sqlite3", ".env", ".log", ".ps1", ".sh", ".md"})
+
+    async def get_response(self, path: str, scope: Any) -> Response:
+        parts = Path(path).parts
+        if any(p.startswith(".") or p == "__pycache__" for p in parts) or Path(path).suffix.lower() in (
+            self._BLOCKED_SUFFIXES
+        ):
+            return Response(status_code=404)
+        return await super().get_response(path, scope)
 
 
 @asynccontextmanager
@@ -178,7 +194,7 @@ def create_app() -> FastAPI:
         web = Path(s.frontend_dir).expanduser().resolve()
         if (web / "index.html").is_file():
             # Mounted last: /api/*, /docs and /health keep priority; everything else is the web app.
-            app.mount("/", StaticFiles(directory=web, html=True), name="web")
+            app.mount("/", PublicStaticFiles(directory=web, html=True), name="web")
         else:
             logging.getLogger(__name__).warning("FRONTEND_DIR has no index.html: %s", web)
 
