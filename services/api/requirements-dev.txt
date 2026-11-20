@@ -1,0 +1,10 @@
+-r requirements.txt
+pytest>=8.3
+pytest-asyncio>=0.24
+ruff>=0.6
+mypy>=1.11
+# in-memory EVM for anchoring tests (explicit pins avoid the legacy safe-pysha3 C build on Windows)
+eth-tester==0.14.0b1
+py-evm==0.12.1b1
+semantic-version>=2.10
+py-solc-x>=2.0          # only to rebuild packages/contracts/build/LexLabAnchor.json

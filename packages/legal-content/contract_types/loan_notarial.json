@@ -1,0 +1,316 @@
+{
+  "code": "loan_notarial",
+  "title_uz": "Qarz shartnomasi (notarial)",
+  "title_ru": "Договор займа (нотариальный)",
+  "description": "Fuqarolar o‘rtasida pul qarzi; notariusda tasdiqlash uchun mo‘ljallangan shakl. Tashkilot shabloni asosida.",
+  "form_requirement": "simple",
+  "form_rules": [],
+  "detect_keywords": [
+    "notarius",
+    "notarial",
+    "xususiy amaliyot",
+    "qarz beruvchi",
+    "qarz oluvchi",
+    "нотариус"
+  ],
+  "source": {
+    "kind": "organization",
+    "title": "Qarz shartnomasi (notarial shakl, tashkilot shabloni)",
+    "file": "Qarz_shartnomasi.docx",
+    "sha256": "c9876bfddd77d585e3674e587486ef2bb715a86ef5c9609953e623dc9a9e2af5",
+    "imported_at": "2026-11-20",
+    "note": "Matn shablondan so‘zma-so‘z olingan; notarius ma’lumotlari ixtiyoriy — bo‘sh qolsa, notarius qo‘lda to‘ldirishi uchun chiziq qoldiriladi."
+  },
+  "questionnaire": {
+    "meta_fields": {
+      "amount": "amount",
+      "starts_on": "contract_date",
+      "ends_on": "return_date"
+    },
+    "sections": [
+      {
+        "key": "contract",
+        "title": "Shartnoma",
+        "fields": [
+          {
+            "key": "notarial_district",
+            "label": "Shartnoma tuzilgan notarial okrug",
+            "type": "string",
+            "required": true,
+            "hint": "Masalan: Toshkent shahar Yunusobod tumani"
+          },
+          {
+            "key": "contract_date",
+            "label": "Shartnoma tuzilgan sana",
+            "type": "date",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "lender",
+        "title": "Qarz beruvchi",
+        "fields": [
+          {
+            "key": "party_a.name",
+            "label": "F.I.Sh.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.birth_date",
+            "label": "Tug‘ilgan sanasi",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "party_a.address",
+            "label": "Yashash manzili",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.passport",
+            "label": "Pasport seriyasi va raqami",
+            "type": "string",
+            "required": true,
+            "pattern": "^[A-Z]{2}\\s?\\d{7}$",
+            "hint": "Masalan: AA 1234567"
+          },
+          {
+            "key": "party_a.passport_issued_by",
+            "label": "Pasportni bergan IIB nomi",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.passport_issued_date",
+            "label": "Pasport berilgan sana",
+            "type": "date",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "borrower",
+        "title": "Qarz oluvchi",
+        "fields": [
+          {
+            "key": "party_b.name",
+            "label": "F.I.Sh.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.birth_date",
+            "label": "Tug‘ilgan sanasi",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "party_b.address",
+            "label": "Yashash manzili",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.passport",
+            "label": "Pasport seriyasi va raqami",
+            "type": "string",
+            "required": true,
+            "pattern": "^[A-Z]{2}\\s?\\d{7}$"
+          },
+          {
+            "key": "party_b.passport_issued_by",
+            "label": "Pasportni bergan IIB nomi",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.passport_issued_date",
+            "label": "Pasport berilgan sana",
+            "type": "date",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "terms",
+        "title": "Qarz shartlari",
+        "fields": [
+          {
+            "key": "amount",
+            "label": "Qarz summasi (so‘m)",
+            "type": "number",
+            "required": true,
+            "min": 1
+          },
+          {
+            "key": "loan_term",
+            "label": "Qarz qancha muddatga beriladi",
+            "type": "string",
+            "required": true,
+            "hint": "Masalan: 6 (olti) oy"
+          },
+          {
+            "key": "return_date",
+            "label": "Qarzni qaytarish muddati (sana)",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "loan_place",
+            "label": "Qarz summasini berish va olish joyi",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "notary",
+        "title": "Notarius (notarius to‘ldirishi mumkin)",
+        "fields": [
+          {
+            "key": "notary_address",
+            "label": "Notarial idora joylashgan manzil",
+            "type": "string"
+          },
+          {
+            "key": "notary_office",
+            "label": "Notarial idora nomi va raqami",
+            "type": "string"
+          },
+          {
+            "key": "notary_name",
+            "label": "Notariusning F.I.Sh.",
+            "type": "string"
+          }
+        ]
+      }
+    ]
+  },
+  "template": {
+    "title": "QARZ SHARTNOMASI",
+    "header": "{{ a.notarial_district }}                                        {{ a.contract_date | date }}",
+    "subheader": "{{ a.notary_address or '____________________' }}dagi {{ a.notary_office or '____________________' }} xususiy amaliyot bilan shug‘ullanuvchi notariusi {{ a.notary_name or '____________________' }}",
+    "preamble": "Biz, {{ party_a.address }}da yashovchi — {{ party_a.birth_date | date }}da tug‘ilgan {{ party_a.name }} (pasport {{ party_a.passport }}, {{ party_a.passport_issued_by }} tomonidan {{ party_a.passport_issued_date | date }}da berilgan) bir tomondan (keyingi o‘rinlarda “Qarz beruvchi”) va {{ party_b.address }}da yashovchi — {{ party_b.birth_date | date }}da tug‘ilgan {{ party_b.name }} (pasport {{ party_b.passport }}, {{ party_b.passport_issued_by }} tomonidan {{ party_b.passport_issued_date | date }}da berilgan) ikkinchi tomondan (keyingi o‘rinlarda “Qarz oluvchi”), ushbu shartnomani quyidagilar haqida tuzdik:",
+    "party_titles": {
+      "A": "QARZ BERUVCHI",
+      "B": "QARZ OLUVCHI"
+    },
+    "clauses": [
+      {
+        "key": "subject",
+        "category": "subject",
+        "title": "",
+        "body": "1. Men — QARZ BERUVCHI {{ a.amount | money }} so‘m pul mablag‘ini QARZ OLUVCHIga qarz sifatida {{ a.loan_term }} muddatga, ya’ni {{ a.return_date | date }}gacha berdim, men — QARZ OLUVCHI ushbu summani QARZ BERUVCHIdan mazkur shartnoma imzolangunga qadar to‘liq oldim."
+      },
+      {
+        "key": "place",
+        "category": "delivery",
+        "title": "",
+        "body": "2. Qarz summasini berish va olish {{ a.loan_place }}da amalga oshirildi."
+      },
+      {
+        "key": "return",
+        "category": "price",
+        "title": "",
+        "body": "3. Men — QARZ OLUVCHI qarzga olgan {{ a.amount | money }} so‘m pulni {{ a.return_date | date }}dan kechiktirmasdan QARZ BERUVCHIga qaytarib berishga majburman."
+      },
+      {
+        "key": "early_return",
+        "category": "term",
+        "title": "",
+        "body": "4. QARZ OLUVCHI yuqorida ko‘rsatilgan pulni QARZ BERUVCHIga shartnomada ko‘rsatilgan muddatdan oldin ham qaytarishi mumkin."
+      },
+      {
+        "key": "liability",
+        "category": "liability",
+        "title": "",
+        "body": "5. Agar qarz summasi shartnomada ko‘rsatilgan muddatda QARZ OLUVCHI tomonidan qaytarib berilmasa, QARZ BERUVCHI tomon qarz summasini QARZ OLUVCHIdan qonunchilik hujjatlariga muvofiq undirib olishi mumkin."
+      },
+      {
+        "key": "expenses",
+        "category": "price",
+        "title": "",
+        "body": "6. Mazkur shartnomani rasmiylashtirish uchun sarflanadigan xarajatlarni QARZ OLUVCHI to‘laydi."
+      },
+      {
+        "key": "declarations",
+        "category": "other",
+        "title": "",
+        "body": "7. Biz taraflar shartnoma matnini to‘liq o‘qib chiqdik, uning mazmuni va mohiyati, huquqiy oqibatlari hamda O‘zbekiston Respublikasi Fuqarolik kodeksining 732–738-moddalari mazmuni notarius tomonidan tushuntirildi va bizga tushunarli, shartnomaning mazmuni bizning asl xohish-istaklarimizga mos keladi. Mazkur shartnomani tuzib, imzolaganimizda muomala layoqatiga ega bo‘lganimizni, o‘z xatti-harakatlarimiz ahamiyatini to‘liq tushunganligimizni, hech kim bizni aldamaganligini, shartnomani tuzib, imzolash haqida zo‘rlamaganligini, tazyiq o‘tkazmaganligini, ushbu bitimni tuzishga majbur qilishga olib kelgan og‘ir holatlar yo‘qligini bildiramiz."
+      },
+      {
+        "key": "copies",
+        "category": "term",
+        "title": "",
+        "body": "8. Mazkur shartnoma taraflar tomonidan uch nusxada tuzilib, imzolandi, ulardan bir nusxasi {{ a.notary_office or '____________________' }} xususiy amaliyot bilan shug‘ullanuvchi notariusi {{ a.notary_name or '____________________' }}da saqlanadi, qolgan nusxalari taraflarga berildi."
+      }
+    ],
+    "requisites": {
+      "title": "Taraflarning imzolari",
+      "labels": [
+        [
+          "name",
+          "F.I.Sh."
+        ]
+      ],
+      "signature": [
+        "____________________________________________",
+        "(F.I.Sh. va imzo)"
+      ]
+    },
+    "closing": "Notariusning tasdiqlov yozuvi:\n\n____________________________________________\n\n____________________________________________"
+  },
+  "required_elements": [
+    {
+      "code": "amount",
+      "title": "Qarz summasi",
+      "patterns": [
+        "summa",
+        "сумм",
+        "so‘m",
+        "so'm",
+        "сум"
+      ]
+    },
+    {
+      "code": "return",
+      "title": "Qaytarish muddati",
+      "patterns": [
+        "qaytar",
+        "возвра"
+      ]
+    }
+  ],
+  "obligation_templates": [
+    {
+      "title": "Qarzni qaytarish",
+      "party": "B",
+      "kind": "duty",
+      "amount_field": "amount",
+      "clause_ref": "3",
+      "due": {
+        "type": "date",
+        "field": "return_date"
+      }
+    },
+    {
+      "title": "Qarzni qaytarib olish huquqi",
+      "party": "A",
+      "kind": "right",
+      "amount_field": "amount",
+      "clause_ref": "3",
+      "due": {
+        "type": "date",
+        "field": "return_date"
+      }
+    }
+  ],
+  "legal_refs": [
+    {
+      "law_ref": "O‘zbekiston Respublikasi Fuqarolik kodeksi — qarz (732–738-moddalar, shablonda ko‘rsatilganidek)"
+    }
+  ]
+}

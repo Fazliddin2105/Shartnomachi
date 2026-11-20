@@ -1,0 +1,41 @@
+[project]
+name = "lexlab-api"
+version = "0.1.0"
+description = "Huquqiy xizmat platformasi — backend (modulli monolit)"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "RUF", "SIM"]
+ignore = [
+  "S101",   # assert in tests / invariants
+  "S105",   # false positives on token names
+  "S603",   # subprocess with fixed argv (soffice/tesseract)
+  "B008",   # FastAPI Depends/File in defaults
+  "RUF001", "RUF002", "RUF003",  # Uzbek/Cyrillic text
+  "RUF012",  # SQLAlchemy type_annotation_map / ARQ WorkerSettings class attributes
+  "ASYNC109", # explicit subprocess/drain timeouts are intentional
+  "ASYNC240", # tiny temp-file ops inside OCR subprocess orchestration
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "B", "E501"]
+"app/ai/prompts.py" = ["E501"]  # natural-language prompt text
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+warn_unused_ignores = false
+check_untyped_defs = true

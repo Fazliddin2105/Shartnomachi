@@ -1,0 +1,20 @@
+{
+  "clauses": [
+    {"code": "confidentiality", "category": "confidentiality", "title": "Maxfiylik", "risk_level": "low",
+     "params_schema": {"years": {"type": "number", "label": "Maxfiylik muddati (yil)", "default": 3}},
+     "body_template": "Tomonlar shartnoma bo'yicha olingan tijorat va shaxsiy ma'lumotlarni shartnoma amal qilgan davrda va u tugaganidan keyin {{ p.years or 3 }} yil davomida uchinchi shaxslarga oshkor etmaslik majburiyatini oladi."},
+    {"code": "force_majeure", "category": "force_majeure", "title": "Fors-major", "risk_level": "low",
+     "params_schema": {"notice_days": {"type": "number", "label": "Xabar berish muddati (kun)", "default": 5}},
+     "body_template": "Tomonlar engib bo'lmaydigan kuch (fors-major) holatlari natijasida majburiyatlarni bajarmaganlik uchun javobgar bo'lmaydi. Bunday holat yuz bergan tomon ikkinchi tomonni {{ p.notice_days or 5 }} kun ichida yozma xabardor qiladi."},
+    {"code": "dispute_court", "category": "dispute", "title": "Nizolarni sudda hal qilish", "risk_level": "low",
+     "params_schema": {"pretrial_days": {"type": "number", "label": "Talabnomaga javob muddati (kun)", "default": 15}},
+     "body_template": "Nizo yuzaga kelganda tomonlar talabnoma yuboradi; talabnomaga {{ p.pretrial_days or 15 }} kun ichida javob beriladi. Kelishuvga erishilmasa, nizo qonunchilikka muvofiq sudda hal qilinadi."},
+    {"code": "penalty_capped", "category": "penalty", "title": "Cheklangan penya", "risk_level": "medium",
+     "params_schema": {"rate": {"type": "number", "label": "% / kun", "default": 0.1},
+                       "cap": {"type": "number", "label": "Eng ko'pi (%)", "default": 10}},
+     "body_template": "Majburiyat kechiktirilganda aybdor tomon har bir kun uchun kechiktirilgan summaning {{ p.rate or 0.1 }}% miqdorida, biroq jami {{ p.cap or 10 }}% dan oshmagan penya to'laydi."},
+    {"code": "warranty", "category": "warranty", "title": "Kafolat", "risk_level": "low",
+     "params_schema": {"months": {"type": "number", "label": "Kafolat (oy)", "default": 12}},
+     "body_template": "Ijrochi (Sotuvchi) ish/tovar sifatiga {{ p.months or 12 }} oy kafolat beradi va bu muddatda aniqlangan kamchiliklarni o'z hisobidan bartaraf etadi."}
+  ]
+}

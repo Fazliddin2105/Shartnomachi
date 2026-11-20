@@ -1,0 +1,123 @@
+{
+  "contractName": "LexLabAnchor",
+  "compiler": "solc 0.8.24",
+  "optimizer_runs": 200,
+  "evmVersion": "paris",
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "AlreadyAnchored",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "EmptyRoot",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotRelayer",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "root",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "leafCount",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "batchNo",
+          "type": "uint256"
+        }
+      ],
+      "name": "Anchored",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "root",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "leafCount",
+          "type": "uint32"
+        }
+      ],
+      "name": "anchor",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "anchoredAt",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "relayer",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalBatches",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60a060405234801561001057600080fd5b5033608052608051610265610035600039600081816087015260ec01526102656000f3fe608060405234801561001057600080fd5b506004361061004c5760003560e01c806347489de41461005157806369ff6abb146100665780638406c079146100825780639591a610146100c1575b600080fd5b61006461005f3660046101dd565b6100e1565b005b61006f60015481565b6040519081526020015b60405180910390f35b6100a97f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b039091168152602001610079565b61006f6100cf366004610216565b60006020819052908152604090205481565b336001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000161461012a5760405163c64891a560e01b815260040160405180910390fd5b81610148576040516329e7276760e11b815260040160405180910390fd5b600082815260208190526040902054156101755760405163a0094ce360e01b815260040160405180910390fd5b60008281526020818152604091829020429081905560018054810190819055835163ffffffff861681529283019190915281830152905183917fc77e7ca1614df785558ec92803636b24132984bd5bbd99a5b502087aa76bc354919081900360600190a25050565b600080604083850312156101f057600080fd5b82359150602083013563ffffffff8116811461020b57600080fd5b809150509250929050565b60006020828403121561022857600080fd5b503591905056fea264697066735822122069524f7b4343b4281ef95d046b932228ce3efc236a497292d9dbf86d3432fb4f64736f6c63430008180033"
+}

@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Huquqiy Platforma — Ikki Tomonlama Shartnoma Tuzish va Tekshirish</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=8.2" />
+</head>
+<body>
+
+  <div class="hp-app-layout">
+    <!-- ==================== CHAP MENYU (SHABLON BILAN 1:1) ==================== -->
+    <aside class="hp-sidebar">
+      <div class="hp-sidebar-top">
+        <!-- Brand Header -->
+        <div class="hp-brand" data-nav="dashboard">
+          <div class="hp-brand-icon">
+            <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="scaleGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#38BDF8"/>
+                  <stop offset="50%" stop-color="#3B82F6"/>
+                  <stop offset="100%" stop-color="#60A5FA"/>
+                </linearGradient>
+              </defs>
+              <path d="M18 5V30" stroke="url(#scaleGrad)" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M11 30H25" stroke="url(#scaleGrad)" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M18 8L7 11M18 8L29 11" stroke="url(#scaleGrad)" stroke-width="2.2" stroke-linecap="round"/>
+              <circle cx="18" cy="7" r="2.2" fill="#38BDF8"/>
+              <path d="M7 11L3.5 20H10.5L7 11Z" stroke="#38BDF8" stroke-width="1.6" stroke-linejoin="round" fill="rgba(56, 189, 248, 0.14)"/>
+              <path d="M3 20C3 22.2 4.8 23.8 7 23.8C9.2 23.8 11 22.2 11 20H3Z" fill="#38BDF8"/>
+              <path d="M29 11L25.5 20H32.5L29 11Z" stroke="#38BDF8" stroke-width="1.6" stroke-linejoin="round" fill="rgba(56, 189, 248, 0.14)"/>
+              <path d="M25 20C25 22.2 26.8 23.8 29 23.8C31.2 23.8 33 22.2 33 20H25Z" fill="#38BDF8"/>
+            </svg>
+          </div>
+          <div class="hp-brand-text">
+            <span class="hp-brand-title">Huquqiy</span>
+            <span class="hp-brand-subtitle">Platforma</span>
+          </div>
+        </div>
+
+        <!-- Asosiy Menyu -->
+        <nav class="hp-nav" aria-label="Asosiy menyu">
+          <button class="hp-nav-item active" data-nav="dashboard">
+            <span class="hp-nav-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z"/>
+                <path d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z"/>
+              </svg>
+            </span>
+            <span class="hp-nav-label" data-i18n="nav_dashboard">Asosiy</span>
+          </button>
+
+          <button class="hp-nav-item" data-nav="builder">
+            <span class="hp-nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <path d="M9 15l2 2 4-4"/>
+              </svg>
+            </span>
+            <span class="hp-nav-label" data-i18n="nav_builder">Shartnoma tuz</span>
+          </button>
+
+          <button class="hp-nav-item" data-nav="scanner">
+            <span class="hp-nav-icon hp-ai-frame-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 8V6a2 2 0 0 1 2-2h2"/>
+                <path d="M4 16v2a2 2 0 0 0 2 2h2"/>
+                <path d="M16 4h2a2 2 0 0 1 2 2v2"/>
+                <path d="M16 20h2a2 2 0 0 0 2-2v-2"/>
+                <text x="6.5" y="15.2" fill="currentColor" stroke="none" font-size="8.5" font-weight="800" font-family="Inter, sans-serif">AI</text>
+              </svg>
+            </span>
+            <span class="hp-nav-label" data-i18n="nav_scanner">Shartnomani tekshir</span>
+          </button>
+
+          <button class="hp-nav-item" data-nav="contracts">
+            <span class="hp-nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="5" rx="1.5"/>
+                <path d="M5 9v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/>
+                <line x1="10" y1="13" x2="14" y2="13"/>
+              </svg>
+            </span>
+            <span class="hp-nav-label" data-i18n="nav_contracts">Shartnomalarim</span>
+            <span class="hp-nav-badge" id="nav-contracts-count">3</span>
+          </button>
+
+          <button class="hp-nav-item" data-nav="reminders">
+            <span class="hp-nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                <circle cx="18" cy="5" r="3" fill="#38BDF8" stroke="#0E1D38" stroke-width="1.5"/>
+              </svg>
+            </span>
+            <span class="hp-nav-label" data-i18n="nav_reminders">Eslatmalar</span>
+          </button>
+
+          <button class="hp-nav-item" data-nav="archive">
+            <span class="hp-nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+            </span>
+            <span class="hp-nav-label" data-i18n="nav_archive">Yurist arxivi</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Pastki Menyu -->
+      <div class="hp-sidebar-bottom">
+        <button class="hp-nav-item" data-nav="settings">
+          <span class="hp-nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </span>
+          <span class="hp-nav-label" data-i18n="nav_settings">Sozlamalar</span>
+        </button>
+
+        <button class="hp-nav-item hp-nav-logout" id="btn-logout">
+          <span class="hp-nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </span>
+          <span class="hp-nav-label" data-i18n="nav_logout">Logout</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ==================== ASOSIY ISHCHI OYNA ==================== -->
+    <div class="hp-main">
+      <!-- YUQORI PANEL (TOPBAR) -->
+      <header class="hp-topbar">
+        <!-- Qidiruv maydoni -->
+        <div class="hp-search-wrapper">
+          <form id="ai-situation-form" class="hp-search-box" autocomplete="off">
+            <input
+              type="text"
+              id="ai-situation-input"
+              class="hp-search-input"
+              placeholder="Vaziyatingizni yozing..."
+              data-i18n-placeholder="search_placeholder"
+              aria-label="Vaziyatingizni yozing"
+            />
+            <div class="hp-search-actions">
+              <button type="button" class="hp-search-ai-btn" id="btn-ai-prompt-suggest" title="Tezkor shartnoma tanlash">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+                  <path d="M20 3v4"/><path d="M22 5h-4"/>
+                  <path d="M4 17v2"/><path d="M5 18H3"/>
+                </svg>
+              </button>
+              <button type="submit" class="hp-search-submit-btn" title="Qidirish">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="7.5"/>
+                  <line x1="20" y1="20" x2="16.35" y2="16.35"/>
+                </svg>
+              </button>
+            </div>
+          </form>
+
+          <!-- Qidiruv tavsiyalari -->
+          <div class="hp-search-dropdown" id="ai-search-dropdown" hidden>
+            <button type="button" class="hp-search-suggestion" data-action="builder" data-contract-type="ijara">
+              <span class="hp-sug-tag">Shartnoma tuz</span>
+              <span>Yangi Ijara shartnomasini tuzish</span>
+            </button>
+            <button type="button" class="hp-search-suggestion" data-action="builder" data-contract-type="mehnat">
+              <span class="hp-sug-tag">Shartnoma tuz</span>
+              <span>Yangi Mehnat shartnomasini tuzish</span>
+            </button>
+            <button type="button" class="hp-search-suggestion" data-action="scanner" data-scan-key="ijara">
+              <span class="hp-sug-tag">Tekshirish</span>
+              <span>Tayyor shartnomani AI orqali tekshirish</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- O'ng boshqaruv: 1-Tomon / 2-Tomon kabinet almashtirgich, Til, Mavzu, Profil -->
+        <div class="hp-topbar-right">
+          <!-- IKKI TOMON KABINET ALMASHTIRGICH -->
+          <div class="hp-active-party-switcher" role="group" aria-label="Kimning kabinetidan kirish">
+            <span class="hp-party-switch-label">Kabinet:</span>
+            <button type="button" class="hp-party-switch-btn active" data-switch-party="party_a">
+              1-Tomon (Abdullo K.)
+            </button>
+            <button type="button" class="hp-party-switch-btn" data-switch-party="party_b">
+              2-Tomon (Vahot MChJ)
+              <span class="hp-party-pending-badge" id="party-b-pending-count">1</span>
+            </button>
+          </div>
+
+          <!-- Til -->
+          <div class="hp-lang-switch" role="group" aria-label="Tilni tanlash">
+            <button type="button" class="hp-lang-btn active" data-lang="uz">UZ</button>
+            <span class="hp-lang-divider">|</span>
+            <button type="button" class="hp-lang-btn" data-lang="ru">RU</button>
+          </div>
+
+          <!-- Tungi rejim -->
+          <button type="button" class="hp-theme-toggle" id="btn-theme-toggle" aria-label="Tungi/Kunduzgi rejim">
+            <span class="hp-theme-toggle-thumb"></span>
+          </button>
+
+          <!-- Bildirishnomalar -->
+          <button type="button" class="hp-notif-btn" id="btn-notif-panel" aria-label="Bildirishnomalar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="hp-notif-dot"></span>
+          </button>
+
+          <!-- Profil -->
+          <div class="hp-profile-card" id="btn-profile-modal" role="button" tabindex="0">
+            <div class="hp-avatar-wrap">
+              <svg class="hp-avatar-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="avBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#DBEAFE"/>
+                    <stop offset="100%" stop-color="#BFDBFE"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="40" cy="40" r="40" fill="url(#avBg)"/>
+                <path d="M14 78C16 61 26 54 40 54C54 54 64 61 66 78Z" fill="#1E293B"/>
+                <path d="M33 54L40 69L47 54Z" fill="#FFFFFF"/>
+                <path d="M38.5 57L41.5 57L42.5 68L40 71L37.5 68Z" fill="#2563EB"/>
+                <rect x="35" y="45" width="10" height="11" rx="4" fill="#F1C29B"/>
+                <ellipse cx="40" cy="34" rx="12.5" ry="14.5" fill="#F5CBA7"/>
+                <path d="M27.5 31C27.5 21 33 17 40 17C47 17 52.5 21 52.5 31C51 25 46 23 40 23C34 23 29 25 27.5 31Z" fill="#1E293B"/>
+                <path d="M30 39C31 45 35 48.5 40 48.5C45 48.5 49 45 50 39C48.5 43 44.5 45.5 40 45.5C35.5 45.5 31.5 43 30 39Z" fill="#334155" opacity="0.45"/>
+                <circle cx="35.5" cy="33" r="1.4" fill="#0F172A"/>
+                <circle cx="44.5" cy="33" r="1.4" fill="#0F172A"/>
+                <path d="M36.5 40.5Q40 43 43.5 40.5" stroke="#9A5B32" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="hp-profile-info">
+              <div class="hp-profile-name-row">
+                <span class="hp-profile-name" id="current-user-name">Abdullo K.</span>
+                <svg class="hp-verified-icon" viewBox="0 0 24 24" fill="#2563EB" title="OneID orqali tasdiqlangan">
+                  <path d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"/>
+                </svg>
+              </div>
+              <span class="hp-oneid-badge" id="current-user-badge" data-i18n="oneid_verified">OneID tasdiqlangan</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ==================== 1-SAHIFA: ASOSIY (SHABLON BILAN 1:1 VA TUSHUNARLI) ==================== -->
+      <main class="hp-view active" id="view-dashboard">
+        <!-- Ikki tomonlama holat va keyingi qadam yo'riqnomasi -->
+        <div class="hp-bilateral-guide-bar" id="bilateral-inbox-banner"></div>
+
+        <!-- 2 TA ASOSIY XIZMAT KARTASI -->
+        <section class="hp-hero-grid" aria-label="Asosiy xizmatlar">
+          <!-- Card 1: Shartnoma tuz -->
+          <article class="hp-hero-card hp-hero-emerald" data-goto="builder" role="button" tabindex="0">
+            <div class="hp-hero-glow"></div>
+            <div class="hp-hero-icon-wrap">
+              <div class="hp-hero-icon-circle hp-icon-emerald">
+                <svg viewBox="0 0 44 44" fill="none">
+                  <rect x="9" y="7" width="20" height="26" rx="3" stroke="#E2F8F0" stroke-width="2.3" fill="rgba(255,255,255,0.08)"/>
+                  <line x1="13.5" y1="13" x2="23.5" y2="13" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+                  <line x1="13.5" y1="18" x2="24.5" y2="18" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+                  <line x1="13.5" y1="23" x2="20" y2="23" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+                  <circle cx="29" cy="28" r="7.5" fill="#10B981" stroke="#0B3B2D" stroke-width="2"/>
+                  <polyline points="25.8 28 28.1 30.3 32.5 25.8" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <div class="hp-hero-content">
+              <h2 class="hp-hero-title" data-i18n="hero2_title">Shartnoma tuz</h2>
+              <p class="hp-hero-desc" data-i18n="hero2_desc">1-Tomon va 2-Tomon o'rtasida qonuniy shartnoma yaratish va elektron imzolash.</p>
+            </div>
+          </article>
+
+          <!-- Card 2: Shartnomani tekshir -->
+          <article class="hp-hero-card hp-hero-indigo" data-goto="scanner" role="button" tabindex="0">
+            <div class="hp-hero-glow"></div>
+            <div class="hp-hero-icon-wrap">
+              <div class="hp-hero-icon-circle hp-icon-indigo">
+                <svg viewBox="0 0 44 44" fill="none">
+                  <path d="M12 16V13C12 11.8954 12.8954 11 14 11H17" stroke="#60A5FA" stroke-width="2.4" stroke-linecap="round"/>
+                  <path d="M27 11H30C31.1046 11 32 11.8954 32 13V16" stroke="#60A5FA" stroke-width="2.4" stroke-linecap="round"/>
+                  <path d="M12 28V31C12 32.1046 12.8954 33 14 33H17" stroke="#60A5FA" stroke-width="2.4" stroke-linecap="round"/>
+                  <path d="M27 33H30C31.1046 33 32 32.1046 32 31V28" stroke="#60A5FA" stroke-width="2.4" stroke-linecap="round"/>
+                  <text x="14.2" y="26" fill="#93C5FD" font-size="12.5" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.5">AI</text>
+                </svg>
+              </div>
+            </div>
+            <div class="hp-hero-content">
+              <h2 class="hp-hero-title" data-i18n="hero3_title">Shartnomani tekshir</h2>
+              <p class="hp-hero-desc" data-i18n="hero3_desc">Tayyor shartnoma faylini yuklab, qonunga zid va xavfli bandlarni aniqlash.</p>
+            </div>
+          </article>
+        </section>
+
+        <!-- ASOSIY 2 USTUNLI PANEL -->
+        <section class="hp-dashboard-grid">
+          <!-- CHAP USTUN -->
+          <div class="hp-dash-left">
+            <!-- 1. AI Shartnoma tahlili -->
+            <div class="hp-card hp-ai-analysis-card">
+              <div class="hp-card-header">
+                <div>
+                  <div class="hp-card-eyebrow" data-i18n="ai_analysis_eyebrow">AI Shartnoma tahlili (Ijara shartnomasi #42)</div>
+                  <h3 class="hp-card-title" data-i18n="ai_analysis_title">Shartnomani tekshir</h3>
+                </div>
+                <button type="button" class="hp-btn-outline-sm" data-goto="scanner">To'liq tekshiruv →</button>
+              </div>
+
+              <div class="hp-ai-analysis-body">
+                <!-- Yarim-aylana xavf spidometri -->
+                <div class="hp-gauge-box">
+                  <svg class="hp-gauge-svg" viewBox="0 0 200 148">
+                    <defs>
+                      <linearGradient id="riskArcGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#D97706"/>
+                        <stop offset="55%" stop-color="#F59E0B"/>
+                        <stop offset="100%" stop-color="#FBBF24"/>
+                      </linearGradient>
+                    </defs>
+                    <path d="M 36 132 A 75 75 0 1 1 164 132" fill="none" stroke="#E2E8F0" stroke-width="13" stroke-linecap="round"/>
+                    <path id="dash-gauge-arc" d="M 36 132 A 75 75 0 1 1 164 132" fill="none" stroke="url(#riskArcGrad)" stroke-width="13" stroke-linecap="round" stroke-dasharray="335" stroke-dashoffset="118"/>
+                    <g id="dash-gauge-needle" transform="translate(100, 82) rotate(18)">
+                      <polygon points="0,-62 -5.5,-48 5.5,-48" fill="#0F172A"/>
+                    </g>
+                    <text x="100" y="95" text-anchor="middle" class="hp-gauge-label-top" id="dash-gauge-line1">O'rta</text>
+                    <text x="100" y="119" text-anchor="middle" class="hp-gauge-label-bottom" id="dash-gauge-line2">xavf</text>
+                  </svg>
+                </div>
+
+                <!-- Belgilangan bandlar -->
+                <div class="hp-flagged-clauses">
+                  <div class="hp-flagged-header">
+                    <span class="hp-flagged-title" data-i18n="flagged_clauses_title">Aniqlangan xavfli bandlar:</span>
+                  </div>
+
+                  <!-- Band 1: Qonunga zid -->
+                  <div class="hp-clause-alert hp-clause-illegal" id="dash-clause-1">
+                    <div class="hp-clause-main-row">
+                      <span class="hp-pill-badge hp-pill-danger" data-i18n="badge_illegal">Qonunga zid</span>
+                      <p class="hp-clause-text" id="dash-clause-1-text">Kechikkanlik jarimasi (penya) chegaradan yuqori (1.5% / kun)</p>
+                    </div>
+                    <div class="hp-clause-actions-row">
+                      <span class="hp-decision-feedback" id="dash-clause-1-status"></span>
+                      <div class="hp-clause-btns">
+                        <button type="button" class="hp-btn-navy-sm" data-clause-action="agree" data-i18n="btn_agree">Roziman</button>
+                        <button type="button" class="hp-btn-outline-sm" data-clause-action="object" data-i18n="btn_object">E'tiroz</button>
+                      </div>
+                    </div>
+                    <div class="hp-clause-detail-collapse" id="dash-clause-1-detail" hidden>
+                      <strong>To'g'rilangan qonuniy band:</strong> Kechiktirilgan har bir kun uchun penya 0,1% (jami 25% gacha) etib belgilandi.
+                    </div>
+                  </div>
+
+                  <!-- Band 2: Qaltis band -->
+                  <div class="hp-clause-alert hp-clause-risky" id="dash-clause-2">
+                    <div class="hp-clause-main-row">
+                      <span class="hp-pill-badge hp-pill-warning" data-i18n="badge_risky">Qaltis band</span>
+                      <p class="hp-clause-text" id="dash-clause-2-text">Ogohlantirishsiz 24 soatda bir tomonlama bekor qilish huquqi</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Shartnomalarim jadvali -->
+            <div class="hp-card hp-contracts-card">
+              <div class="hp-card-header">
+                <h3 class="hp-card-title" data-i18n="my_contracts_title">Shartnomalarim (1-Tomon va 2-Tomon holati)</h3>
+                <button type="button" class="hp-btn-outline-sm" data-goto="contracts">Barchasi →</button>
+              </div>
+
+              <div class="hp-table-wrap">
+                <table class="hp-table" id="dash-contracts-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n="th_doc_name">Shartnoma nomi</th>
+                      <th data-i18n="th_party_name">2-Tomon va imzo holati</th>
+                      <th data-i18n="th_date">Sana</th>
+                      <th class="hp-th-right" data-i18n="th_actions">Harakat</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-contracts-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- O'NG USTUN -->
+          <div class="hp-dash-right">
+            <!-- 3. Majburiyatlar va eslatmalar -->
+            <div class="hp-card hp-obligations-card">
+              <div class="hp-card-header">
+                <h3 class="hp-card-title" data-i18n="obligations_title">Majburiyatlar va eslatmalar</h3>
+                <button type="button" class="hp-btn-outline-sm" data-goto="reminders">Barchasi →</button>
+              </div>
+
+              <div class="hp-timeline" id="dash-timeline-list">
+                <div class="hp-timeline-item" data-ob-id="ob1">
+                  <div class="hp-timeline-rail">
+                    <span class="hp-timeline-dot hp-dot-emerald"></span>
+                    <span class="hp-timeline-line hp-line-emerald"></span>
+                  </div>
+                  <div class="hp-timeline-content">
+                    <span class="hp-timeline-title">Ijara to'lovi (4 500 000 so'm) <strong class="hp-timeline-days">(3 kun qoldi)</strong></span>
+                  </div>
+                </div>
+
+                <div class="hp-timeline-item" data-ob-id="ob2">
+                  <div class="hp-timeline-rail">
+                    <span class="hp-timeline-dot hp-dot-teal"></span>
+                    <span class="hp-timeline-line hp-line-muted"></span>
+                  </div>
+                  <div class="hp-timeline-content">
+                    <span class="hp-timeline-title">Xizmat haqi hisob-fakturasi <strong class="hp-timeline-days">(5 kun qoldi)</strong></span>
+                  </div>
+                </div>
+
+                <div class="hp-timeline-item" data-ob-id="ob3">
+                  <div class="hp-timeline-rail">
+                    <span class="hp-timeline-dot hp-dot-gray"></span>
+                  </div>
+                  <div class="hp-timeline-content">
+                    <span class="hp-timeline-title hp-text-muted">Shartnoma muddatini uzaytirish <span>(12 kun qoldi)</span></span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Eslatma yuborish kanallari:</div>
+              <div class="hp-channel-pills" role="group" aria-label="Eslatma kanallari">
+                <button type="button" class="hp-channel-chip hp-chip-telegram active" data-channel="telegram">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M21.9 4.4c.3-1.2-.8-2.1-1.9-1.6L2.6 9.6c-1.2.5-1.1 2.2.1 2.6l4.5 1.4 10.4-6.6c.5-.3 1 .2.6.6l-8.4 7.6-.3 4.6c.4 0 .9-.2 1.2-.5l2.2-2.1 4.5 3.3c.8.5 1.9.1 2.1-.9l2.4-15.2z"/>
+                  </svg>
+                  <span>Telegram</span>
+                </button>
+
+                <button type="button" class="hp-channel-chip hp-chip-sms active" data-channel="sms">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9h10v2H7V9zm6 5H7v-2h6v2z"/>
+                  </svg>
+                  <span>SMS</span>
+                </button>
+
+                <button type="button" class="hp-channel-chip hp-chip-push active" data-channel="push">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                  </svg>
+                  <span>Push</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 4. Davlat boji (BHM) kalkulyatori -->
+            <div class="hp-card hp-bhm-card">
+              <div class="hp-card-header hp-bhm-header">
+                <h3 class="hp-card-title" data-i18n="bhm_calc_title">Davlat boji (BHM) kalkulyatori</h3>
+              </div>
+
+              <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">BHM sonini tanlang (1 BHM = 375 000 so'm):</div>
+              <div class="hp-bhm-input-wrap">
+                <input
+                  type="number"
+                  id="bhm-count-input"
+                  class="hp-bhm-input"
+                  value="1"
+                  min="1"
+                  step="1"
+                  aria-label="BHM soni"
+                />
+                <div class="hp-bhm-spinners">
+                  <button type="button" class="hp-spin-btn" id="bhm-inc-btn" aria-label="Ko'paytirish">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="2.5 7.5 6 4 9.5 7.5"/></svg>
+                  </button>
+                  <button type="button" class="hp-spin-btn" id="bhm-dec-btn" aria-label="Kamaytirish">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="2.5 4.5 6 8 9.5 4.5"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="hp-bhm-footer">
+                <div class="hp-bhm-result-box">
+                  <span class="hp-bhm-caption" data-i18n="bhm_amount_label">To'lanadigan davlat boji:</span>
+                  <strong class="hp-bhm-value" id="bhm-calculated-output">375 000 so'm</strong>
+                </div>
+                <button type="button" class="hp-btn-navy" id="btn-bhm-calculate" data-i18n="btn_calculate">Hisoblash</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- ==================== 2-SAHIFA: SHARTNOMA TUZ (IKKI TOMONLAMA TUZISH VA IMZOLASH) ==================== -->
+      <main class="hp-view" id="view-builder">
+        <div class="hp-module-header">
+          <div>
+            <h1 class="hp-module-title">Ikki tomonlama shartnoma tuzish</h1>
+            <p class="hp-module-subtitle">1-Tomon shartnomani to'ldirib imzolaydi → 2-Tomon o'z kabinetida ko'rib chiqib E-imzo bilan tasdiqlaydi.</p>
+          </div>
+          <button type="button" class="hp-btn-outline" data-goto="dashboard">← Asosiy oynaga</button>
+        </div>
+
+        <!-- Tushunarli 3 qadamli ko'rsatkich -->
+        <div class="hp-stepper-bar" style="margin-bottom:18px;">
+          <div class="hp-step-chip active"><span>1</span> 1-Qadam: Shartnoma shartlarini kiritish</div>
+          <div class="hp-step-chip active"><span>2</span> 2-Qadam: 1-Tomon (Abdullo K.) imzolashi</div>
+          <div class="hp-step-chip"><span>3</span> 3-Qadam: 2-Tomon (Vahot MChJ) tasdiqlashi</div>
+        </div>
+
+        <div class="hp-builder-grid">
+          <!-- Chap: Sodda 5 ta maydonli forma -->
+          <div class="hp-card">
+            <h3 class="hp-card-title" style="margin-bottom:16px;">1. Shartnoma ma'lumotlarini kiriting</h3>
+
+            <form id="contract-builder-form" class="hp-builder-form">
+              <div class="hp-form-group">
+                <label for="cb-type">1. Qanday shartnoma tuzmoqchisiz?</label>
+                <select id="cb-type" class="hp-input">
+                  <option value="ijara" selected>Ijara shartnomasi (Uy-joy yoki ofis ijarasi)</option>
+                  <option value="mehnat">Mehnat shartnomasi (Xodimni ishga olish)</option>
+                  <option value="xizmat">Xizmat ko'rsatish shartnomasi</option>
+                  <option value="oldi_sotdi">Oldi-sotdi shartnomasi</option>
+                </select>
+              </div>
+
+              <div class="hp-form-row-2">
+                <div class="hp-form-group">
+                  <label for="cb-party-a">2. 1-Tomon (Shartnoma tuzuvchi)</label>
+                  <input type="text" id="cb-party-a" class="hp-input" value="Abdullo Karimov" />
+                  <span class="hp-field-hint">OneID orqali imzolaydi</span>
+                </div>
+                <div class="hp-form-group">
+                  <label for="cb-party-b">3. 2-Tomon (Ikkinchi taraf / Hamkor)</label>
+                  <div class="hp-input-with-btn">
+                    <input type="text" id="cb-party-b" class="hp-input" value='"Vahot Abdullo Trade" MChJ' />
+                    <button type="button" class="hp-mini-lookup-btn" id="btn-stir-lookup-b">STIR orqali topish</button>
+                  </div>
+                  <span class="hp-field-hint">E-imzo orqali tasdiqlaydi</span>
+                </div>
+              </div>
+
+              <div class="hp-form-row-2">
+                <div class="hp-form-group">
+                  <label for="cb-amount">4. Shartnoma summasi (so'm)</label>
+                  <input type="number" id="cb-amount" class="hp-input" value="4500000" min="100000" step="100000" />
+                </div>
+                <div class="hp-form-group">
+                  <label for="cb-penalty">5. To'lov kechiksa, kunlik penya (%)</label>
+                  <input type="number" id="cb-penalty" class="hp-input" value="0.2" min="0" max="5" step="0.1" />
+                  <span class="hp-field-hint">Qonun bo'yicha kuniga 0.4% dan oshmasligi shart</span>
+                </div>
+              </div>
+
+              <!-- Qonuniylik tekshiruvi natijasi -->
+              <div id="cb-rule-alerts-list"></div>
+
+              <div class="hp-builder-actions">
+                <button type="button" class="hp-btn-outline" id="btn-builder-autofix">Qonuniy me'yorga tushirish (0.2%)</button>
+                <button type="button" class="hp-btn-navy" id="btn-builder-generate">1-Tomon bo'lib imzolash va 2-Tomonga yuborish →</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- O'ng: Tayyor shartnoma matni va 2 tomon imzo muhrlari -->
+          <div class="hp-card">
+            <div class="hp-card-header">
+              <h3 class="hp-card-title">2. Tayyor shartnoma hujjati va imzolar</h3>
+              <div class="hp-doc-lang-tabs">
+                <button type="button" class="hp-mini-tab active" data-doc-lang="uz">O'zbekcha</button>
+                <button type="button" class="hp-mini-tab" data-doc-lang="ru">Русский</button>
+              </div>
+            </div>
+            <div class="hp-doc-paper" id="cb-doc-preview-content"></div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ==================== 3-SAHIFA: SHARTNOMANI TEKSHIR ==================== -->
+      <main class="hp-view" id="view-scanner">
+        <div class="hp-module-header">
+          <div>
+            <h1 class="hp-module-title">Tayyor shartnomani tekshirish</h1>
+            <p class="hp-module-subtitle">Shartnoma faylini yuklang — tizim qonunga zid va qaltis bandlarni topib, qonuniy variantini taklif qiladi.</p>
+          </div>
+          <button type="button" class="hp-btn-outline" data-goto="dashboard">← Asosiy oynaga</button>
+        </div>
+
+        <!-- 1. Fayl yuklash va namuna tanlash -->
+        <div class="hp-card hp-scanner-upload-bar">
+          <div class="hp-upload-dropzone" id="scanner-dropzone">
+            <input type="file" id="scanner-file-input" accept=".pdf,.docx,.png,.jpg,.jpeg,.txt" hidden />
+            <div>
+              <strong style="font-size:15px;">1. Shartnoma faylini yuklang (PDF, DOCX yoki Rasm)</strong>
+              <p>Yoki quyidagi tayyor shartnoma namunalaridan birini tanlab, tekshiruv natijasini ko'ring:</p>
+            </div>
+            <button type="button" class="hp-btn-navy-sm" id="btn-trigger-file-upload">Fayl tanlash</button>
+          </div>
+
+          <div class="hp-sample-presets">
+            <span class="hp-sample-label">Tayyor namunalar:</span>
+            <button type="button" class="hp-sample-btn active" data-scan-preset="ijara">Ijara shartnomasi #42</button>
+            <button type="button" class="hp-sample-btn" data-scan-preset="mehnat">Mehnat shartnomasi</button>
+            <button type="button" class="hp-sample-btn" data-scan-preset="xizmat">IT Xizmat shartnomasi</button>
+          </div>
+        </div>
+
+        <!-- Tekshiruv natijasi: 2 ta tushunarli karta -->
+        <div class="hp-scanner-workspace">
+          <!-- Chap: Umumiy xulosa -->
+          <div class="hp-card">
+            <div class="hp-card-header">
+              <h3 class="hp-card-title" id="scan-report-doc-title">2. Tekshiruv xulosasi: Ijara shartnomasi #42</h3>
+              <span class="hp-pill-badge hp-pill-warning" id="scan-report-risk-badge">O'rta xavf</span>
+            </div>
+
+            <div class="hp-scan-kpi-row" style="grid-template-columns:1fr 1fr;">
+              <div class="hp-scan-kpi hp-kpi-red">
+                <span class="hp-kpi-num" id="scan-count-illegal">1</span>
+                <span class="hp-kpi-label">Qonunga zid band (o'zgartirish shart)</span>
+              </div>
+              <div class="hp-scan-kpi hp-kpi-amber">
+                <span class="hp-kpi-num" id="scan-count-risky">1</span>
+                <span class="hp-kpi-label">Qaltis band (e'tibor bering)</span>
+              </div>
+            </div>
+
+            <div class="hp-extracted-box" style="margin-top:12px;">
+              <h4>Ushbu shartnoma bo'yicha sizning asosiy majburiyatlaringiz:</h4>
+              <ul id="scan-duties-list"></ul>
+            </div>
+          </div>
+
+          <!-- O'ng: Xavfli bandlar va Roziman / E'tiroz -->
+          <div class="hp-card">
+            <div class="hp-card-header">
+              <h3 class="hp-card-title">3. Aniqlangan xavfli bandlar va yechim</h3>
+            </div>
+            <div class="hp-decision-cards-list" id="scan-decision-cards"></div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ==================== 4-SAHIFA: SHARTNOMALARIM (IKKI TOMON IMZOSI JADVALI) ==================== -->
+      <main class="hp-view" id="view-contracts">
+        <div class="hp-module-header">
+          <div>
+            <h1 class="hp-module-title">Shartnomalarim</h1>
+            <p class="hp-module-subtitle">1-Tomon va 2-Tomon o'rtasida tuzilgan barcha shartnomalar va kim imzolagani haqida aniq jadval.</p>
+          </div>
+          <div class="hp-module-header-actions">
+            <button type="button" class="hp-btn-navy" data-goto="builder">+ Yangi shartnoma tuzish</button>
+            <button type="button" class="hp-btn-outline" data-goto="dashboard">← Asosiy oynaga</button>
+          </div>
+        </div>
+
+        <div class="hp-card">
+          <div class="hp-card-header">
+            <div class="hp-filter-pills" id="full-contract-filters">
+              <button type="button" class="hp-filter-pill active" data-filter="all">Barchasi</button>
+              <button type="button" class="hp-filter-pill" data-filter="active">Faol</button>
+              <button type="button" class="hp-filter-pill" data-filter="pending">Imzolash kutilmoqda</button>
+              <button type="button" class="hp-filter-pill" data-filter="disputed">Nizoli</button>
+              <button type="button" class="hp-filter-pill" data-filter="completed">Yakunlangan</button>
+              <button type="button" class="hp-filter-pill" data-filter="expired">Muddati o'tgan</button>
+            </div>
+          </div>
+
+          <div class="hp-table-wrap">
+            <table class="hp-table">
+              <thead>
+                <tr>
+                  <th>Shartnoma nomi</th>
+                  <th>1-Tomon (Tuzuvchi)</th>
+                  <th>2-Tomon (Hamkor)</th>
+                  <th>Shartnoma summasi</th>
+                  <th>Tomonlar imzosi</th>
+                  <th>Sana</th>
+                  <th class="hp-th-right">Harakat</th>
+                </tr>
+              </thead>
+              <tbody id="full-contracts-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+
+      <!-- ==================== 5-SAHIFA: ESLATMALAR ==================== -->
+      <main class="hp-view" id="view-reminders">
+        <div class="hp-module-header">
+          <div>
+            <h1 class="hp-module-title">To'lov va majburiyat eslatmalari</h1>
+            <p class="hp-module-subtitle">Imzolangan shartnomalar bo'yicha to'lov muddatini o'tkazib yubormaslik va jarimaga tushmaslik jadvali.</p>
+          </div>
+          <div class="hp-module-header-actions">
+            <button type="button" class="hp-btn-navy" id="btn-add-obligation">+ Yangi eslatma qo'shish</button>
+            <button type="button" class="hp-btn-outline" data-goto="dashboard">← Asosiy oynaga</button>
+          </div>
+        </div>
+
+        <div class="hp-card">
+          <div class="hp-obligations-full-list" id="full-obligations-list"></div>
+        </div>
+      </main>
+
+      <!-- ==================== 6-SAHIFA: YURIST ARXIVI ==================== -->
+      <main class="hp-view" id="view-archive">
+        <div class="hp-module-header">
+          <div>
+            <h1 class="hp-module-title">Yurist arxivi (Tasdiqlangan hujjatlar va cheklar)</h1>
+            <p class="hp-module-subtitle">Nizo chiqqanda yurist yoki sudga taqdim etish uchun barcha shartnoma imzolari va to'lov cheklari tarixi.</p>
+          </div>
+          <div class="hp-module-header-actions">
+            <button type="button" class="hp-btn-navy" id="btn-export-case-zip">PDF Dalil to'plami</button>
+            <button type="button" class="hp-btn-outline" data-goto="dashboard">← Asosiy oynaga</button>
+          </div>
+        </div>
+
+        <div class="hp-archive-grid">
+          <div class="hp-card">
+            <h3 class="hp-card-title" style="margin-bottom:14px;">Saqlangan hujjatlar va imzolar tarixi</h3>
+            <div class="hp-case-timeline" id="lawyer-case-timeline"></div>
+          </div>
+
+          <div class="hp-card">
+            <h3 class="hp-card-title" style="margin-bottom:14px;">Arxivga yangi to'lov cheki yoki hujjat qo'shish</h3>
+            <form id="case-step-form" class="hp-builder-form">
+              <div class="hp-form-group">
+                <label for="cs-title">Hujjat nomi</label>
+                <input type="text" id="cs-title" class="hp-input" placeholder="Masalan: Aprel oyi ijara to'lovi cheki" required />
+              </div>
+              <div class="hp-form-group">
+                <label for="cs-type">Hujjat turi</label>
+                <select id="cs-type" class="hp-input">
+                  <option value="To'lov cheki">To'lov cheki / Kvitansiya</option>
+                  <option value="Qo'shimcha kelishuv">Qo'shimcha kelishuv</option>
+                  <option value="Talabnoma">Rasmiy talabnoma</option>
+                </select>
+              </div>
+              <div class="hp-form-group">
+                <label for="cs-desc">Qisqacha izoh</label>
+                <textarea id="cs-desc" class="hp-input" rows="3" placeholder="Summa va to'lov sanasini yozing..." required></textarea>
+              </div>
+              <button type="submit" class="hp-btn-navy" style="width:100%;">Arxivga saqlash</button>
+            </form>
+          </div>
+        </div>
+      </main>
+
+      <!-- ==================== 7-SAHIFA: SOZLAMALAR ==================== -->
+      <main class="hp-view" id="view-settings">
+        <div class="hp-module-header">
+          <div>
+            <h1 class="hp-module-title">Sozlamalar (Shartnoma tomonlari profillari)</h1>
+            <p class="hp-module-subtitle">Tizimga ulangan 1-Tomon (OneID) va 2-Tomon (E-imzo) rekvizitlari.</p>
+          </div>
+          <button type="button" class="hp-btn-outline" data-goto="dashboard">← Asosiy oynaga</button>
+        </div>
+
+        <div class="hp-card">
+          <div class="hp-setting-list">
+            <div class="hp-setting-item">
+              <div>
+                <strong>1-Tomon profili (Jismoniy shaxs / OneID)</strong>
+                <p>Abdullo Karimov · JShShIR: 31205941230042 · Tel: +998 90 123-45-67</p>
+              </div>
+              <span class="hp-pill-badge hp-pill-success">OneID tasdiqlangan</span>
+            </div>
+            <div class="hp-setting-item">
+              <div>
+                <strong>2-Tomon profili (Yuridik shaxs / E-imzo)</strong>
+                <p>"Vahot Abdullo Trade" MChJ · STIR: 305891247 · Direktor: V. Abdullayev</p>
+              </div>
+              <span class="hp-pill-badge hp-pill-success">E-imzo ulangan</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL OYNA (SHARTNOMA KO'RISH VA IKKI TOMONLAMA IMZOLASH) ==================== -->
+  <div class="hp-modal-backdrop" id="hp-modal-backdrop" hidden>
+    <div class="hp-modal" role="dialog" aria-modal="true" aria-labelledby="hp-modal-title">
+      <div class="hp-modal-header">
+        <h3 id="hp-modal-title">Shartnoma tafsilotlari</h3>
+        <button type="button" class="hp-modal-close" id="hp-modal-close" aria-label="Yopish">✕</button>
+      </div>
+      <div class="hp-modal-body" id="hp-modal-body"></div>
+      <div class="hp-modal-footer" id="hp-modal-footer">
+        <button type="button" class="hp-btn-outline" id="hp-modal-ok">Yopish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST XABARNOMALAR -->
+  <div class="hp-toast-container" id="hp-toast-container" aria-live="polite"></div>
+
+  <script src="/sdk/lexlab-api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

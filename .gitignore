@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+services/api/data/
+.env
+!.env.example
+node_modules/
+.DS_Store
+# local databases / scratch
+*.db
+*.sqlite
+*.sqlite3
+# old integration copy (superseded by apps/web + packages/web-sdk)
+/web/

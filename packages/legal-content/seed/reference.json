@@ -1,0 +1,62 @@
+{
+  "_note": "Ma'lumotnoma qiymatlari (BHM, bayramlar) rasmiy manbalar bilan solishtirilib, CMS orqali yangilanishi kerak.",
+  "bhm_rates": [
+    {
+      "amount": 340000,
+      "valid_from": "2023-10-01",
+      "legal_ref": "Prezident farmoni (tekshirilsin)"
+    },
+    {
+      "amount": 375000,
+      "valid_from": "2024-08-01",
+      "legal_ref": "Prezident farmoni (tekshirilsin)"
+    }
+  ],
+  "calendar_2026": [
+    {
+      "day": "2026-01-01",
+      "kind": "holiday",
+      "title": "Yangi yil"
+    },
+    {
+      "day": "2026-03-08",
+      "kind": "holiday",
+      "title": "Xalqaro xotin-qizlar kuni"
+    },
+    {
+      "day": "2026-03-20",
+      "kind": "holiday",
+      "title": "Ramazon hayiti (taxminiy — rasmiy qaror bilan tasdiqlansin)"
+    },
+    {
+      "day": "2026-03-21",
+      "kind": "holiday",
+      "title": "Navro'z"
+    },
+    {
+      "day": "2026-05-09",
+      "kind": "holiday",
+      "title": "Xotira va qadrlash kuni"
+    },
+    {
+      "day": "2026-05-27",
+      "kind": "holiday",
+      "title": "Qurbon hayiti (taxminiy — rasmiy qaror bilan tasdiqlansin)"
+    },
+    {
+      "day": "2026-09-01",
+      "kind": "holiday",
+      "title": "Mustaqillik kuni"
+    },
+    {
+      "day": "2026-10-01",
+      "kind": "holiday",
+      "title": "O'qituvchi va murabbiylar kuni"
+    },
+    {
+      "day": "2026-12-08",
+      "kind": "holiday",
+      "title": "Konstitutsiya kuni"
+    }
+  ]
+}

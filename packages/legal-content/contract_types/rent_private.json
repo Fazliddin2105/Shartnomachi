@@ -1,0 +1,120 @@
+{
+  "code": "rent_private",
+  "title_uz": "Ijara shartnomasi (jismoniy shaxslar o‘rtasida)",
+  "title_ru": "Договор аренды (между физическими лицами)",
+  "description": "Jismoniy shaxslar o‘rtasida bino (xonalar)ni muayyan maqsadda ijaraga berish. Tashkilot shabloni asosida.",
+  "form_requirement": "simple",
+  "form_rules": [
+    {
+      "when": {"all": [{"field": "contract.duration_days", "op": "gte", "value": 365}]},
+      "form": "registration",
+      "reason": "Bir yil va undan ortiq muddatga tuzilgan bino ijarasi shartnomasi davlat ro‘yxatidan o‘tkazilishi talab etilishi mumkin (huquqiy ekspert tasdig‘i kerak)."
+    }
+  ],
+  "detect_keywords": ["ijara shartnomasi", "ijaraga beruvchi", "ijaraga oluvchi", "jismoniy shaxs", "xonali bino", "ижара", "аренд"],
+  "source": {
+    "kind": "organization",
+    "title": "Ijara shartnomasi shabloni (jismoniy shaxslar, kirill yozuvidagi asl nusxa)",
+    "file": "Ijara_shartnomasi_shabloni.docx",
+    "sha256": "926898ae2c933a7a964710b84939ce6bb4dae42bc03814a3558063bd9bf853c3",
+    "imported_at": "2026-11-20",
+    "note": "Kirill yozuvidan lotinga o‘girilgan. Asl nusxadagi 2.3 (kommunal to‘lovlar ijara haqiga kiradi) va 2.4 (kommunal to‘lovlar ijaraga oluvchi hisobidan) bandlari bir-biriga zid edi — bitta tanlovga aylantirildi."
+  },
+  "questionnaire": {
+    "meta_fields": {"amount": "rent_amount", "starts_on": "start_date", "ends_on": "end_date"},
+    "sections": [
+      {"key": "contract", "title": "Shartnoma", "fields": [
+        {"key": "contract_number", "label": "Shartnoma raqami", "type": "string"},
+        {"key": "city", "label": "Shartnoma tuzilgan joy (shahar/tuman)", "type": "string", "required": true},
+        {"key": "contract_date", "label": "Shartnoma tuzilgan sana", "type": "date", "required": true}
+      ]},
+      {"key": "landlord", "title": "Ijaraga beruvchi (jismoniy shaxs)", "fields": [
+        {"key": "party_a.name", "label": "F.I.Sh.", "type": "string", "required": true},
+        {"key": "party_a.address", "label": "Manzil", "type": "string", "required": true},
+        {"key": "party_a.tin", "label": "STIR / JShShIR", "type": "string", "required": true, "pattern": "^(\\d{9}|\\d{14})$", "hint": "STIR — 9 xona, JShShIR — 14 xona"},
+        {"key": "party_a.account", "label": "Bank hisob raqami", "type": "string", "hint": "Pul ko‘chirish yo‘li bilan to‘lansa, majburiy"},
+        {"key": "party_a.phone", "label": "Telefon raqami", "type": "string", "required": true, "pattern": "^\\+?998\\d{9}$"}
+      ]},
+      {"key": "tenant", "title": "Ijaraga oluvchi (jismoniy shaxs)", "fields": [
+        {"key": "party_b.name", "label": "F.I.Sh.", "type": "string", "required": true},
+        {"key": "party_b.address", "label": "Manzil", "type": "string", "required": true},
+        {"key": "party_b.tin", "label": "STIR / JShShIR", "type": "string", "required": true, "pattern": "^(\\d{9}|\\d{14})$"},
+        {"key": "party_b.account", "label": "Bank hisob raqami", "type": "string"},
+        {"key": "party_b.phone", "label": "Telefon raqami", "type": "string", "required": true, "pattern": "^\\+?998\\d{9}$"}
+      ]},
+      {"key": "object", "title": "Ijara obyekti va muddati", "fields": [
+        {"key": "property_address", "label": "Bino joylashgan manzil", "type": "string", "required": true},
+        {"key": "property_area", "label": "Umumiy maydoni (kv.m)", "type": "number", "required": true, "min": 1},
+        {"key": "rooms", "label": "Xonalar soni", "type": "number", "required": true, "min": 1},
+        {"key": "purpose", "label": "Binodan foydalanish maqsadi", "type": "string", "required": true},
+        {"key": "start_date", "label": "Ijara boshlanadigan sana", "type": "date", "required": true},
+        {"key": "end_date", "label": "Ijara tugaydigan sana", "type": "date", "required": true}
+      ]},
+      {"key": "payment", "title": "Ijara haqi", "fields": [
+        {"key": "rent_amount", "label": "Bir oylik ijara haqi (so‘m)", "type": "number", "required": true, "min": 1},
+        {"key": "payment_day", "label": "To‘lov sanasi (oyning nechanchi kunigacha)", "type": "number", "required": true, "min": 1, "max": 31},
+        {"key": "payment_method", "label": "To‘lov usuli", "type": "enum", "required": true, "options": [
+          {"value": "cash", "label": "Naqd pulda"},
+          {"value": "bank_transfer", "label": "Pul ko‘chirish yo‘li bilan"}
+        ]},
+        {"key": "utilities", "label": "Kommunal xizmatlar va ekspluatatsiya xarajatlari", "type": "enum", "required": true, "options": [
+          {"value": "included", "label": "Ijara haqiga kiradi"},
+          {"value": "tenant", "label": "Ijaraga oluvchi alohida to‘laydi"}
+        ]}
+      ]},
+      {"key": "duties", "title": "Majburiyatlar", "fields": [
+        {"key": "handover_days", "label": "Obyektni topshirish muddati (shartnomadan keyin, kun)", "type": "number", "required": true, "min": 0},
+        {"key": "sale_notice_days", "label": "Obyekt sotilishi haqida oldindan ogohlantirish (kun)", "type": "number", "required": true, "min": 0}
+      ]},
+      {"key": "final", "title": "Yakuniy qoidalar", "fields": [
+        {"key": "copies", "label": "Shartnoma nusxalari soni", "type": "number", "required": true, "min": 1, "default": 2},
+        {"key": "registry_district", "label": "Ijara maydoni hisobga olingan shahar (tuman)", "type": "string", "hint": "Bilmasangiz bo‘sh qoldiring"}
+      ]}
+    ]
+  },
+  "template": {
+    "title": "IJARA SHARTNOMASI № {{ a.contract_number or '____' }}",
+    "header": "{{ a.city }}                                                    {{ a.contract_date | date }}",
+    "preamble": "O‘zbekiston Respublikasining “Ijara to‘g‘risida”gi hamda “Xo‘jalik yurituvchi subyektlar faoliyatining shartnomaviy-huquqiy bazasi to‘g‘risida”gi Qonunlariga muvofiq, kelgusida “IJARAGA BERUVCHI” deb ataluvchi jismoniy shaxs {{ party_a.name }} bir tomondan va kelgusida “IJARAGA OLUVCHI” deb ataluvchi jismoniy shaxs {{ party_b.name }} ikkinchi tomondan, quyidagilar haqida shartnoma tuzdilar:",
+    "party_titles": {"A": "IJARAGA BERUVCHI", "B": "IJARAGA OLUVCHI"},
+    "clauses": [
+      {"key": "subject", "category": "subject", "title": "1. Shartnomaning predmeti",
+       "body": "1.1. “IJARAGA BERUVCHI” mazkur ijara shartnomasiga asosan “IJARAGA OLUVCHI”ga {{ a.property_address }} manzilida joylashgan umumiy maydoni {{ a.property_area }} kv.m bo‘lgan {{ a.rooms }} xonali binoni {{ a.start_date | date }}dan {{ a.end_date | date }}gacha bo‘lgan muddatga ijaraga beradi.\n1.2. “IJARAGA OLUVCHI” esa mazkur binodan {{ a.purpose }} maqsadida foydalanishi shart."},
+      {"key": "price", "category": "price", "title": "2. Ijara haqining miqdori va to‘lov muddatlari",
+       "body": "2.1. Tomonlarning kelishuviga asosan bir oylik ijara haqi {{ a.rent_amount | money }} ({{ a.rent_amount | words }}) so‘m etib belgilangan.\n2.2. Ijara uchun to‘lovlar har oyning {{ a.payment_day }}-sanasigacha {% if a.payment_method == 'bank_transfer' %}pul ko‘chirish{% else %}naqd pul to‘lash{% endif %} yo‘li bilan amalga oshiriladi.\n{% if a.utilities == 'tenant' %}2.3. Ijara haqi stavkasiga binodan foydalanish (ekspluatatsiya) xarajatlari, kommunal xizmatlar haqi, yer solig‘i va boshqa to‘lovlar kirmaydi.\n2.4. Kommunal xizmatlar uchun to‘lovlar Ijaraga oluvchi hisobidan amalga oshiriladi.\n2.5. Zaruratga asosan binoni ta’mirlash Ijaraga beruvchi hisobidan amalga oshiriladi.{% else %}2.3. Ijara haqi stavkasiga binodan foydalanish (ekspluatatsiya) xarajatlari, kommunal xizmatlar haqi, yer solig‘i va boshqa to‘lovlar kiradi.\n2.4. Zaruratga asosan binoni ta’mirlash Ijaraga beruvchi hisobidan amalga oshiriladi.{% endif %}"},
+      {"key": "rights", "category": "rights", "title": "3. Taraflarning huquq va majburiyatlari",
+       "body": "“IJARAGA BERUVCHI”ning huquqlari:\n3.1.1. Ijaraga bergan bino va maydonlarning “IJARAGA OLUVCHI” tomonidan maqsadga muvofiq foydalanilayotganini, uni ozoda saqlanishi, yong‘inga qarshi va sanitariya qoidalariga amal qilinishini ko‘zdan kechirib borish, dalolatnoma yoki boshqa hujjatlar tuzish;\n3.1.2. Ijara haqini tegishli muddatlarda to‘lanishini talab qilish, “IJARAGA OLUVCHI” bilan birgalikda hisob-kitoblarni solishtirish dalolatnomalarini tuzish;\n3.1.3. Shartnoma shartlarini o‘zaro yoki sud orqali tuzish, o‘zgartirish va bekor qilish.\n“IJARAGA BERUVCHI”ning majburiyatlari:\n3.2.1. Ijaraga berilgan bino nizosiz ekanligi va o‘ziga tegishli ekanligini tegishli hujjatlar bilan asoslash;\n3.2.2. Shartnoma tuzilganidan so‘ng {{ a.handover_days }} kun ichida ijara obyektini qabul qilish-topshirish dalolatnomasi orqali “IJARAGA OLUVCHI”ga topshirish;\n3.2.3. Ijara obyektini sotishi yoki boshqacha tarzda begonalashtirishi to‘g‘risida {{ a.sale_notice_days }} kun oldin “IJARAGA OLUVCHI”ga ma’lum qilish.\n“IJARAGA OLUVCHI”ning huquqlari:\n3.3.1. Ijara obyektidan ushbu shartnomada belgilangan muddatda va tegishli maqsadga muvofiq foydalanish;\n3.3.2. Shartnomani bajarish, o‘zgartirish va bekor qilish bilan bog‘liq bo‘lgan ma’lumotnomalar va boshqa hujjatlarni talab qilish va olish.\n“IJARAGA OLUVCHI”ning majburiyatlari:\n3.4.1. Ijara obyektidan maqsadga muvofiq foydalanish;\n3.4.2. Binodan, asbob-uskunalar va inventardan tegishli ravishda foydalanish;\n3.4.3. Bino va uning hududini ozoda saqlashi, barcha sanitar, yong‘inga qarshi va elektr energiyadan foydalanish qoidalariga amal qilish;\n3.4.4. Ijara obyektining xavfsizligini ta’minlash;\n3.4.5. Ijara shartnomasi muddati tugagach, binoni, inventarlarni, asbob-uskunalari va boshqa mulklarni “IJARAGA BERUVCHI”ga to‘liq ravishda topshirish;\n3.4.6. “IJARAGA BERUVCHI”ning yozma roziligisiz ijara obyekti bilan bog‘liq huquq va majburiyatlarni uchinchi shaxslarga bermaslik, shuningdek binoni subijaraga bermaslik."},
+      {"key": "liability", "category": "liability", "title": "4. Majburiyatlarni bajarmaganlik uchun javobgarlik",
+       "body": "4.1. Taraflar uchun ushbu shartnomada belgilanmagan javobgarlik masalasi O‘zbekiston Respublikasi Fuqarolik kodeksi va “Xo‘jalik yurituvchi subyektlarning shartnomaviy-huquqiy bazasi to‘g‘risida”gi Qonuni bilan tartibga solinadi."},
+      {"key": "termination", "category": "termination", "title": "5. Shartnomani o‘zgartirish va bekor qilish asoslari",
+       "body": "5.1. Ushbu shartnoma taraflarning kelishuviga muvofiq o‘zgartirilishi yoki bekor qilinishi mumkin.\n5.2. Shartnoma quyidagi hollarda sud tartibida bir tomonlama o‘zgartiriladi yoki bekor qilinadi:\n— egallangan maydonlardan shartnomaning 1.2 va 2.2-bandlarida ko‘rsatilgan maqsadlarga nomuvofiq ravishda foydalanish hollari aniqlanganda;\n— bino va xonalardan yong‘inga qarshi va sanitariya qoidalariga zid ravishda foydalanilayotganligi hamda xavfsizlikni ta’minlash choralari ko‘rilmaganligi aniqlansa va bu holatlar tegishli xizmatlar tomonidan tuzilgan dalolatnoma bilan tasdiqlanganda yoxud Qonunda ko‘rsatilgan boshqa hollarda.\n5.3. Sud qarori asosida."},
+      {"key": "dispute", "category": "dispute", "title": "6. Shartnomaning kuchga kirishi va nizolarni hal qilish tartibi",
+       "body": "6.1. Mazkur shartnoma 1.1-bandida belgilangan muddat davomida yuridik kuchga ega bo‘ladi.\n6.2. Mazkur shartnoma {{ a.copies or 2 }} nusxadan iborat bo‘lib, ularning har biri bir xil yuridik kuchga ega.\n6.3. Ushbu shartnoma bo‘yicha kelib chiqqan nizolar taraflarning kelishuviga muvofiq yoki sud tartibida hal qilinadi."}
+    ],
+    "requisites": {
+      "title": "7. Tomonlarning manzillari va bank rekvizitlari",
+      "labels": [["name", "Jismoniy shaxs (F.I.Sh.)"], ["address", "Manzil"], ["tin", "STIR / JShShIR"], ["account", "Bank hisob raqami"], ["phone", "Telefon raqami"]],
+      "signature": ["", "Imzo: ___________________"]
+    },
+    "closing": "Ijara maydoni {{ a.registry_district or '____________________' }} shahar (tuman) binolardan foydalanish departamentida hisobga olindi."
+  },
+  "required_elements": [
+    {"code": "subject", "title": "Ijara obyekti (manzil, maydon)", "patterns": ["manzil", "kv\\.?m", "адрес", "манзил"]},
+    {"code": "price", "title": "Ijara haqi miqdori", "patterns": ["ijara haqi", "ижара ҳақи", "so‘m", "so'm", "сўм", "сум"]},
+    {"code": "term", "title": "Ijara muddati", "patterns": ["muddat", "gacha", "муддат", "срок"]},
+    {"code": "dispute", "title": "Nizolarni hal qilish tartibi", "patterns": ["nizo", "низо", "спор", "sud tartibida"]}
+  ],
+  "obligation_templates": [
+    {"title": "Oylik ijara haqini to‘lash", "party": "B", "kind": "duty", "amount_field": "rent_amount", "clause_ref": "2.2",
+     "due": {"type": "recurring_monthly", "day_field": "payment_day", "start_field": "start_date", "until_field": "end_date"}},
+    {"title": "Ijara haqini olish", "party": "A", "kind": "right", "amount_field": "rent_amount", "clause_ref": "2.1",
+     "due": {"type": "recurring_monthly", "day_field": "payment_day", "start_field": "start_date", "until_field": "end_date"}},
+    {"title": "Ijara obyektini dalolatnoma bilan topshirish", "party": "A", "kind": "duty", "clause_ref": "3.2.2",
+     "due": {"type": "offset_days", "start_field": "contract_date", "days_field": "handover_days"}},
+    {"title": "Binoni va mol-mulkni qaytarib topshirish", "party": "B", "kind": "duty", "clause_ref": "3.4.5",
+     "due": {"type": "date", "field": "end_date"}}
+  ],
+  "legal_refs": [
+    {"law_ref": "O‘zbekiston Respublikasi Fuqarolik kodeksi — mulk ijarasi bo‘limi"}
+  ]
+}

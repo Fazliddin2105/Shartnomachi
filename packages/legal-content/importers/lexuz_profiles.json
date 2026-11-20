@@ -1,0 +1,342 @@
+{
+  "_note": "lex.uz rasmiy namunaviy shakllarini platforma shabloniga aylantirish profillari. Har bir '____' bo'sh joy izohi (qavs ichidagi keyingi qator), undan oldingi matn yoki ustun nomi bo'yicha qoidaga moslanadi. Bir xil 'key' bir necha joyda bo'lsa, foydalanuvchidan bir marta so'raladi. Moslanmagan bo'sh joylar avtomatik maydonga aylanadi. Qoidalar tartib bilan tekshiriladi (birinchi mos kelgani ishlatiladi).",
+  "generic": [
+    {
+      "match": {
+        "hint": "имзо|imzo|муҳр|muhr"
+      },
+      "signature": true
+    },
+    {
+      "match": {
+        "special": "date"
+      },
+      "key": "contract_date",
+      "type": "date",
+      "label": "Shartnoma sanasi",
+      "required": true
+    },
+    {
+      "match": {
+        "special": "number"
+      },
+      "key": "contract_number",
+      "type": "string",
+      "label": "Shartnoma raqami"
+    },
+    {
+      "match": {
+        "hint": "шартнома тузилган жой|shartnoma tuzilgan joy"
+      },
+      "key": "city",
+      "type": "string",
+      "label": "Shartnoma tuzilgan joy (shahar)",
+      "required": true
+    }
+  ],
+  "profiles": [
+    {
+      "id": "labor_vm758_annex2",
+      "doc_id": "7220862",
+      "annex": 2,
+      "target": "labor",
+      "title_uz": "Mehnat shartnomasi",
+      "description": "Vazirlar Mahkamasining 14.11.2024 yildagi 758-son qarori, 2-ilova — mehnat shartnomalarining namunaviy shakli (tavsiyaviy).",
+      "meta_fields": {
+        "starts_on": "start_date",
+        "ends_on": "end_date"
+      },
+      "party_roles": {
+        "A": "Ish beruvchi",
+        "B": "Xodim"
+      },
+      "fields": [
+        {
+          "match": {
+            "hint": "тўлиқ номи$",
+            "occurrence": 1
+          },
+          "key": "party_a.name",
+          "type": "string",
+          "label": "Ish beruvchi — tashkilotning to'liq nomi",
+          "required": true
+        },
+        {
+          "match": {
+            "hint": "фамилияси, исми ва отасининг исми",
+            "column": "Иш берувчи"
+          },
+          "key": "employer_representative",
+          "type": "string",
+          "label": "Ish beruvchi vakili — F.I.Sh. (to'liq)",
+          "required": true
+        },
+        {
+          "match": {
+            "hint": "фамилияси, исми ва отасининг исми",
+            "column": "Ходим"
+          },
+          "key": "party_b.name",
+          "type": "string",
+          "label": "Xodim — F.I.Sh. (to'liq)",
+          "required": true
+        },
+        {
+          "match": {
+            "hint": "фамилияси, исми ва отасининг исми",
+            "occurrence": 1
+          },
+          "key": "employer_representative",
+          "type": "string",
+          "label": "Ish beruvchi vakili — F.I.Sh. (to'liq)",
+          "required": true
+        },
+        {
+          "match": {
+            "hint": "фамилияси, исми ва отасининг исми"
+          },
+          "key": "party_b.name",
+          "type": "string",
+          "label": "Xodim — F.I.Sh. (to'liq)",
+          "required": true
+        },
+        {
+          "match": {
+            "hint": "таркибий бўлинмаси"
+          },
+          "key": "department",
+          "type": "string",
+          "label": "Tarkibiy bo'linma (sex, bo'lim, uchastka...)"
+        },
+        {
+          "match": {
+            "hint": "ХАЛИКК"
+          },
+          "key": "position",
+          "type": "string",
+          "label": "Kasbi / lavozimi (XALIKK bo'yicha to'liq nomi, razryad, malaka toifasi)",
+          "required": true
+        },
+        {
+          "match": {
+            "hint": "асосий иш, ўриндошлик"
+          },
+          "key": "employment_kind",
+          "type": "enum",
+          "label": "Ish turi",
+          "required": true,
+          "options": [
+            {
+              "value": "main",
+              "label": "asosiy ish"
+            },
+            {
+              "value": "part",
+              "label": "o'rindoshlik"
+            },
+            {
+              "value": "other",
+              "label": "boshqa"
+            }
+          ]
+        },
+        {
+          "match": {
+            "hint": "номуайян муддатга"
+          },
+          "key": "contract_kind",
+          "type": "enum",
+          "label": "Shartnoma muddati",
+          "required": true,
+          "options": [
+            {
+              "value": "indefinite",
+              "label": "nomuayyan muddatga"
+            },
+            {
+              "value": "fixed",
+              "label": "uch yildan ko'p bo'lmagan muayyan muddatga (muddatli mehnat shartnomasi)"
+            }
+          ]
+        },
+        {
+          "match": {
+            "before": "ишлаш бошланиши"
+          },
+          "key": "start_date",
+          "type": "date",
+          "label": "Ishni boshlash sanasi",
+          "required": true
+        },
+        {
+          "match": {
+            "before": "тамом бўлиши"
+          },
+          "key": "end_date",
+          "type": "date",
+          "label": "Tugash sanasi (muddatli shartnoma uchun)"
+        },
+        {
+          "match": {
+            "hint": "синовсиз, синов муддати"
+          },
+          "key": "probation_months",
+          "type": "number",
+          "min": 0,
+          "max": 12,
+          "label": "Sinov muddati, oy (0 — sinovsiz)",
+          "render": "{{ ({v} ~ \" ой\") if ({v} is defined and {v} is not none and {v} != \"\" and {v} != 0) else (\"синовсиз\" if {v} == 0 else {blank}) }}"
+        },
+        {
+          "match": {
+            "hint": "иш вақтининг нормал давомийлиги"
+          },
+          "key": "work_regime",
+          "type": "enum",
+          "label": "Ish kuni rejimi",
+          "required": true,
+          "options": [
+            {
+              "value": "normal",
+              "label": "ish vaqtining normal davomiyligi"
+            },
+            {
+              "value": "reduced",
+              "label": "ish vaqtining qisqartirilgan davomiyligi"
+            },
+            {
+              "value": "part_time",
+              "label": "to'liqsiz ish vaqti"
+            }
+          ]
+        },
+        {
+          "match": {
+            "before": "Ходим учун"
+          },
+          "key": "work_days_per_week",
+          "type": "number",
+          "min": 1,
+          "max": 7,
+          "label": "Ish haftasi (kun)",
+          "required": true
+        },
+        {
+          "match": {
+            "before": "ҳафтасига"
+          },
+          "key": "weekly_hours",
+          "type": "number",
+          "min": 1,
+          "label": "Haftalik ish vaqti (soat)",
+          "required": true
+        },
+        {
+          "match": {
+            "hint": "аниқ суммадаги"
+          },
+          "key": "salary",
+          "type": "string",
+          "label": "Mehnatga haq (aniq summa, YaTS razryadi yoki tushumdan foiz)",
+          "required": true
+        },
+        {
+          "match": {
+            "before": "асосий таътил"
+          },
+          "key": "annual_leave_days",
+          "type": "number",
+          "min": 0,
+          "label": "Asosiy (mehnat) ta'tili, kalendar kun",
+          "required": true
+        },
+        {
+          "match": {
+            "before": "қўшимча таътил"
+          },
+          "key": "extra_leave",
+          "type": "string",
+          "label": "Qo'shimcha ta'til (nomi va kunlari)"
+        },
+        {
+          "match": {
+            "hint": "паспорти ёки идентификацияловчи"
+          },
+          "key": "party_b.passport",
+          "type": "string",
+          "label": "Xodim — pasport yoki ID-karta ma'lumotlari",
+          "required": true
+        },
+        {
+          "match": {
+            "hint": "ЖШШИР"
+          },
+          "key": "party_b.pinfl",
+          "type": "string",
+          "label": "Xodim — JShShIR",
+          "required": true
+        },
+        {
+          "match": {
+            "hint": "манзили, телефон"
+          },
+          "key": "party_b.address",
+          "type": "string",
+          "label": "Xodim — manzili, telefon raqami"
+        },
+        {
+          "match": {
+            "hint": "пенсия ҳисобварағи"
+          },
+          "key": "party_b.pension_account",
+          "type": "string",
+          "label": "Xodim — shaxsiy jamg'arib boriladigan pensiya hisobvarag'i"
+        },
+        {
+          "match": {
+            "hint": "ташкилот ёки бўлинма номи"
+          },
+          "key": "party_a.name",
+          "type": "string",
+          "label": "Ish beruvchi — tashkilotning to'liq nomi",
+          "required": true
+        },
+        {
+          "match": {
+            "hint": "жойлашган жойи"
+          },
+          "key": "party_a.address",
+          "type": "string",
+          "label": "Ish beruvchi — joylashgan joyi, telefon raqami"
+        },
+        {
+          "match": {
+            "hint": "СТИР ва банк"
+          },
+          "key": "party_a.stir",
+          "type": "string",
+          "label": "Ish beruvchi — STIR va bank rekvizitlari",
+          "required": true
+        },
+        {
+          "match": {
+            "hint": "қўшимча ҳақ, устама, компенсациялар номи"
+          },
+          "key": "extra_pay_name",
+          "type": "string",
+          "label": "Qo'shimcha haq / ustama nomi",
+          "repeatable": true
+        },
+        {
+          "match": {
+            "hint": "уларнинг миқдори"
+          },
+          "key": "extra_pay_amount",
+          "type": "string",
+          "label": "Qo'shimcha haq miqdori",
+          "repeatable": true
+        }
+      ]
+    }
+  ]
+}

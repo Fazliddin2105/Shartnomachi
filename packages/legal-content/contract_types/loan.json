@@ -1,0 +1,54 @@
+{
+  "code": "loan",
+  "title_uz": "Qarz shartnomasi",
+  "title_ru": "Договор займа",
+  "description": "Pul mablag'ini qaytarish sharti bilan qarzga berish",
+  "form_requirement": "simple",
+  "form_rules": [],
+  "detect_keywords": ["qarz", "qarz beruvchi", "qarz oluvchi", "заём", "займ", "заимодавец", "заемщик"],
+  "questionnaire": {
+    "meta_fields": {"amount": "amount", "starts_on": "given_date", "ends_on": "return_date", "currency": "currency"},
+    "sections": [
+      {"key": "parties", "title": "Tomonlar", "fields": [
+        {"key": "party_a", "label": "Qarz beruvchi", "type": "party", "required": true},
+        {"key": "party_b", "label": "Qarz oluvchi", "type": "party", "required": true}
+      ]},
+      {"key": "terms", "title": "Shartlar", "fields": [
+        {"key": "city", "label": "Shahar", "type": "string", "required": true},
+        {"key": "contract_date", "label": "Shartnoma sanasi", "type": "date", "required": true},
+        {"key": "amount", "label": "Qarz summasi", "type": "number", "required": true, "min": 1},
+        {"key": "currency", "label": "Valyuta", "type": "enum", "required": true, "options": ["UZS", "USD"]},
+        {"key": "given_date", "label": "Qarz berilgan sana", "type": "date", "required": true},
+        {"key": "return_date", "label": "Qaytarish sanasi", "type": "date", "required": true},
+        {"key": "interest_rate_year", "label": "Yillik foiz (%)", "type": "number", "min": 0},
+        {"key": "penalty_percent_per_day", "label": "Kechiktirganlik uchun penya (% / kun)", "type": "number", "min": 0}
+      ]}
+    ]
+  },
+  "template": {
+    "title": "QARZ SHARTNOMASI",
+    "header": "{{ a.city }} sh.                                                    {{ a.contract_date | date }}",
+    "preamble": "{{ party_a.name }} (keyingi o'rinlarda «Qarz beruvchi») va {{ party_b.name }} (keyingi o'rinlarda «Qarz oluvchi») ushbu shartnomani tuzdilar:",
+    "clauses": [
+      {"key": "subject", "category": "subject", "title": "1. Shartnoma predmeti",
+       "body": "1.1. Qarz beruvchi Qarz oluvchiga {{ a.amount | money }} {{ a.currency }} miqdorida pul mablag'ini {{ a.given_date | date }} kuni qarzga beradi, Qarz oluvchi esa uni {{ a.return_date | date }} gacha qaytarish majburiyatini oladi."},
+      {"key": "interest", "category": "price", "title": "2. Foizlar",
+       "body": "{% if a.interest_rate_year %}2.1. Qarz summasiga yillik {{ a.interest_rate_year }}% miqdorida foiz hisoblanadi.{% else %}2.1. Qarz foizsiz beriladi.{% endif %}"},
+      {"key": "penalty", "category": "penalty", "title": "3. Javobgarlik", "if": "a.penalty_percent_per_day",
+       "body": "3.1. Qarz o'z vaqtida qaytarilmaganda Qarz oluvchi kechiktirilgan har bir kun uchun qaytarilmagan summaning {{ a.penalty_percent_per_day }}% miqdorida penya to'laydi."},
+      {"key": "dispute", "category": "dispute", "title": "4. Nizolarni hal qilish",
+       "body": "4.1. Nizolar muzokara yo'li bilan, kelishuvga erishilmasa sud tartibida hal qilinadi."}
+    ]
+  },
+  "required_elements": [
+    {"code": "amount", "title": "Qarz summasi", "patterns": ["summa", "сумм", "so'm", "сум", "usd", "доллар"]},
+    {"code": "return", "title": "Qaytarish muddati", "patterns": ["qaytar", "возвра"]}
+  ],
+  "obligation_templates": [
+    {"title": "Qarzni qaytarish", "party": "B", "kind": "duty", "amount_field": "amount", "clause_ref": "1.1",
+     "due": {"type": "date", "field": "return_date"}},
+    {"title": "Qarzni qaytarib olish huquqi", "party": "A", "kind": "right", "amount_field": "amount", "clause_ref": "1.1",
+     "due": {"type": "date", "field": "return_date"}}
+  ],
+  "legal_refs": [{"law_ref": "O'zbekiston Respublikasi Fuqarolik kodeksi — qarz bo'limi"}]
+}

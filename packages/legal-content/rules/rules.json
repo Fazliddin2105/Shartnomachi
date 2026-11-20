@@ -1,0 +1,888 @@
+{
+  "_note": "DEMO qoidalar. Ishga tushirishdan oldin huquqiy ekspertlar tomonidan tekshirilishi va CMS orqali tasdiqlanishi shart (spec §5.3, §9).",
+  "rules": [
+    {
+      "code": "LABOR_PROBATION_MAX",
+      "contract_type": "labor",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "field": "answers.probation_months",
+        "op": "gt",
+        "value": 3
+      },
+      "message": "Sinov muddati {answers.probation_months} oy — qonunda belgilangan eng ko'p muddatdan (3 oy) oshgan.",
+      "fix_suggestion": "Sinov muddatini 3 oydan oshirmang.",
+      "law_ref": "Mehnat kodeksi — dastlabki sinov muddati",
+      "tests": [
+        {
+          "name": "4 oy — buzilish",
+          "context": {
+            "answers": {
+              "probation_months": 4
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "3 oy — mumkin",
+          "context": {
+            "answers": {
+              "probation_months": 3
+            }
+          },
+          "expect": false
+        }
+      ],
+      "autofix": {
+        "field": "answers.probation_months",
+        "value": 3
+      }
+    },
+    {
+      "code": "LABOR_WEEKLY_HOURS_MAX",
+      "contract_type": "labor",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "field": "answers.weekly_hours",
+        "op": "gt",
+        "value": 40
+      },
+      "message": "Haftalik ish vaqti {answers.weekly_hours} soat — normal ish vaqti haftasiga 40 soatdan oshmasligi kerak.",
+      "fix_suggestion": "Haftalik ish vaqtini 40 soat yoki undan kam qilib belgilang; ortiqcha ish qo'shimcha haq bilan alohida rasmiylashtiriladi.",
+      "law_ref": "Mehnat kodeksi — ish vaqtining normal davomiyligi",
+      "tests": [
+        {
+          "name": "48 soat",
+          "context": {
+            "answers": {
+              "weekly_hours": 48
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "40 soat",
+          "context": {
+            "answers": {
+              "weekly_hours": 40
+            }
+          },
+          "expect": false
+        }
+      ],
+      "autofix": {
+        "field": "answers.weekly_hours",
+        "value": 40
+      }
+    },
+    {
+      "code": "LABOR_ANNUAL_LEAVE_MIN",
+      "contract_type": "labor",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "field": "answers.annual_leave_days",
+        "op": "lt",
+        "value": 21
+      },
+      "message": "Yillik ta'til {answers.annual_leave_days} kun — eng kam yillik asosiy ta'til muddatidan (21 kalendar kun) kam.",
+      "fix_suggestion": "Yillik asosiy ta'tilni kamida 21 kalendar kun qilib belgilang.",
+      "law_ref": "Mehnat kodeksi — yillik asosiy ta'til",
+      "tests": [
+        {
+          "name": "14 kun",
+          "context": {
+            "answers": {
+              "annual_leave_days": 14
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "21 kun",
+          "context": {
+            "answers": {
+              "annual_leave_days": 21
+            }
+          },
+          "expect": false
+        }
+      ],
+      "autofix": {
+        "field": "answers.annual_leave_days",
+        "value": 21
+      }
+    },
+    {
+      "code": "LABOR_FIXED_TERM_NO_END",
+      "contract_type": "labor",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "all": [
+          {
+            "field": "answers.contract_kind",
+            "op": "eq",
+            "value": "fixed"
+          },
+          {
+            "field": "answers.end_date",
+            "op": "missing"
+          }
+        ]
+      },
+      "message": "Muayyan muddatli mehnat shartnomasida tugash sanasi ko'rsatilmagan.",
+      "fix_suggestion": "Tugash sanasini kiriting yoki shartnomani nomuayyan muddatga tuzing.",
+      "law_ref": "Mehnat kodeksi — mehnat shartnomasining muddatlari",
+      "tests": [
+        {
+          "name": "sana yo'q",
+          "context": {
+            "answers": {
+              "contract_kind": "fixed"
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "sana bor",
+          "context": {
+            "answers": {
+              "contract_kind": "fixed",
+              "end_date": "2027-01-01"
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "LOAN_RETURN_BEFORE_GIVEN",
+      "contract_type": "loan",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "field": "answers.return_date",
+        "op": "lte",
+        "value": {
+          "field": "answers.given_date"
+        }
+      },
+      "message": "Qaytarish sanasi ({answers.return_date}) qarz berilgan sanadan ({answers.given_date}) keyin bo'lishi kerak.",
+      "fix_suggestion": "Qaytarish sanasini to'g'rilang.",
+      "law_ref": "Fuqarolik kodeksi — qarz shartnomasi",
+      "tests": [
+        {
+          "name": "teskari",
+          "context": {
+            "answers": {
+              "given_date": "2026-05-01",
+              "return_date": "2026-04-01"
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "to'g'ri",
+          "context": {
+            "answers": {
+              "given_date": "2026-05-01",
+              "return_date": "2026-06-01"
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "LOAN_FOREIGN_CURRENCY",
+      "contract_type": "loan",
+      "scope": "answers",
+      "severity": "yellow",
+      "rule_json": {
+        "field": "answers.currency",
+        "op": "in",
+        "value": [
+          "USD",
+          "EUR",
+          "RUB"
+        ]
+      },
+      "message": "Rezidentlar o'rtasida chet el valyutasida hisob-kitob qilish valyuta qonunchiligi bilan cheklangan.",
+      "fix_suggestion": "Summani so'mda belgilang (kerak bo'lsa valyuta ekvivalentini izohda ko'rsating) yoki yurist bilan maslahatlashing.",
+      "law_ref": "Valyutani tartibga solish to'g'risidagi qonun",
+      "tests": [
+        {
+          "name": "USD",
+          "context": {
+            "answers": {
+              "currency": "USD"
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "UZS",
+          "context": {
+            "answers": {
+              "currency": "UZS"
+            }
+          },
+          "expect": false
+        }
+      ],
+      "autofix": {
+        "field": "answers.currency",
+        "value": "UZS"
+      }
+    },
+    {
+      "code": "RENT_DEPOSIT_HIGH",
+      "contract_type": "rent_residential",
+      "scope": "answers",
+      "severity": "yellow",
+      "rule_json": {
+        "op": "expr",
+        "value": "answers__deposit_amount > answers__rent_amount * 3"
+      },
+      "message": "Garov puli oylik ijara haqining 3 baravaridan ko'p — Ijarachi uchun og'ir shart.",
+      "fix_suggestion": "Garov pulini 1–2 oylik ijara haqi miqdorida belgilash odatiy amaliyot.",
+      "law_ref": "Fuqarolik kodeksi — majburiyatlarni ta'minlash",
+      "tests": [
+        {
+          "name": "4x",
+          "context": {
+            "answers": {
+              "deposit_amount": 4000000,
+              "rent_amount": 1000000
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "1x",
+          "context": {
+            "answers": {
+              "deposit_amount": 1000000,
+              "rent_amount": 1000000
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "RENT_SHORT_NOTICE",
+      "contract_type": "rent_residential",
+      "scope": "answers",
+      "severity": "yellow",
+      "rule_json": {
+        "field": "answers.notice_days",
+        "op": "lt",
+        "value": 30
+      },
+      "message": "Muddatidan oldin bekor qilish haqida ogohlantirish muddati {answers.notice_days} kun — yangi joy topish uchun qisqa.",
+      "fix_suggestion": "Ogohlantirish muddatini kamida 30 kun qilib belgilang.",
+      "law_ref": "Fuqarolik kodeksi — turar joy ijarasini bekor qilish",
+      "tests": [
+        {
+          "name": "7 kun",
+          "context": {
+            "answers": {
+              "notice_days": 7
+            }
+          },
+          "expect": true
+        }
+      ],
+      "autofix": {
+        "field": "answers.notice_days",
+        "value": 30
+      }
+    },
+    {
+      "code": "SERVICES_FULL_PREPAYMENT",
+      "contract_type": "services",
+      "scope": "answers",
+      "severity": "yellow",
+      "rule_json": {
+        "field": "answers.prepayment_percent",
+        "op": "gte",
+        "value": 100
+      },
+      "message": "To'liq oldindan to'lov — xizmat ko'rsatilmasa pulni qaytarish qiyin bo'lishi mumkin.",
+      "fix_suggestion": "Bosqichma-bosqich to'lov yoki 30–50% avans belgilang.",
+      "law_ref": "Fuqarolik kodeksi — haq evaziga xizmat ko'rsatish",
+      "tests": [
+        {
+          "name": "100%",
+          "context": {
+            "answers": {
+              "prepayment_percent": 100
+            }
+          },
+          "expect": true
+        }
+      ],
+      "autofix": {
+        "field": "answers.prepayment_percent",
+        "value": 50
+      }
+    },
+    {
+      "code": "PENALTY_RATE_HIGH",
+      "scope": "answers",
+      "severity": "yellow",
+      "rule_json": {
+        "field": "answers.penalty_percent_per_day",
+        "op": "gt",
+        "value": 0.5
+      },
+      "message": "Penya kuniga {answers.penalty_percent_per_day}% — majburiyat buzilishi oqibatlariga nomutanosib bo'lsa, sud uni kamaytirishi mumkin.",
+      "fix_suggestion": "Penyani kuniga 0,1–0,5% oralig'ida va umumiy summaning ma'lum foizi bilan cheklab belgilang.",
+      "law_ref": "Fuqarolik kodeksi — neustoykani kamaytirish",
+      "tests": [
+        {
+          "name": "1%",
+          "context": {
+            "answers": {
+              "penalty_percent_per_day": 1
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "0.1%",
+          "context": {
+            "answers": {
+              "penalty_percent_per_day": 0.1
+            }
+          },
+          "expect": false
+        }
+      ],
+      "autofix": {
+        "field": "answers.penalty_percent_per_day",
+        "value": 0.1
+      }
+    },
+    {
+      "code": "LARGE_AMOUNT_ADVICE",
+      "scope": "answers",
+      "severity": "blue",
+      "rule_json": {
+        "field": "derived.amount_in_bhm",
+        "op": "gt",
+        "value": 100
+      },
+      "message": "Shartnoma summasi katta (≈{derived.amount_in_bhm} BHM). Tomonlarning shaxsini va vakolatini sinchiklab tekshiring.",
+      "fix_suggestion": "Yurist bilan maslahatlashing; to'lovni bank orqali amalga oshiring.",
+      "law_ref": null,
+      "tests": [
+        {
+          "name": "katta",
+          "context": {
+            "derived": {
+              "amount_in_bhm": 500
+            }
+          },
+          "expect": true
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_WAIVER_OF_COURT",
+      "scope": "clause",
+      "severity": "red",
+      "rule_json": {
+        "field": "clause.text",
+        "op": "regex",
+        "value": "(sudga murojaat qilish|da'vo (qilish|berish)) huquqidan voz kech|отказ\\w* от права на обращение в суд"
+      },
+      "message": "Band sud himoyasi huquqidan voz kechishni nazarda tutadi — bunday shart haqiqiy emas.",
+      "fix_suggestion": "Bandni olib tashlang: nizolar sud tartibida hal qilinishi mumkinligini ko'rsating.",
+      "law_ref": "O'zbekiston Respublikasi Konstitutsiyasi — sud himoyasi huquqi",
+      "tests": [
+        {
+          "name": "voz kechish",
+          "context": {
+            "clause": {
+              "text": "Ijarachi sudga murojaat qilish huquqidan voz kechadi.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "oddiy",
+          "context": {
+            "clause": {
+              "text": "Nizolar sudda hal qilinadi.",
+              "index": 0
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_UNILATERAL_CHANGE",
+      "scope": "clause",
+      "severity": "yellow",
+      "rule_json": {
+        "field": "clause.text",
+        "op": "regex",
+        "value": "bir tomonlama (tartibda )?(o'zgartir|bekor|oshir)|в одностороннем порядке (измен|растор|увелич)"
+      },
+      "message": "Bir tomonga shartlarni (narxni) bir tomonlama o'zgartirish yoki shartnomani bekor qilish huquqi berilgan — bu sizga qarshi ishlatilishi mumkin.",
+      "fix_suggestion": "O'zgartirishlar faqat tomonlarning yozma kelishuvi bilan kiritilishini talab qiling.",
+      "law_ref": "Fuqarolik kodeksi — majburiyatni bir tomonlama bajarishdan bosh tortishga yo'l qo'yilmasligi",
+      "tests": [
+        {
+          "name": "uz",
+          "context": {
+            "clause": {
+              "text": "Ijaraga beruvchi ijara haqini bir tomonlama oshirishga haqli.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "ru",
+          "context": {
+            "clause": {
+              "text": "Исполнитель вправе в одностороннем порядке изменить цену.",
+              "index": 0
+            }
+          },
+          "expect": true
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_TERMINATION_NO_NOTICE",
+      "scope": "clause",
+      "severity": "yellow",
+      "rule_json": {
+        "field": "clause.text",
+        "op": "regex",
+        "value": "ogohlantirishsiz[^.]{0,60}bekor|bekor[^.]{0,60}ogohlantirishsiz|(\\d{1,2} soat|bir kun|1 kun) (ichida|davomida)[^.]{0,60}bekor|без (предварительного )?предупреждения[^.]{0,60}растор|растор[^.]{0,60}без (предварительного )?предупреждения"
+      },
+      "message": "Shartnomani ogohlantirishsiz yoki juda qisqa muddatda (soatlar/1 kun) bir tomonlama bekor qilish huquqi berilgan — ikkinchi tomon himoyasiz qoladi.",
+      "fix_suggestion": "Bekor qilishdan kamida 30 kalendar kun oldin yozma ogohlantirish shartini kiriting.",
+      "law_ref": "Fuqarolik kodeksi — shartnomani o'zgartirish va bekor qilish",
+      "tests": [
+        {
+          "name": "24 soat",
+          "context": {
+            "clause": {
+              "text": "Ijaraga beruvchi shartnomani 24 soat ichida ogohlantirishsiz bekor qilishi mumkin.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "ru",
+          "context": {
+            "clause": {
+              "text": "Арендодатель вправе расторгнуть договор без предупреждения.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "30 kun",
+          "context": {
+            "clause": {
+              "text": "Tomonlar 30 kun oldin yozma ogohlantirib shartnomani bekor qilishi mumkin.",
+              "index": 0
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_PENALTY_PER_DAY_HIGH",
+      "scope": "clause",
+      "severity": "yellow",
+      "category": "penalty",
+      "rule_json": {
+        "all": [
+          {
+            "field": "clause.text",
+            "op": "regex",
+            "value": "kun(iga|ига)?|в день|за каждый день|har bir kun"
+          },
+          {
+            "field": "clause.text",
+            "op": "number_in_text_gt",
+            "value": 0.5,
+            "pattern": "(\\d+(?:[.,]\\d+)?)\\s*(?:%|foiz|процент)"
+          }
+        ]
+      },
+      "message": "Kunlik penya stavkasi yuqori (0,5% dan ortiq) — sud uni kamaytirishi mumkin, lekin siz uchun moliyaviy xavf katta.",
+      "fix_suggestion": "Penyani kuniga 0,1% atrofida va jami summaning 10% bilan cheklashni taklif qiling.",
+      "law_ref": "Fuqarolik kodeksi — neustoykani kamaytirish",
+      "tests": [
+        {
+          "name": "1%",
+          "context": {
+            "clause": {
+              "text": "Har bir kun uchun 1% penya to'lanadi.",
+              "category": "penalty",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "0.1%",
+          "context": {
+            "clause": {
+              "text": "Har bir kun uchun 0,1% penya to'lanadi.",
+              "category": "penalty",
+              "index": 0
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_UNLIMITED_LIABILITY",
+      "scope": "clause",
+      "severity": "yellow",
+      "rule_json": {
+        "field": "clause.text",
+        "op": "regex",
+        "value": "(to'liq|cheklanmagan|barcha) (moddiy )?(javobgar|zararlar)|неограниченн\\w* ответственн|в полном объеме все убытки"
+      },
+      "message": "Cheklanmagan (to'liq) javobgarlik nazarda tutilgan — kutilmagan katta zarar summalari sizga yuklanishi mumkin.",
+      "fix_suggestion": "Javobgarlikni haqiqiy zarar bilan yoki shartnoma summasi bilan cheklashni taklif qiling.",
+      "law_ref": "Fuqarolik kodeksi — zararni to'lash",
+      "tests": [
+        {
+          "name": "uz",
+          "context": {
+            "clause": {
+              "text": "Xodim etkazilgan barcha zararlar uchun to'liq javobgar.",
+              "index": 0
+            }
+          },
+          "expect": true
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_NO_REFUND",
+      "scope": "clause",
+      "severity": "yellow",
+      "rule_json": {
+        "field": "clause.text",
+        "op": "regex",
+        "value": "(pul|to'lov|tovar)\\w* (hech qanday holatda )?qaytarilmaydi|возврату не подлежит|деньги не возвращаются"
+      },
+      "message": "To'lov/tovar qaytarilmasligi haqidagi band — iste'molchi bo'lsangiz, qonun bergan huquqlarni cheklashi mumkin.",
+      "fix_suggestion": "Qaytarish shartlarini qonunga muvofiq aniq belgilashni talab qiling.",
+      "law_ref": "Iste'molchilarning huquqlarini himoya qilish to'g'risidagi qonun",
+      "tests": [
+        {
+          "name": "uz",
+          "context": {
+            "clause": {
+              "text": "To'langan pul hech qanday holatda qaytarilmaydi.",
+              "index": 0
+            }
+          },
+          "expect": true
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_AUTO_PROLONGATION",
+      "scope": "clause",
+      "severity": "blue",
+      "rule_json": {
+        "field": "clause.text",
+        "op": "regex",
+        "value": "avtomatik (ravishda )?uzaytiril|автоматически продлева|пролонгир"
+      },
+      "message": "Shartnoma avtomatik uzaytiriladi — muddat tugashidan oldin bekor qilmasangiz, majburiyatlar davom etadi.",
+      "fix_suggestion": "Uzaytirishdan voz kechish muddatini eslatmaga qo'shing.",
+      "law_ref": null,
+      "tests": [
+        {
+          "name": "uz",
+          "context": {
+            "clause": {
+              "text": "Shartnoma avtomatik ravishda uzaytiriladi.",
+              "index": 0
+            }
+          },
+          "expect": true
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_UNPAID_OVERTIME",
+      "contract_type": "labor",
+      "scope": "clause",
+      "severity": "red",
+      "rule_json": {
+        "field": "clause.text",
+        "op": "regex",
+        "value": "(qo'shimcha|ortiqcha|ish vaqtidan tashqari) (ish|vaqt|ishlar).{0,60}(to'lanmaydi|haq to'lanmaydi|bepul)|сверхурочн.{0,60}не оплачива"
+      },
+      "message": "Ish vaqtidan tashqari ish haqsiz bajarilishi nazarda tutilgan — bu xodim ahvolini qonunga nisbatan yomonlashtiradi.",
+      "fix_suggestion": "Ish vaqtidan tashqari ish oshirilgan miqdorda to'lanishi yoki dam olish vaqti bilan qoplanishini yozing.",
+      "law_ref": "Mehnat kodeksi — ish vaqtidan tashqari ish uchun haq to'lash",
+      "tests": [
+        {
+          "name": "uz",
+          "context": {
+            "clause": {
+              "text": "Qo'shimcha ish vaqti uchun haq to'lanmaydi.",
+              "index": 0
+            }
+          },
+          "expect": true
+        }
+      ]
+    },
+    {
+      "code": "RENTC_END_BEFORE_START",
+      "contract_type": "rent_commercial",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "field": "answers.end_date",
+        "op": "lte",
+        "value": {
+          "field": "answers.start_date"
+        }
+      },
+      "message": "Ijara tugash sanasi ({answers.end_date}) boshlanish sanasidan ({answers.start_date}) keyin bo‘lishi kerak.",
+      "fix_suggestion": "Ijara muddatini to‘g‘rilang.",
+      "law_ref": "Fuqarolik kodeksi — mulk ijarasi (ijara muddati)",
+      "tests": [
+        {
+          "name": "teskari",
+          "context": {
+            "answers": {
+              "start_date": "2026-12-01",
+              "end_date": "2026-11-01"
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "to‘g‘ri",
+          "context": {
+            "answers": {
+              "start_date": "2026-12-01",
+              "end_date": "2027-11-30"
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "RENTP_END_BEFORE_START",
+      "contract_type": "rent_private",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "field": "answers.end_date",
+        "op": "lte",
+        "value": {
+          "field": "answers.start_date"
+        }
+      },
+      "message": "Ijara tugash sanasi ({answers.end_date}) boshlanish sanasidan ({answers.start_date}) keyin bo‘lishi kerak.",
+      "fix_suggestion": "Ijara muddatini to‘g‘rilang.",
+      "law_ref": "Fuqarolik kodeksi — mulk ijarasi (ijara muddati)",
+      "tests": [
+        {
+          "name": "teskari",
+          "context": {
+            "answers": {
+              "start_date": "2026-12-01",
+              "end_date": "2026-11-01"
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "to‘g‘ri",
+          "context": {
+            "answers": {
+              "start_date": "2026-12-01",
+              "end_date": "2027-11-30"
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "RENTC_CASH_BETWEEN_COMPANIES",
+      "contract_type": "rent_commercial",
+      "scope": "answers",
+      "severity": "yellow",
+      "rule_json": {
+        "field": "answers.payment_method",
+        "op": "eq",
+        "value": "cash"
+      },
+      "message": "Yuridik shaxslar o‘rtasidagi hisob-kitoblar odatda naqd pulsiz amalga oshiriladi — naqd to‘lov soliq va buxgalteriya talablariga zid bo‘lishi mumkin.",
+      "fix_suggestion": "To‘lov usulini «pul ko‘chirish» qilib belgilang yoki naqd to‘lovga ruxsat borligini buxgalter/yurist bilan tekshiring.",
+      "law_ref": "Naqd pul hisob-kitoblari bo‘yicha qonunchilik (ekspert tasdig‘i kerak)",
+      "tests": [
+        {
+          "name": "naqd",
+          "context": {
+            "answers": {
+              "payment_method": "cash"
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "bank",
+          "context": {
+            "answers": {
+              "payment_method": "bank_transfer"
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "RENTP_TRANSFER_NO_ACCOUNT",
+      "contract_type": "rent_private",
+      "scope": "answers",
+      "severity": "yellow",
+      "rule_json": {
+        "all": [
+          {
+            "field": "answers.payment_method",
+            "op": "eq",
+            "value": "bank_transfer"
+          },
+          {
+            "field": "answers.party_a.account",
+            "op": "missing"
+          }
+        ]
+      },
+      "message": "To‘lov pul ko‘chirish yo‘li bilan belgilangan, lekin Ijaraga beruvchining bank hisob raqami ko‘rsatilmagan.",
+      "fix_suggestion": "Ijaraga beruvchining bank hisob raqamini kiriting yoki to‘lov usulini o‘zgartiring.",
+      "tests": [
+        {
+          "name": "hisob yo‘q",
+          "context": {
+            "answers": {
+              "payment_method": "bank_transfer",
+              "party_a": {
+                "name": "X"
+              }
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "hisob bor",
+          "context": {
+            "answers": {
+              "payment_method": "bank_transfer",
+              "party_a": {
+                "account": "20208000000000000001"
+              }
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "naqd",
+          "context": {
+            "answers": {
+              "payment_method": "cash"
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "LOANN_RETURN_NOT_AFTER_CONTRACT",
+      "contract_type": "loan_notarial",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "field": "answers.return_date",
+        "op": "lte",
+        "value": {
+          "field": "answers.contract_date"
+        }
+      },
+      "message": "Qarzni qaytarish sanasi ({answers.return_date}) shartnoma sanasidan ({answers.contract_date}) keyin bo‘lishi kerak — shablonga ko‘ra qarz shartnoma imzolangunga qadar beriladi.",
+      "fix_suggestion": "Qaytarish sanasini to‘g‘rilang.",
+      "law_ref": "Fuqarolik kodeksi — qarz shartnomasi",
+      "tests": [
+        {
+          "name": "teskari",
+          "context": {
+            "answers": {
+              "contract_date": "2026-11-20",
+              "return_date": "2026-11-01"
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "to‘g‘ri",
+          "context": {
+            "answers": {
+              "contract_date": "2026-11-20",
+              "return_date": "2027-05-20"
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "LOANN_NOTARY_FORM",
+      "contract_type": "loan_notarial",
+      "scope": "answers",
+      "severity": "blue",
+      "rule_json": {
+        "field": "answers.contract_date",
+        "op": "exists"
+      },
+      "message": "Ushbu shakl notarial tasdiqlash uchun mo‘ljallangan: platformadagi elektron tasdiqdan so‘ng shartnomani notariusda tasdiqlating.",
+      "fix_suggestion": "Notarius ma’lumotlarini kiriting yoki ularni notarius to‘ldirishi uchun bo‘sh qoldiring.",
+      "law_ref": "Fuqarolik kodeksi — qarz (732–738-moddalar)",
+      "tests": [
+        {
+          "name": "har doim",
+          "context": {
+            "answers": {
+              "contract_date": "2026-11-20"
+            }
+          },
+          "expect": true
+        }
+      ]
+    }
+  ]
+}
