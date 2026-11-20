@@ -151,6 +151,7 @@ async def review(
     rule_findings: list[dict[str, Any]],
     template_clauses: list[str] | None,
     template_label: str | None = None,
+    law_texts: list[str] | None = None,
 ) -> AIReview:
     flagged = {f["clause_index"] for f in rule_findings if isinstance(f.get("clause_index"), int)}
     user = prompts.review_user(
@@ -159,6 +160,7 @@ async def review(
         rule_findings=[f"[{f.get('clause_index')}] {f.get('message')}" for f in rule_findings],
         template_clauses=template_clauses,
         template_label=template_label,
+        law_texts=law_texts,
         today=today_local().isoformat(),
     )
     ans = await llm.ask_json(prompts.REVIEW_SYSTEM, user)

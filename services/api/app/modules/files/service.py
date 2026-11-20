@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import re
 import uuid
 from datetime import datetime
@@ -114,3 +115,13 @@ async def read_bytes(row: StoredFile, *, verify: bool = True) -> bytes:
     if verify and sha256_hex(data) != row.sha256:
         raise ValidationFailed("File integrity check failed", code="file_integrity")
     return data
+
+
+async def delete_file(db: AsyncSession, file_id: uuid.UUID) -> None:
+    """Remove the encrypted object and its row (used when a user deletes their own upload)."""
+    row = await db.get(StoredFile, file_id)
+    if row is None:
+        return
+    with contextlib.suppress(FileNotFoundError):
+        await get_storage().delete(row.storage_key)
+    await db.delete(row)

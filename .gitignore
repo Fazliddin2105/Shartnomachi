@@ -15,3 +15,4 @@ node_modules/
 *.sqlite3
 # old integration copy (superseded by apps/web + packages/web-sdk)
 /web/
+/backups/

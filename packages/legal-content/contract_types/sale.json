@@ -5,31 +5,127 @@
   "description": "Tovar, transport vositasi yoki ko'chmas mulkni sotish",
   "form_requirement": "simple",
   "form_rules": [
-    {"when": {"field": "answers.object_type", "op": "eq", "value": "vehicle"}, "form": "notarial",
-     "reason": "Transport vositasi oldi-sotdisi notarial tasdiqlash yoki vakolatli tartibda rasmiylashtirishni talab qilishi mumkin (ekspert tekshiruvi kerak)."},
-    {"when": {"field": "answers.object_type", "op": "eq", "value": "real_estate"}, "form": "registration",
-     "reason": "Ko'chmas mulk oldi-sotdisi notarial tasdiqlanadi va mulk huquqi davlat ro'yxatidan o'tkaziladi."}
+    {
+      "when": {
+        "field": "answers.object_type",
+        "op": "eq",
+        "value": "vehicle"
+      },
+      "form": "notarial",
+      "reason": "Transport vositasi oldi-sotdisi notarial tasdiqlash yoki vakolatli tartibda rasmiylashtirishni talab qilishi mumkin (ekspert tekshiruvi kerak)."
+    },
+    {
+      "when": {
+        "field": "answers.object_type",
+        "op": "eq",
+        "value": "real_estate"
+      },
+      "form": "registration",
+      "reason": "Ko'chmas mulk oldi-sotdisi notarial tasdiqlanadi va mulk huquqi davlat ro'yxatidan o'tkaziladi."
+    }
   ],
-  "detect_keywords": ["oldi-sotdi", "sotuvchi", "xaridor", "купли-продажи", "продавец", "покупатель"],
+  "detect_keywords": [
+    "oldi-sotdi",
+    "sotuvchi",
+    "xaridor",
+    "купли-продажи",
+    "продавец",
+    "покупатель"
+  ],
   "questionnaire": {
-    "meta_fields": {"amount": "price", "starts_on": "contract_date", "ends_on": "transfer_date"},
+    "meta_fields": {
+      "amount": "price",
+      "starts_on": "contract_date",
+      "ends_on": "transfer_date"
+    },
     "sections": [
-      {"key": "parties", "title": "Tomonlar", "fields": [
-        {"key": "party_a", "label": "Sotuvchi", "type": "party", "required": true},
-        {"key": "party_b", "label": "Xaridor", "type": "party", "required": true}
-      ]},
-      {"key": "object", "title": "Sotiladigan narsa", "fields": [
-        {"key": "city", "label": "Shahar", "type": "string", "required": true},
-        {"key": "contract_date", "label": "Shartnoma sanasi", "type": "date", "required": true},
-        {"key": "object_type", "label": "Obyekt turi", "type": "enum", "required": true,
-         "options": [{"value": "goods", "label": "Tovar"}, {"value": "vehicle", "label": "Transport vositasi"},
-                     {"value": "real_estate", "label": "Ko'chmas mulk"}]},
-        {"key": "object_description", "label": "Tavsifi (model, raqam, manzil...)", "type": "string", "required": true},
-        {"key": "price", "label": "Narxi (so'm)", "type": "number", "required": true, "min": 0},
-        {"key": "payment_date", "label": "To'lov sanasi", "type": "date", "required": true},
-        {"key": "transfer_date", "label": "Topshirish sanasi", "type": "date", "required": true},
-        {"key": "warranty_months", "label": "Kafolat muddati (oy)", "type": "number", "min": 0}
-      ]}
+      {
+        "key": "parties",
+        "title": "Tomonlar",
+        "fields": [
+          {
+            "key": "party_a",
+            "label": "Sotuvchi",
+            "type": "party",
+            "required": true
+          },
+          {
+            "key": "party_b",
+            "label": "Xaridor",
+            "type": "party",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "object",
+        "title": "Sotiladigan narsa",
+        "fields": [
+          {
+            "key": "city",
+            "label": "Shahar",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "contract_date",
+            "label": "Shartnoma sanasi",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "object_type",
+            "label": "Obyekt turi",
+            "type": "enum",
+            "required": true,
+            "options": [
+              {
+                "value": "goods",
+                "label": "Tovar"
+              },
+              {
+                "value": "vehicle",
+                "label": "Transport vositasi"
+              },
+              {
+                "value": "real_estate",
+                "label": "Ko'chmas mulk"
+              }
+            ]
+          },
+          {
+            "key": "object_description",
+            "label": "Tavsifi (model, raqam, manzil...)",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "price",
+            "label": "Narxi (so'm)",
+            "type": "number",
+            "required": true,
+            "min": 0
+          },
+          {
+            "key": "payment_date",
+            "label": "To'lov sanasi",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "transfer_date",
+            "label": "Topshirish sanasi",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "warranty_months",
+            "label": "Kafolat muddati (oy)",
+            "type": "number",
+            "min": 0
+          }
+        ]
+      }
     ]
   },
   "template": {
@@ -37,27 +133,111 @@
     "header": "{{ a.city }} sh.                                                    {{ a.contract_date | date }}",
     "preamble": "{{ party_a.name }} (keyingi o'rinlarda «Sotuvchi») va {{ party_b.name }} (keyingi o'rinlarda «Xaridor») ushbu shartnomani tuzdilar:",
     "clauses": [
-      {"key": "subject", "category": "subject", "title": "1. Shartnoma predmeti",
-       "body": "1.1. Sotuvchi quyidagi mulkni Xaridorning mulkiga topshiradi, Xaridor esa uni qabul qilib, haqini to'laydi: {{ a.object_description }}."},
-      {"key": "price", "category": "price", "title": "2. Narx va to'lov",
-       "body": "2.1. Mulk narxi {{ a.price | money }} so'm.\n2.2. Xaridor narxni {{ a.payment_date | date }} gacha to'laydi."},
-      {"key": "delivery", "category": "delivery", "title": "3. Topshirish",
-       "body": "3.1. Sotuvchi mulkni {{ a.transfer_date | date }} gacha topshirish-qabul qilish dalolatnomasi asosida topshiradi.\n3.2. Mulkka bo'lgan mulk huquqi qonunda belgilangan paytdan Xaridorga o'tadi."},
-      {"key": "warranty", "category": "warranty", "title": "4. Kafolat", "if": "a.warranty_months",
-       "body": "4.1. Sotuvchi mulk sifatiga {{ a.warranty_months }} oy kafolat beradi."},
-      {"key": "dispute", "category": "dispute", "title": "5. Nizolarni hal qilish",
-       "body": "5.1. Nizolar muzokaralar yo'li bilan, kelishuvga erishilmasa sud tartibida hal qilinadi."}
+      {
+        "key": "subject",
+        "category": "subject",
+        "title": "1. Shartnoma predmeti",
+        "body": "1.1. Sotuvchi quyidagi mulkni Xaridorning mulkiga topshiradi, Xaridor esa uni qabul qilib, haqini to'laydi: {{ a.object_description }}."
+      },
+      {
+        "key": "price",
+        "category": "price",
+        "title": "2. Narx va to'lov",
+        "body": "2.1. Mulk narxi {{ a.price | money }} so'm.\n2.2. Xaridor narxni {{ a.payment_date | date }} gacha to'laydi."
+      },
+      {
+        "key": "delivery",
+        "category": "delivery",
+        "title": "3. Topshirish",
+        "body": "3.1. Sotuvchi mulkni {{ a.transfer_date | date }} gacha topshirish-qabul qilish dalolatnomasi asosida topshiradi.\n3.2. Mulkka bo'lgan mulk huquqi qonunda belgilangan paytdan Xaridorga o'tadi."
+      },
+      {
+        "key": "warranty",
+        "category": "warranty",
+        "title": "4. Kafolat",
+        "if": "a.warranty_months",
+        "body": "4.1. Sotuvchi mulk sifatiga {{ a.warranty_months }} oy kafolat beradi."
+      },
+      {
+        "key": "dispute",
+        "category": "dispute",
+        "title": "5. Nizolarni hal qilish",
+        "body": "5.1. Nizolar muzokaralar yo'li bilan, kelishuvga erishilmasa sud tartibida hal qilinadi."
+      }
     ]
   },
   "required_elements": [
-    {"code": "subject", "title": "Sotiladigan mulk tavsifi", "patterns": ["predmet", "предмет", "mulk", "tovar", "товар", "имуществ"]},
-    {"code": "price", "title": "Narx", "patterns": ["narx", "цена", "стоимост", "so'm", "сум"]}
+    {
+      "code": "subject",
+      "title": "Sotiladigan mulk tavsifi",
+      "patterns": [
+        "predmet",
+        "предмет",
+        "mulk",
+        "tovar",
+        "товар",
+        "имуществ"
+      ]
+    },
+    {
+      "code": "price",
+      "title": "Narx",
+      "patterns": [
+        "narx",
+        "цена",
+        "стоимост",
+        "so'm",
+        "сум"
+      ]
+    }
   ],
   "obligation_templates": [
-    {"title": "Narxni to'lash", "party": "B", "kind": "duty", "amount_field": "price", "clause_ref": "2.2",
-     "due": {"type": "date", "field": "payment_date"}},
-    {"title": "Mulkni topshirish", "party": "A", "kind": "duty", "clause_ref": "3.1",
-     "due": {"type": "date", "field": "transfer_date"}}
+    {
+      "title": "Narxni to'lash",
+      "party": "B",
+      "kind": "duty",
+      "amount_field": "price",
+      "clause_ref": "2.2",
+      "due": {
+        "type": "date",
+        "field": "payment_date"
+      }
+    },
+    {
+      "title": "Mulkni topshirish",
+      "party": "A",
+      "kind": "duty",
+      "clause_ref": "3.1",
+      "due": {
+        "type": "date",
+        "field": "transfer_date"
+      }
+    }
   ],
-  "legal_refs": [{"law_ref": "O'zbekiston Respublikasi Fuqarolik kodeksi — oldi-sotdi bo'limi"}]
+  "legal_refs": [
+    {
+      "law_ref": "FK 386-modda. Oldi-sotdi shartnomasi",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-180613",
+      "code": "fk2",
+      "number": "386"
+    },
+    {
+      "law_ref": "FK 388-modda. Tovarni topshirish yuzasidan sotuvchining majburiyatlari",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-182545",
+      "code": "fk2",
+      "number": "388"
+    },
+    {
+      "law_ref": "FK 390-modda. Sotuvchining tovarni topshirish majburiyatini bajarish payti",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-182551",
+      "code": "fk2",
+      "number": "390"
+    },
+    {
+      "law_ref": "FK 392-modda. Tovarning tasodifan nobud boʻlishi yoki tasodifan shikastlanishi xavfining oʻtishi",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-182558",
+      "code": "fk2",
+      "number": "392"
+    }
+  ]
 }

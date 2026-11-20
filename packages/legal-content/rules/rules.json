@@ -7,28 +7,49 @@
       "scope": "answers",
       "severity": "red",
       "rule_json": {
-        "field": "answers.probation_months",
-        "op": "gt",
-        "value": 3
+        "all": [
+          {
+            "field": "answers.probation_months",
+            "op": "gt",
+            "value": 3
+          },
+          {
+            "field": "answers.position",
+            "op": "not_regex",
+            "value": "(?i)(rahbar|direktor|boshliq|bosh buxgalter|oʻrinbosar|o'rinbosar|o‘rinbosar|руковод|директор|главный бухгалтер|заместител)"
+          }
+        ]
       },
-      "message": "Sinov muddati {answers.probation_months} oy — qonunda belgilangan eng ko'p muddatdan (3 oy) oshgan.",
-      "fix_suggestion": "Sinov muddatini 3 oydan oshirmang.",
-      "law_ref": "Mehnat kodeksi — dastlabki sinov muddati",
+      "message": "Sinov muddati {answers.probation_months} oy — MK 130-moddaga ko‘ra dastlabki sinov muddati uch oydan oshmasligi kerak (olti oygacha faqat tashkilot rahbari, uning o‘rinbosarlari, bosh buxgalter va alohida bo‘linma rahbarlari uchun).",
+      "fix_suggestion": "Sinov muddatini 3 oygacha kamaytiring.",
+      "law_ref": "MK 130-modda. Dastlabki sinov muddati",
       "tests": [
         {
-          "name": "4 oy — buzilish",
+          "name": "oddiy xodim 6 oy",
           "context": {
             "answers": {
-              "probation_months": 4
+              "probation_months": 6,
+              "position": "Dasturchi"
             }
           },
           "expect": true
         },
         {
-          "name": "3 oy — mumkin",
+          "name": "direktor 6 oy",
           "context": {
             "answers": {
-              "probation_months": 3
+              "probation_months": 6,
+              "position": "Moliya direktori"
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "3 oy",
+          "context": {
+            "answers": {
+              "probation_months": 3,
+              "position": "Dasturchi"
             }
           },
           "expect": false
@@ -37,7 +58,15 @@
       "autofix": {
         "field": "answers.probation_months",
         "value": 3
-      }
+      },
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6260649",
+      "lex_doc_id": "-6257288",
+      "law_articles": [
+        {
+          "code": "mk",
+          "number": "130"
+        }
+      ]
     },
     {
       "code": "LABOR_WEEKLY_HOURS_MAX",
@@ -51,7 +80,7 @@
       },
       "message": "Haftalik ish vaqti {answers.weekly_hours} soat — normal ish vaqti haftasiga 40 soatdan oshmasligi kerak.",
       "fix_suggestion": "Haftalik ish vaqtini 40 soat yoki undan kam qilib belgilang; ortiqcha ish qo'shimcha haq bilan alohida rasmiylashtiriladi.",
-      "law_ref": "Mehnat kodeksi — ish vaqtining normal davomiyligi",
+      "law_ref": "MK 182-modda. Ish vaqtining normal davomiyligi",
       "tests": [
         {
           "name": "48 soat",
@@ -75,7 +104,15 @@
       "autofix": {
         "field": "answers.weekly_hours",
         "value": 40
-      }
+      },
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6262333",
+      "lex_doc_id": "-6257288",
+      "law_articles": [
+        {
+          "code": "mk",
+          "number": "182"
+        }
+      ]
     },
     {
       "code": "LABOR_ANNUAL_LEAVE_MIN",
@@ -89,7 +126,7 @@
       },
       "message": "Yillik ta'til {answers.annual_leave_days} kun — eng kam yillik asosiy ta'til muddatidan (21 kalendar kun) kam.",
       "fix_suggestion": "Yillik asosiy ta'tilni kamida 21 kalendar kun qilib belgilang.",
-      "law_ref": "Mehnat kodeksi — yillik asosiy ta'til",
+      "law_ref": "MK 217-modda. Har yilgi asosiy eng kam mehnat taʼtilining davomiyligi",
       "tests": [
         {
           "name": "14 kun",
@@ -113,7 +150,15 @@
       "autofix": {
         "field": "answers.annual_leave_days",
         "value": 21
-      }
+      },
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6263022",
+      "lex_doc_id": "-6257288",
+      "law_articles": [
+        {
+          "code": "mk",
+          "number": "217"
+        }
+      ]
     },
     {
       "code": "LABOR_FIXED_TERM_NO_END",
@@ -135,7 +180,7 @@
       },
       "message": "Muayyan muddatli mehnat shartnomasida tugash sanasi ko'rsatilmagan.",
       "fix_suggestion": "Tugash sanasini kiriting yoki shartnomani nomuayyan muddatga tuzing.",
-      "law_ref": "Mehnat kodeksi — mehnat shartnomasining muddatlari",
+      "law_ref": "MK 114-modda. Mehnat shartnomasining muddatini belgilash usullari",
       "tests": [
         {
           "name": "sana yo'q",
@@ -156,6 +201,14 @@
           },
           "expect": false
         }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6260278",
+      "lex_doc_id": "-6257288",
+      "law_articles": [
+        {
+          "code": "mk",
+          "number": "114"
+        }
       ]
     },
     {
@@ -172,7 +225,7 @@
       },
       "message": "Qaytarish sanasi ({answers.return_date}) qarz berilgan sanadan ({answers.given_date}) keyin bo'lishi kerak.",
       "fix_suggestion": "Qaytarish sanasini to'g'rilang.",
-      "law_ref": "Fuqarolik kodeksi — qarz shartnomasi",
+      "law_ref": "FK 735-modda. Qarz oluvchining qarz summasini qaytarish majburiyati",
       "tests": [
         {
           "name": "teskari",
@@ -194,6 +247,14 @@
           },
           "expect": false
         }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-180552#-190167",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "735"
+        }
       ]
     },
     {
@@ -212,7 +273,7 @@
       },
       "message": "Rezidentlar o'rtasida chet el valyutasida hisob-kitob qilish valyuta qonunchiligi bilan cheklangan.",
       "fix_suggestion": "Summani so'mda belgilang (kerak bo'lsa valyuta ekvivalentini izohda ko'rsating) yoki yurist bilan maslahatlashing.",
-      "law_ref": "Valyutani tartibga solish to'g'risidagi qonun",
+      "law_ref": "FK 245-modda. Pul majburiyatlarining valyutasi",
       "tests": [
         {
           "name": "USD",
@@ -236,7 +297,15 @@
       "autofix": {
         "field": "answers.currency",
         "value": "UZS"
-      }
+      },
+      "lex_url": "https://lex.uz/uz/docs/-111189#-5446086",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "245"
+        }
+      ]
     },
     {
       "code": "RENT_DEPOSIT_HIGH",
@@ -249,7 +318,7 @@
       },
       "message": "Garov puli oylik ijara haqining 3 baravaridan ko'p — Ijarachi uchun og'ir shart.",
       "fix_suggestion": "Garov pulini 1–2 oylik ijara haqi miqdorida belgilash odatiy amaliyot.",
-      "law_ref": "Fuqarolik kodeksi — majburiyatlarni ta'minlash",
+      "law_ref": "FK 259-modda. Umumiy qoidalar",
       "tests": [
         {
           "name": "4x",
@@ -271,21 +340,29 @@
           },
           "expect": false
         }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-111189#-154425",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "259"
+        }
       ]
     },
     {
       "code": "RENT_SHORT_NOTICE",
       "contract_type": "rent_residential",
       "scope": "answers",
-      "severity": "yellow",
+      "severity": "blue",
       "rule_json": {
         "field": "answers.notice_days",
         "op": "lt",
         "value": 30
       },
-      "message": "Muddatidan oldin bekor qilish haqida ogohlantirish muddati {answers.notice_days} kun — yangi joy topish uchun qisqa.",
-      "fix_suggestion": "Ogohlantirish muddatini kamida 30 kun qilib belgilang.",
-      "law_ref": "Fuqarolik kodeksi — turar joy ijarasini bekor qilish",
+      "message": "Ijaraga oluvchining ogohlantirish muddati {answers.notice_days} kun — FK 615-moddada ijaraga oluvchi uch oy oldin ogohlantiradi; qisqaroq muddat ijaraga beruvchi uchun noqulay (yangi ijarachi topishga vaqt kam).",
+      "fix_suggestion": "Ijaraga beruvchi sifatida kamida 30 kun (qonundagi standart — 90 kun) talab qiling.",
+      "law_ref": "FK 615-modda. Ijara shartnomasini bekor qilish",
       "tests": [
         {
           "name": "7 kun",
@@ -300,7 +377,15 @@
       "autofix": {
         "field": "answers.notice_days",
         "value": 30
-      }
+      },
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186540",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "615"
+        }
+      ]
     },
     {
       "code": "SERVICES_FULL_PREPAYMENT",
@@ -314,7 +399,7 @@
       },
       "message": "To'liq oldindan to'lov — xizmat ko'rsatilmasa pulni qaytarish qiyin bo'lishi mumkin.",
       "fix_suggestion": "Bosqichma-bosqich to'lov yoki 30–50% avans belgilang.",
-      "law_ref": "Fuqarolik kodeksi — haq evaziga xizmat ko'rsatish",
+      "law_ref": "FK 705-modda. Xizmatlarga haq toʻlash",
       "tests": [
         {
           "name": "100%",
@@ -329,7 +414,15 @@
       "autofix": {
         "field": "answers.prepayment_percent",
         "value": 50
-      }
+      },
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189512",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "705"
+        }
+      ]
     },
     {
       "code": "PENALTY_RATE_HIGH",
@@ -342,7 +435,7 @@
       },
       "message": "Penya kuniga {answers.penalty_percent_per_day}% — majburiyat buzilishi oqibatlariga nomutanosib bo'lsa, sud uni kamaytirishi mumkin.",
       "fix_suggestion": "Penyani kuniga 0,1–0,5% oralig'ida va umumiy summaning ma'lum foizi bilan cheklab belgilang.",
-      "law_ref": "Fuqarolik kodeksi — neustoykani kamaytirish",
+      "law_ref": "FK 326-modda. Neustoykani kamaytirish",
       "tests": [
         {
           "name": "1%",
@@ -366,7 +459,15 @@
       "autofix": {
         "field": "answers.penalty_percent_per_day",
         "value": 0.1
-      }
+      },
+      "lex_url": "https://lex.uz/uz/docs/-111189#-155297",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "326"
+        }
+      ]
     },
     {
       "code": "LARGE_AMOUNT_ADVICE",
@@ -401,9 +502,9 @@
         "op": "regex",
         "value": "(sudga murojaat qilish|da'vo (qilish|berish)) huquqidan voz kech|отказ\\w* от права на обращение в суд"
       },
-      "message": "Band sud himoyasi huquqidan voz kechishni nazarda tutadi — bunday shart haqiqiy emas.",
+      "message": "Band sud himoyasi huquqidan voz kechishni nazarda tutadi. FK 9-moddaga ko‘ra huquqni amalga oshirishdan voz kechish bu huquqning bekor bo‘lishiga olib kelmaydi — bunday shart sudga murojaat qilishga to‘sqinlik qilmaydi.",
       "fix_suggestion": "Bandni olib tashlang: nizolar sud tartibida hal qilinishi mumkinligini ko'rsating.",
-      "law_ref": "O'zbekiston Respublikasi Konstitutsiyasi — sud himoyasi huquqi",
+      "law_ref": "FK 9-modda. Fuqarolik huquqlarini amalga oshirish",
       "tests": [
         {
           "name": "voz kechish",
@@ -425,6 +526,14 @@
           },
           "expect": false
         }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-111189#-150408",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "9"
+        }
       ]
     },
     {
@@ -438,7 +547,7 @@
       },
       "message": "Bir tomonga shartlarni (narxni) bir tomonlama o'zgartirish yoki shartnomani bekor qilish huquqi berilgan — bu sizga qarshi ishlatilishi mumkin.",
       "fix_suggestion": "O'zgartirishlar faqat tomonlarning yozma kelishuvi bilan kiritilishini talab qiling.",
-      "law_ref": "Fuqarolik kodeksi — majburiyatni bir tomonlama bajarishdan bosh tortishga yo'l qo'yilmasligi",
+      "law_ref": "FK 237-modda. Majburiyatni bajarishdan bir tomonlama bosh tortishga yoʻl qoʻyilmasligi",
       "tests": [
         {
           "name": "uz",
@@ -460,6 +569,14 @@
           },
           "expect": true
         }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-111189#-154344",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "237"
+        }
       ]
     },
     {
@@ -473,7 +590,7 @@
       },
       "message": "Shartnomani ogohlantirishsiz yoki juda qisqa muddatda (soatlar/1 kun) bir tomonlama bekor qilish huquqi berilgan — ikkinchi tomon himoyasiz qoladi.",
       "fix_suggestion": "Bekor qilishdan kamida 30 kalendar kun oldin yozma ogohlantirish shartini kiriting.",
-      "law_ref": "Fuqarolik kodeksi — shartnomani o'zgartirish va bekor qilish",
+      "law_ref": "FK 237-modda. Majburiyatni bajarishdan bir tomonlama bosh tortishga yoʻl qoʻyilmasligi; FK 382-modda. Shartnomani oʻzgartirish va bekor qilish asoslari",
       "tests": [
         {
           "name": "24 soat",
@@ -505,6 +622,18 @@
           },
           "expect": false
         }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-111189#-154344",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "237"
+        },
+        {
+          "code": "fk1",
+          "number": "382"
+        }
       ]
     },
     {
@@ -529,7 +658,7 @@
       },
       "message": "Kunlik penya stavkasi yuqori (0,5% dan ortiq) — sud uni kamaytirishi mumkin, lekin siz uchun moliyaviy xavf katta.",
       "fix_suggestion": "Penyani kuniga 0,1% atrofida va jami summaning 10% bilan cheklashni taklif qiling.",
-      "law_ref": "Fuqarolik kodeksi — neustoykani kamaytirish",
+      "law_ref": "FK 326-modda. Neustoykani kamaytirish",
       "tests": [
         {
           "name": "1%",
@@ -553,6 +682,14 @@
           },
           "expect": false
         }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-111189#-155297",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "326"
+        }
       ]
     },
     {
@@ -566,7 +703,7 @@
       },
       "message": "Cheklanmagan (to'liq) javobgarlik nazarda tutilgan — kutilmagan katta zarar summalari sizga yuklanishi mumkin.",
       "fix_suggestion": "Javobgarlikni haqiqiy zarar bilan yoki shartnoma summasi bilan cheklashni taklif qiling.",
-      "law_ref": "Fuqarolik kodeksi — zararni to'lash",
+      "law_ref": "FK 14-modda. Zararni qoplash",
       "tests": [
         {
           "name": "uz",
@@ -577,6 +714,14 @@
             }
           },
           "expect": true
+        }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-111189#-150438",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "14"
         }
       ]
     },
@@ -589,9 +734,9 @@
         "op": "regex",
         "value": "(pul|to'lov|tovar)\\w* (hech qanday holatda )?qaytarilmaydi|возврату не подлежит|деньги не возвращаются"
       },
-      "message": "To'lov/tovar qaytarilmasligi haqidagi band — iste'molchi bo'lsangiz, qonun bergan huquqlarni cheklashi mumkin.",
+      "message": "To‘lov/tovar qaytarilmasligi haqidagi band. Iste’molchi bo‘lsangiz: IHHQ 18-moddaga ko‘ra maqbul sifatli nooziq-ovqat tovarini o‘n kun ichida almashtirish yoki pulini qaytarib olish huquqi bor, 21-moddaga ko‘ra iste’molchi huquqlarini cheklaydigan va qonunchilikka zid shartlar haqiqiy emas.",
       "fix_suggestion": "Qaytarish shartlarini qonunga muvofiq aniq belgilashni talab qiling.",
-      "law_ref": "Iste'molchilarning huquqlarini himoya qilish to'g'risidagi qonun",
+      "law_ref": "IHHQ 21-modda. Shartnomaning isteʼmolchi huquqlarini cheklab qoʻyadigan shartlari haqiqiy emasligi; IHHQ 18-modda. Isteʼmolchining maqbul sifatli tovarni almashtirib olish huquqi",
       "tests": [
         {
           "name": "uz",
@@ -602,6 +747,18 @@
             }
           },
           "expect": true
+        }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-4704#-6085",
+      "lex_doc_id": "-4704",
+      "law_articles": [
+        {
+          "code": "consumer",
+          "number": "21"
+        },
+        {
+          "code": "consumer",
+          "number": "18"
         }
       ]
     },
@@ -642,7 +799,7 @@
       },
       "message": "Ish vaqtidan tashqari ish haqsiz bajarilishi nazarda tutilgan — bu xodim ahvolini qonunga nisbatan yomonlashtiradi.",
       "fix_suggestion": "Ish vaqtidan tashqari ish oshirilgan miqdorda to'lanishi yoki dam olish vaqti bilan qoplanishini yozing.",
-      "law_ref": "Mehnat kodeksi — ish vaqtidan tashqari ish uchun haq to'lash",
+      "law_ref": "MK 262-modda. Ish vaqtidan tashqari ish uchun haq toʻlash",
       "tests": [
         {
           "name": "uz",
@@ -653,6 +810,14 @@
             }
           },
           "expect": true
+        }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6264049",
+      "lex_doc_id": "-6257288",
+      "law_articles": [
+        {
+          "code": "mk",
+          "number": "262"
         }
       ]
     },
@@ -670,7 +835,7 @@
       },
       "message": "Ijara tugash sanasi ({answers.end_date}) boshlanish sanasidan ({answers.start_date}) keyin bo‘lishi kerak.",
       "fix_suggestion": "Ijara muddatini to‘g‘rilang.",
-      "law_ref": "Fuqarolik kodeksi — mulk ijarasi (ijara muddati)",
+      "law_ref": "FK 540-modda. Mulk ijarasi shartnomasining muddati",
       "tests": [
         {
           "name": "teskari",
@@ -691,6 +856,14 @@
             }
           },
           "expect": false
+        }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-180552#-184387",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "540"
         }
       ]
     },
@@ -708,7 +881,7 @@
       },
       "message": "Ijara tugash sanasi ({answers.end_date}) boshlanish sanasidan ({answers.start_date}) keyin bo‘lishi kerak.",
       "fix_suggestion": "Ijara muddatini to‘g‘rilang.",
-      "law_ref": "Fuqarolik kodeksi — mulk ijarasi (ijara muddati)",
+      "law_ref": "FK 540-modda. Mulk ijarasi shartnomasining muddati",
       "tests": [
         {
           "name": "teskari",
@@ -729,6 +902,14 @@
             }
           },
           "expect": false
+        }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-180552#-184387",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "540"
         }
       ]
     },
@@ -836,7 +1017,7 @@
       },
       "message": "Qarzni qaytarish sanasi ({answers.return_date}) shartnoma sanasidan ({answers.contract_date}) keyin bo‘lishi kerak — shablonga ko‘ra qarz shartnoma imzolangunga qadar beriladi.",
       "fix_suggestion": "Qaytarish sanasini to‘g‘rilang.",
-      "law_ref": "Fuqarolik kodeksi — qarz shartnomasi",
+      "law_ref": "FK 735-modda. Qarz oluvchining qarz summasini qaytarish majburiyati",
       "tests": [
         {
           "name": "teskari",
@@ -858,6 +1039,14 @@
           },
           "expect": false
         }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-180552#-190167",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "735"
+        }
       ]
     },
     {
@@ -869,9 +1058,9 @@
         "field": "answers.contract_date",
         "op": "exists"
       },
-      "message": "Ushbu shakl notarial tasdiqlash uchun mo‘ljallangan: platformadagi elektron tasdiqdan so‘ng shartnomani notariusda tasdiqlating.",
-      "fix_suggestion": "Notarius ma’lumotlarini kiriting yoki ularni notarius to‘ldirishi uchun bo‘sh qoldiring.",
-      "law_ref": "Fuqarolik kodeksi — qarz (732–738-moddalar)",
+      "message": "FK 733-moddaga ko‘ra fuqarolar o‘rtasidagi qarz BHMning o‘n baravaridan ortiq bo‘lsa, oddiy yozma shaklda tuzilishi shart; notarial tasdiq majburiy emas, lekin bu shakl notarius uchun mo‘ljallangan va isbot kuchini oshiradi.",
+      "fix_suggestion": "Notarial tasdiqlashni istasangiz, notarius ma’lumotlarini kiriting yoki ularni notarius to‘ldiradi.",
+      "law_ref": "FK 733-modda. Qarz shartnomasining shakli",
       "tests": [
         {
           "name": "har doim",
@@ -881,6 +1070,774 @@
             }
           },
           "expect": true
+        }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-180552#-190114",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "733"
+        }
+      ]
+    },
+    {
+      "code": "VEX_UNEQUAL_VALUE",
+      "contract_type": "vehicle_exchange",
+      "scope": "answers",
+      "severity": "yellow",
+      "rule_json": {
+        "field": "answers.value_a",
+        "op": "ne",
+        "value": {
+          "field": "answers.value_b"
+        }
+      },
+      "message": "Avtomobillar qiymati teng emas ({answers.value_a} va {answers.value_b} so‘m), shartnomaning 4-bandi esa «teng qiymatda» deydi. FK 498-moddaga ko‘ra tovarlar teng qiymatli emas deb tan olinsa, arzonroq tovarni topshiruvchi taraf, shartnomada boshqacha tartib bo‘lmasa, farqni tovar topshirilgandan so‘ng kechiktirmasdan to‘lashi lozim.",
+      "fix_suggestion": "Qiymatlarni kelishib tenglashtiring yoki farq qanday to‘lanishini alohida kelishing.",
+      "law_ref": "FK 498-modda. Ayirboshlash shartnomasi boʻyicha baho va xarajatlar",
+      "tests": [
+        {
+          "name": "teng emas",
+          "context": {
+            "answers": {
+              "value_a": 100,
+              "value_b": 120
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "teng",
+          "context": {
+            "answers": {
+              "value_a": 100,
+              "value_b": 100
+            }
+          },
+          "expect": false
+        }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-180552#-183898",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "498"
+        }
+      ]
+    },
+    {
+      "code": "VEX_SAME_PLATE",
+      "contract_type": "vehicle_exchange",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "all": [
+          {
+            "field": "answers.party_a.vehicle.plate",
+            "op": "exists"
+          },
+          {
+            "field": "answers.party_a.vehicle.plate",
+            "op": "eq",
+            "value": {
+              "field": "answers.party_b.vehicle.plate"
+            }
+          }
+        ]
+      },
+      "message": "Ikkala avtomobilning davlat raqami belgisi bir xil ({answers.party_a.vehicle.plate}) — bitta avtomobilni o‘zi bilan ayirboshlab bo‘lmaydi, ma’lumot xato kiritilgan.",
+      "fix_suggestion": "Har bir avtomobilning qayd guvohnomasidagi davlat raqamini tekshirib, to‘g‘ri kiriting.",
+      "law_ref": "FK 497-modda. Ayirboshlash shartnomasi",
+      "tests": [
+        {
+          "name": "bir xil",
+          "context": {
+            "answers": {
+              "party_a": {
+                "vehicle": {
+                  "plate": "01A123BC"
+                }
+              },
+              "party_b": {
+                "vehicle": {
+                  "plate": "01A123BC"
+                }
+              }
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "har xil",
+          "context": {
+            "answers": {
+              "party_a": {
+                "vehicle": {
+                  "plate": "01A123BC"
+                }
+              },
+              "party_b": {
+                "vehicle": {
+                  "plate": "10B777AA"
+                }
+              }
+            }
+          },
+          "expect": false
+        }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-180552#-183895",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "497"
+        }
+      ]
+    },
+    {
+      "code": "VEX_POA_AFTER_CONTRACT",
+      "contract_type": "vehicle_exchange",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "all": [
+          {
+            "field": "answers.b_via_representative",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "answers.party_b.poa_date",
+            "op": "gt",
+            "value": {
+              "field": "answers.contract_date"
+            }
+          }
+        ]
+      },
+      "message": "Vakilning ishonchnomasi ({answers.party_b.poa_date}) shartnoma sanasidan ({answers.contract_date}) keyin berilgan — shartnoma tuzilgan kuni vakilda vakolat bo‘lmagan.",
+      "fix_suggestion": "Shartnoma sanasidan oldin berilgan amaldagi ishonchnoma ma’lumotlarini kiriting.",
+      "law_ref": "FK 134-modda. Ishonchnoma",
+      "tests": [
+        {
+          "name": "keyin",
+          "context": {
+            "answers": {
+              "b_via_representative": "yes",
+              "contract_date": "2026-11-20",
+              "party_b": {
+                "poa_date": "2026-12-01"
+              }
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "oldin",
+          "context": {
+            "answers": {
+              "b_via_representative": "yes",
+              "contract_date": "2026-11-20",
+              "party_b": {
+                "poa_date": "2026-10-01"
+              }
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "o'zi",
+          "context": {
+            "answers": {
+              "b_via_representative": "no",
+              "contract_date": "2026-11-20",
+              "party_b": {
+                "poa_date": "2026-12-01"
+              }
+            }
+          },
+          "expect": false
+        }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-111189#-153566",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "134"
+        }
+      ]
+    },
+    {
+      "code": "VEX_NOTARY_AND_REGISTRATION",
+      "contract_type": "vehicle_exchange",
+      "scope": "answers",
+      "severity": "blue",
+      "rule_json": {
+        "field": "answers.contract_date",
+        "op": "exists"
+      },
+      "message": "Shakl notarial tasdiqlash uchun mo‘ljallangan; shartnoma 10 kun ichida YHXXda ro‘yxatdan o‘tkazilishi shart (8-band). Platforma ikkala taraf uchun eslatma yaratadi.",
+      "fix_suggestion": "Notariusga ikkala avtomobilning qayd guvohnomalari va pasportlar bilan boring.",
+      "law_ref": "Shartnomaning 8-bandi",
+      "tests": [
+        {
+          "name": "har doim",
+          "context": {
+            "answers": {
+              "contract_date": "2026-11-20"
+            }
+          },
+          "expect": true
+        }
+      ]
+    },
+    {
+      "code": "MED_END_BEFORE_START",
+      "contract_type": "medical_paid",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "field": "answers.end_date",
+        "op": "lt",
+        "value": {
+          "field": "answers.start_date"
+        }
+      },
+      "message": "Xizmat yakunlanish sanasi ({answers.end_date}) boshlanish sanasidan ({answers.start_date}) oldin.",
+      "fix_suggestion": "Xizmat ko‘rsatish muddatini to‘g‘rilang.",
+      "law_ref": "FK 703-modda. Haq evaziga xizmat koʻrsatish shartnomasi",
+      "tests": [
+        {
+          "name": "teskari",
+          "context": {
+            "answers": {
+              "start_date": "2026-12-10",
+              "end_date": "2026-12-01"
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "bir kun",
+          "context": {
+            "answers": {
+              "start_date": "2026-12-10",
+              "end_date": "2026-12-10"
+            }
+          },
+          "expect": false
+        }
+      ],
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189499",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "703"
+        }
+      ]
+    },
+    {
+      "code": "LABOR_PROBATION_MAX_MANAGER",
+      "contract_type": "labor",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "field": "answers.probation_months",
+        "op": "gt",
+        "value": 6
+      },
+      "message": "Sinov muddati {answers.probation_months} oy — MK 130-moddaga ko‘ra hatto rahbarlar va bosh buxgalter uchun ham olti oydan oshmasligi kerak.",
+      "fix_suggestion": "Sinov muddatini 6 oygacha (oddiy xodim uchun 3 oygacha) kamaytiring.",
+      "tests": [
+        {
+          "name": "7 oy",
+          "context": {
+            "answers": {
+              "probation_months": 7
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "6 oy",
+          "context": {
+            "answers": {
+              "probation_months": 6
+            }
+          },
+          "expect": false
+        }
+      ],
+      "law_ref": "MK 130-modda. Dastlabki sinov muddati",
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6260649",
+      "lex_doc_id": "-6257288",
+      "law_articles": [
+        {
+          "code": "mk",
+          "number": "130"
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_LABOR_FINE_OVER_50",
+      "contract_type": "labor",
+      "scope": "clause",
+      "severity": "red",
+      "rule_json": {
+        "all": [
+          {
+            "field": "clause.text",
+            "op": "regex",
+            "value": "(?i)jarima|штраф"
+          },
+          {
+            "field": "clause.text",
+            "op": "number_in_text_gt",
+            "value": 50,
+            "pattern": "(\\d+(?:[.,]\\d+)?)\\s*(?:%|foiz)"
+          }
+        ]
+      },
+      "message": "Jarima miqdori MK 312-moddadagi chegaradan yuqori: o‘rtacha oylik ish haqining 30 foizidan (ichki mehnat tartibi qoidalarida — 50 foizidan) ko‘p jarima qo‘llash mumkin emas.",
+      "fix_suggestion": "Jarimani o‘rtacha oylik ish haqining 30 foizi bilan cheklang.",
+      "tests": [
+        {
+          "name": "60%",
+          "context": {
+            "clause": {
+              "text": "Kechikkani uchun ish haqining 60% miqdorida jarima.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "20%",
+          "context": {
+            "clause": {
+              "text": "Ish haqining 20% miqdorida jarima.",
+              "index": 0
+            }
+          },
+          "expect": false
+        }
+      ],
+      "law_ref": "MK 312-modda. Intizomiy jazo choralari",
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6264926",
+      "lex_doc_id": "-6257288",
+      "law_articles": [
+        {
+          "code": "mk",
+          "number": "312"
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_LABOR_FINE_OVER_30",
+      "contract_type": "labor",
+      "scope": "clause",
+      "severity": "yellow",
+      "rule_json": {
+        "all": [
+          {
+            "field": "clause.text",
+            "op": "regex",
+            "value": "(?i)jarima|штраф"
+          },
+          {
+            "field": "clause.text",
+            "op": "number_in_text_gt",
+            "value": 30,
+            "pattern": "(\\d+(?:[.,]\\d+)?)\\s*(?:%|foiz)"
+          }
+        ]
+      },
+      "message": "Jarima o‘rtacha oylik ish haqining 30 foizidan ko‘p — MK 312-moddaga ko‘ra bunga faqat ichki mehnat tartibi qoidalarida nazarda tutilgan hollarda (50 foizgacha) yo‘l qo‘yiladi.",
+      "fix_suggestion": "Ichki mehnat tartibi qoidalarida asos borligini tekshiring yoki jarimani 30 foizgacha kamaytiring.",
+      "tests": [
+        {
+          "name": "40%",
+          "context": {
+            "clause": {
+              "text": "Ish haqining 40% miqdorida jarima.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "30%",
+          "context": {
+            "clause": {
+              "text": "Ish haqining 30% miqdorida jarima.",
+              "index": 0
+            }
+          },
+          "expect": false
+        }
+      ],
+      "law_ref": "MK 312-modda. Intizomiy jazo choralari",
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6264926",
+      "lex_doc_id": "-6257288",
+      "law_articles": [
+        {
+          "code": "mk",
+          "number": "312"
+        }
+      ]
+    },
+    {
+      "code": "RENT_TENANT_NOTICE_OVER_LAW",
+      "contract_type": "rent_residential",
+      "scope": "answers",
+      "severity": "yellow",
+      "rule_json": {
+        "field": "answers.notice_days",
+        "op": "gt",
+        "value": 90
+      },
+      "message": "Ijaraga oluvchidan {answers.notice_days} kun oldin ogohlantirish talab qilinmoqda — FK 615-moddaga ko‘ra ijaraga oluvchi uch oy oldin yozma ogohlantirib shartnomani istalgan vaqtda bekor qilishga haqli; uzoqroq muddat uning qonuniy huquqini cheklaydi.",
+      "fix_suggestion": "Ogohlantirish muddatini 90 kundan oshirmang.",
+      "tests": [
+        {
+          "name": "120",
+          "context": {
+            "answers": {
+              "notice_days": 120
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "90",
+          "context": {
+            "answers": {
+              "notice_days": 90
+            }
+          },
+          "expect": false
+        }
+      ],
+      "law_ref": "FK 615-modda. Ijara shartnomasini bekor qilish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186540",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "615"
+        }
+      ]
+    },
+    {
+      "code": "RENT_RES_TERM_OVER_5Y",
+      "contract_type": "rent_residential",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "field": "contract.duration_days",
+        "op": "gt",
+        "value": 1827
+      },
+      "message": "Uy-joy ijarasi muddati besh yildan ortiq — FK 612-moddaga ko‘ra uy-joyni ijaraga berish shartnomasi besh yildan ortiq bo‘lmagan muddatga tuziladi.",
+      "fix_suggestion": "Muddatni 5 yilgacha qisqartiring (keyin yangi muddatga tuzish mumkin — ijaraga oluvchining imtiyozli huquqi bor).",
+      "tests": [
+        {
+          "name": "6 yil",
+          "context": {
+            "contract": {
+              "duration_days": 2190
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "1 yil",
+          "context": {
+            "contract": {
+              "duration_days": 365
+            }
+          },
+          "expect": false
+        }
+      ],
+      "law_ref": "FK 612-modda. Uy-joyni ijaraga berish shartnomasining muddati",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186525",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "612"
+        }
+      ]
+    },
+    {
+      "code": "RENT_RES_TAX_REGISTRATION",
+      "contract_type": "rent_residential",
+      "scope": "answers",
+      "severity": "blue",
+      "rule_json": {
+        "field": "answers.contract_date",
+        "op": "exists"
+      },
+      "message": "FK 603-moddaga ko‘ra uy-joyni ijaraga berish shartnomasi yozma shaklda tuziladi, fuqarolar o‘rtasida tuzilgani esa davlat soliq organlarida hisobga qo‘yilishi lozim.",
+      "fix_suggestion": "Imzolangandan so‘ng shartnomani soliq organida (ijara.soliq.uz) hisobga qo‘ying.",
+      "tests": [
+        {
+          "name": "har doim",
+          "context": {
+            "answers": {
+              "contract_date": "2026-11-20"
+            }
+          },
+          "expect": true
+        }
+      ],
+      "law_ref": "FK 603-modda. Uy-joyni ijaraga berish shartnomasining shakli",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186493",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "603"
+        }
+      ]
+    },
+    {
+      "code": "RENTC_TAX_REGISTRATION",
+      "contract_type": "rent_commercial",
+      "scope": "answers",
+      "severity": "blue",
+      "rule_json": {
+        "field": "answers.contract_date",
+        "op": "exists"
+      },
+      "message": "FK 574-moddaga ko‘ra bino ijarasi shartnomasi bitta hujjat tarzida yozma tuziladi (aks holda haqiqiy emas) va davlat soliq organlarida hisobga qo‘yilishi lozim; bir yildan kam bo‘lmagan muddatga tuzilgani esa davlat ro‘yxatidan o‘tkazilgan paytdan boshlab tuzilgan hisoblanadi.",
+      "fix_suggestion": "Imzolangandan so‘ng shartnomani soliq organida hisobga qo‘ying.",
+      "tests": [
+        {
+          "name": "har doim",
+          "context": {
+            "answers": {
+              "contract_date": "2026-11-20"
+            }
+          },
+          "expect": true
+        }
+      ],
+      "law_ref": "FK 574-modda. Bino yoki inshootni ijaraga berish shartnomasining shakli va uni davlat roʻyxatidan oʻtkazish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186357",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "574"
+        }
+      ]
+    },
+    {
+      "code": "RENTP_TAX_REGISTRATION",
+      "contract_type": "rent_private",
+      "scope": "answers",
+      "severity": "blue",
+      "rule_json": {
+        "field": "answers.contract_date",
+        "op": "exists"
+      },
+      "message": "FK 574-moddaga ko‘ra fuqarolar o‘rtasidagi bino ijarasi shartnomasi davlat soliq organlarida hisobga qo‘yilishi lozim; bir yildan kam bo‘lmagan muddatga tuzilgani davlat ro‘yxatidan o‘tkazilishi kerak.",
+      "fix_suggestion": "Imzolangandan so‘ng shartnomani soliq organida hisobga qo‘ying.",
+      "tests": [
+        {
+          "name": "har doim",
+          "context": {
+            "answers": {
+              "contract_date": "2026-11-20"
+            }
+          },
+          "expect": true
+        }
+      ],
+      "law_ref": "FK 574-modda. Bino yoki inshootni ijaraga berish shartnomasining shakli va uni davlat roʻyxatidan oʻtkazish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186357",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "574"
+        }
+      ]
+    },
+    {
+      "code": "RENTP_RESIDENTIAL_PURPOSE",
+      "contract_type": "rent_private",
+      "scope": "answers",
+      "severity": "blue",
+      "rule_json": {
+        "field": "answers.purpose",
+        "op": "regex",
+        "value": "(?i)yasha|turar|oila|жил|прожив"
+      },
+      "message": "Bino yashash uchun ijaraga berilmoqda — uy-joy ijarasi qoidalari ham qo‘llanadi: muddat besh yildan oshmaydi (FK 612), ijaraga oluvchi uch oy oldin ogohlantirib shartnomani bekor qilishi mumkin, ijaraga beruvchi esa faqat sud orqali qonunda ko‘rsatilgan hollarda (FK 615).",
+      "fix_suggestion": "Yashash uchun ijarada «Turar joy ijarasi» shablonidan foydalanish ham mumkin.",
+      "tests": [
+        {
+          "name": "yashash",
+          "context": {
+            "answers": {
+              "purpose": "oila bilan yashash"
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "ofis",
+          "context": {
+            "answers": {
+              "purpose": "ofis"
+            }
+          },
+          "expect": false
+        }
+      ],
+      "law_ref": "FK 612-modda. Uy-joyni ijaraga berish shartnomasining muddati; FK 615-modda. Ijara shartnomasini bekor qilish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186525",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "612"
+        },
+        {
+          "code": "fk2",
+          "number": "615"
+        }
+      ]
+    },
+    {
+      "code": "VEX_POA_OLDER_1Y",
+      "contract_type": "vehicle_exchange",
+      "scope": "answers",
+      "severity": "yellow",
+      "rule_json": {
+        "all": [
+          {
+            "field": "answers.b_via_representative",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "answers.party_b.poa_date",
+            "op": "older_than_days",
+            "value": {
+              "field": "answers.contract_date"
+            },
+            "days": 365
+          }
+        ]
+      },
+      "message": "Ishonchnoma shartnoma sanasidan bir yildan ko‘proq oldin berilgan — FK 139-moddaga ko‘ra ishonchnomada muddat ko‘rsatilmagan bo‘lsa, u berilgan kundan boshlab bir yil kuchda bo‘ladi.",
+      "fix_suggestion": "Ishonchnomadagi amal qilish muddatini tekshiring (ko‘pi bilan uch yil).",
+      "tests": [
+        {
+          "name": "2 yil",
+          "context": {
+            "answers": {
+              "b_via_representative": "yes",
+              "contract_date": "2026-11-20",
+              "party_b": {
+                "poa_date": "2024-11-01"
+              }
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "6 oy",
+          "context": {
+            "answers": {
+              "b_via_representative": "yes",
+              "contract_date": "2026-11-20",
+              "party_b": {
+                "poa_date": "2026-05-20"
+              }
+            }
+          },
+          "expect": false
+        }
+      ],
+      "law_ref": "FK 139-modda. Ishonchnomaning muddati",
+      "lex_url": "https://lex.uz/uz/docs/-111189#-153601",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "139"
+        }
+      ]
+    },
+    {
+      "code": "VEX_POA_OLDER_3Y",
+      "contract_type": "vehicle_exchange",
+      "scope": "answers",
+      "severity": "red",
+      "rule_json": {
+        "all": [
+          {
+            "field": "answers.b_via_representative",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "answers.party_b.poa_date",
+            "op": "older_than_days",
+            "value": {
+              "field": "answers.contract_date"
+            },
+            "days": 1096
+          }
+        ]
+      },
+      "message": "Ishonchnoma uch yildan ko‘proq oldin berilgan — FK 139-moddaga ko‘ra ishonchnoma ko‘pi bilan uch yil muddatga berilishi mumkin; vakilning vakolati tugagan.",
+      "fix_suggestion": "Yangi ishonchnoma rasmiylashtiring.",
+      "tests": [
+        {
+          "name": "4 yil",
+          "context": {
+            "answers": {
+              "b_via_representative": "yes",
+              "contract_date": "2026-11-20",
+              "party_b": {
+                "poa_date": "2022-10-01"
+              }
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "2 yil",
+          "context": {
+            "answers": {
+              "b_via_representative": "yes",
+              "contract_date": "2026-11-20",
+              "party_b": {
+                "poa_date": "2024-11-01"
+              }
+            }
+          },
+          "expect": false
+        }
+      ],
+      "law_ref": "FK 139-modda. Ishonchnomaning muddati",
+      "lex_url": "https://lex.uz/uz/docs/-111189#-153601",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "139"
         }
       ]
     }

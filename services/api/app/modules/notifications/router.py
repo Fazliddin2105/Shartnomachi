@@ -6,6 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, status
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, select, update
 
 from app.api.deps import DB, CurrentUser, PageParams
@@ -51,3 +52,18 @@ async def mark_read(db: DB, user: CurrentUser, ids: list[uuid.UUID] | None = Non
     if ids:
         stmt = stmt.where(Notification.id.in_(ids))
     await db.execute(stmt.values(read_at=utcnow()))
+
+
+@router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Bildirishnomani o'chirish")
+async def delete_notification(notification_id: uuid.UUID, db: DB, user: CurrentUser) -> None:
+    await db.execute(sa_delete(Notification).where(Notification.id == notification_id, Notification.user_id == user.id))
+
+
+@router.delete(
+    "", status_code=status.HTTP_204_NO_CONTENT, summary="Bildirishnomalarni tozalash (standart: o'qilganlar)"
+)
+async def clear_notifications(db: DB, user: CurrentUser, only_read: bool = True) -> None:
+    stmt = sa_delete(Notification).where(Notification.user_id == user.id)
+    if only_read:
+        stmt = stmt.where(Notification.read_at.is_not(None))
+    await db.execute(stmt)

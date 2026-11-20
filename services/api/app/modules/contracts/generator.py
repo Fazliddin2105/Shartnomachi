@@ -90,6 +90,50 @@ _env.filters["money"] = _money
 _env.filters["date"] = _date
 _env.filters["words"] = _words
 
+_MONTHS = [
+    "yanvar",
+    "fevral",
+    "mart",
+    "aprel",
+    "may",
+    "iyun",
+    "iyul",
+    "avgust",
+    "sentabr",
+    "oktabr",
+    "noyabr",
+    "dekabr",
+]
+
+
+def _ordinal(words: str) -> str:
+    """«ikki ming yigirma olti» -> «ikki ming yigirma oltinchi» (suffix on the last word)."""
+    if not words:
+        return ""
+    head, _, last = words.rpartition(" ")
+    suffix = "nchi" if last[-1] in "aeiouAEIOU" else "inchi"
+    return f"{head} {last}{suffix}".strip()
+
+
+def _date_long(v: Any) -> str:
+    """Notarial style: «20» noyabr ikki ming yigirma oltinchi yil."""
+    try:
+        d = v if isinstance(v, date) else date.fromisoformat(str(v)[:10])
+    except (TypeError, ValueError):
+        return str(v or "")
+    return f"«{d.day:02d}» {_MONTHS[d.month - 1]} {_ordinal(_words(d.year))} yil"
+
+
+def _year(v: Any) -> str:
+    try:
+        return str((v if isinstance(v, date) else date.fromisoformat(str(v)[:10])).year)
+    except (TypeError, ValueError):
+        return str(v or "")
+
+
+_env.filters["date_long"] = _date_long
+_env.filters["year"] = _year
+
 
 def _render(src: str, ctx: dict[str, Any]) -> str:
     try:
@@ -211,8 +255,9 @@ def build_docx(content: dict[str, Any], *, version: int, sha256: str) -> bytes:
                 para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     req = content.get("requisites") or {}
-    labels = [tuple(x) for x in req.get("labels", [])] or _REQ_LABELS
-    signature = req.get("signature") or ["", "Imzo: ____________________"]
+    # labels / signature may be one list for both columns or {"A": [...], "B": [...]} per side
+    raw_labels = req.get("labels") or []
+    raw_sign = req.get("signature") or ["", "Imzo: ____________________"]
     doc.add_paragraph()
     doc.add_paragraph().add_run(req.get("title") or "Tomonlarning rekvizitlari va imzolari").bold = True
     table = doc.add_table(rows=1, cols=2)
@@ -222,6 +267,9 @@ def build_docx(content: dict[str, Any], *, version: int, sha256: str) -> bytes:
         cell = table.rows[0].cells[i]
         cell.text = ""
         cell.paragraphs[0].add_run(party.get("role_title") or f"Tomon {side}").bold = True
+        side_labels = raw_labels.get(side, []) if isinstance(raw_labels, dict) else raw_labels
+        labels = [tuple(x) for x in side_labels] or _REQ_LABELS
+        signature = raw_sign.get(side, []) if isinstance(raw_sign, dict) else raw_sign
         for key, label in labels:
             if party.get(key):
                 cell.add_paragraph(f"{label}: {party[key]}")

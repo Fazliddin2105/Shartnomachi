@@ -1,6 +1,6 @@
 /**
- * HUQUQIY PLATFORMA — LexLab API Frontend Integration (js/app.js)
- * All server communication goes exclusively through window.LexLab (/sdk/lexlab-api.js).
+ * HUQUQIY PLATFORMA — LexLab API Frontend Integration (js/app.js — Task 2: Negotiation, Personal Archive, Cleanup)
+ * All server communication goes exclusively through window.LexLab (/sdk/lexlab-api.js v1.1.0).
  */
 
 (function () {
@@ -52,23 +52,32 @@
     contractFilter: 'all',
     docPreviewLang: 'uz',
 
-    // Builder
+    // Builder & Negotiation
     contractTypes: [],
     builderTypeCode: null,
     builderTypeDetail: null,
     builderContractId: null,
     builderAnswers: {},
     builderFieldMap: {},
+    builderFieldDefs: [],
+    builderNegotiation: null,
     builderDebounceTimer: null,
     builderPendingPatch: {},
     builderPreviewSha256: null,
+
+    // Modal tracking & Polling
+    openModalContractId: null,
+    pollTimer: null,
 
     // Scanner
     currentScanId: null,
     currentScanTitle: null,
     currentScanReport: null,
+    scansHistory: [],
 
-    // Archive
+    // Personal Archive & Lawyer Cases
+    archiveItems: [],
+    archiveQuery: '',
     currentCaseId: null,
     casesList: []
   };
@@ -168,6 +177,13 @@
   function handleErr(e) {
     const msg = window.LexLab ? LexLab.humanError(e) : (e && e.message) || 'Xato';
     showToast(msg);
+    // U2.6: For field_not_yours, highlight e.details.fields
+    if (e && e.code === 'field_not_yours' && e.details && Array.isArray(e.details.fields)) {
+      e.details.fields.forEach(k => {
+        const inp = document.querySelector(`#cb-dynamic-questionnaire [data-q-key="${CSS.escape(k)}"]`);
+        if (inp) inp.style.borderColor = '#DC2626';
+      });
+    }
   }
 
   async function withBusy(btn, fn) {
@@ -185,6 +201,9 @@
   function openModal(title, htmlContent, opts) {
     const options = opts || {};
     state.modalLocked = !!options.locked;
+    if (!options.keepContractId) {
+      state.openModalContractId = options.contractId || null;
+    }
     const backdrop = document.getElementById('hp-modal-backdrop');
     const titleEl = document.getElementById('hp-modal-title');
     const bodyEl = document.getElementById('hp-modal-body');
@@ -202,12 +221,42 @@
   function closeModal(force) {
     if (state.modalLocked && !force) return;
     state.modalLocked = false;
+    state.openModalContractId = null;
     const backdrop = document.getElementById('hp-modal-backdrop');
     const closeBtn = document.getElementById('hp-modal-close');
     const footerEl = document.getElementById('hp-modal-footer');
     if (closeBtn) closeBtn.hidden = false;
     if (footerEl) footerEl.hidden = false;
     if (backdrop) backdrop.hidden = true;
+  }
+
+  // U2.5: Confirmation modal before every delete
+  function confirmDeleteModal(title, message, onConfirm, reopenFn) {
+    openModal(
+      title,
+      `
+      <div class="hp-builder-form">
+        <p style="font-size:14px;color:var(--text-main);">${esc(message)}</p>
+        <div class="hp-builder-actions">
+          <button type="button" class="hp-btn-outline" id="btn-confirm-cancel">Bekor qilish</button>
+          <button type="button" class="hp-btn-navy" id="btn-confirm-proceed" style="background:#DC2626;">Tasdiqlash (O'chirish)</button>
+        </div>
+      </div>
+      `,
+      { hideFooter: true }
+    );
+
+    document.getElementById('btn-confirm-cancel')?.addEventListener('click', () => {
+      closeModal();
+      if (reopenFn) reopenFn();
+    });
+
+    const proceedBtn = document.getElementById('btn-confirm-proceed');
+    proceedBtn?.addEventListener('click', () => {
+      withBusy(proceedBtn, async () => {
+        await onConfirm();
+      }).catch(() => {});
+    });
   }
 
   function formatNumberUz(num, decimals = 0) {
@@ -227,6 +276,77 @@
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
     return `${dd}.${mm}.${yyyy}`;
+  }
+
+  // ==================== FRONTEND_GEMINI_4: LAW REFERENCES (lex.uz) ====================
+  // A law reference ("FK 615-modda. …") rendered as a link-styled button; the click handler resolves it
+  // to the article text published on lex.uz. Existing class only (.hp-clause-expand-link), no new CSS.
+  function lawRefLink(ref, lexUrl) {
+    if (!ref) return '';
+    // only real articles (FK/MK/IHHQ + number) or references with a lex.uz link are clickable
+    if (!lexUrl && !/\b(FK|MK|IHHQ)\s*\d/i.test(ref)) return esc(ref);
+    const urlAttr = lexUrl ? ` data-lex-url="${esc(lexUrl)}"` : '';
+    return `<button type="button" class="hp-clause-expand-link" style="padding:0;text-align:left;" data-law-ref="${esc(ref)}"${urlAttr} title="Modda matnini ko'rish (lex.uz)">${esc(ref)}</button>`;
+  }
+
+  function renderLawArticlesHtml(arts, ref, lexUrl) {
+    if (!arts || arts.length === 0) {
+      return `
+        <p style="font-size:13.5px;">${esc(ref)}</p>
+        ${lexUrl ? `<a class="hp-text-link-btn" style="padding:0;" href="${esc(lexUrl)}" target="_blank" rel="noopener">lex.uz'da ochish ↗</a>` : ''}
+      `;
+    }
+    return arts.map(a => `
+      <div style="margin-bottom:16px;">
+        <strong style="display:block;font-size:14px;margin-bottom:2px;">${esc(a.short)} ${esc(a.number)}-modda. ${esc(a.title)}</strong>
+        <div class="hp-text-muted" style="font-size:12px;margin-bottom:8px;">${esc(a.law)} — lex.uz tahriri: ${esc(formatDateDdMmYyyy(a.edition_date))}</div>
+        <div style="font-size:13px;line-height:1.55;white-space:pre-wrap;">${esc(a.text)}</div>
+        <a class="hp-text-link-btn" style="display:inline-block;margin-top:6px;padding:0;" href="${esc(a.url)}" target="_blank" rel="noopener">lex.uz'da ochish ↗</a>
+      </div>
+    `).join('');
+  }
+
+  async function openLawReference(btn) {
+    const ref = btn.getAttribute('data-law-ref') || '';
+    const lexUrl = btn.getAttribute('data-lex-url') || '';
+    const backdrop = document.getElementById('hp-modal-backdrop');
+    const insideOpenModal = !!(backdrop && !backdrop.hidden && btn.closest('#hp-modal-backdrop'));
+
+    // Inside an already open modal (contract, invitation…) the article opens inline, so the user's
+    // modal is not replaced. Clicking again folds it.
+    if (insideOpenModal) {
+      const next = btn.nextElementSibling;
+      if (next && next.hasAttribute('data-law-inline')) {
+        next.remove();
+        return;
+      }
+    }
+
+    let arts = [];
+    if (!LexLab.laws) {
+      // stale SDK in the browser cache (< v1.2): show the reference itself
+      showToast('Modda matnini ko\'rish uchun sahifani yangilang (Ctrl+F5)');
+    } else {
+      btn.disabled = true;
+      try {
+        arts = await LexLab.laws.resolve(ref);
+      } catch (e) {
+        handleErr(e);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+    const html = renderLawArticlesHtml(arts, ref, lexUrl);
+    if (insideOpenModal) {
+      const box = document.createElement('div');
+      box.setAttribute('data-law-inline', '1');
+      box.className = 'hp-rule-item hp-rule-blue';
+      box.style.cssText = 'display:block;margin-top:6px;max-height:260px;overflow-y:auto;';
+      box.innerHTML = html;
+      btn.insertAdjacentElement('afterend', box);
+    } else {
+      openModal('Qonun moddasi', html);
+    }
   }
 
   function maskPhone(phone) {
@@ -287,6 +407,11 @@
       if (viewName === 'contracts') loadFullContracts(state.contractFilter).catch(handleErr);
       if (viewName === 'reminders') loadObligationsView().catch(handleErr);
       if (viewName === 'archive') loadArchiveView().catch(handleErr);
+      if (viewName === 'scanner') {
+        if (state.currentScanReport) renderScanReport(state.currentScanReport, state.currentScanTitle);
+        else renderScanEmptyState();
+        loadScannerHistory().catch(() => {});
+      }
       if (viewName === 'builder' && !state.builderContractId) initBuilder().catch(handleErr);
     }
   }
@@ -356,53 +481,49 @@
     const form = document.getElementById('lexlab-login-form');
     const submitBtn = document.getElementById('btn-login-submit');
 
-    if (sendBtn) {
-      sendBtn.addEventListener('click', () => {
-        const phone = (phoneInput?.value || '').trim();
-        withBusy(sendBtn, async () => {
-          await LexLab.auth.requestOtp(phone);
-          otpRequestedFor = phone;
-          showToast('SMS-kod yuborildi');
-          codeInput?.focus();
-        }).catch(() => {});
-      });
-    }
+    sendBtn?.addEventListener('click', () => {
+      const phone = (phoneInput?.value || '').trim();
+      withBusy(sendBtn, async () => {
+        await LexLab.auth.requestOtp(phone);
+        otpRequestedFor = phone;
+        showToast('SMS-kod yuborildi');
+        codeInput?.focus();
+      }).catch(() => {});
+    });
 
-    if (form) {
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const phone = (phoneInput?.value || '').trim();
-        const code = (codeInput?.value || '').trim();
-        const consent = !!consentCb?.checked;
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const phone = (phoneInput?.value || '').trim();
+      const code = (codeInput?.value || '').trim();
+      const consent = !!consentCb?.checked;
 
-        withBusy(submitBtn, async () => {
-          if (pendingMfaToken) {
-            const totp = (mfaInput?.value || '').trim();
-            await LexLab.auth.verify2fa(pendingMfaToken, totp);
-          } else {
-            if (otpRequestedFor !== phone) {
-              try {
-                await LexLab.auth.requestOtp(phone);
-                otpRequestedFor = phone;
-              } catch (otpErr) {
-                if (!otpErr || otpErr.code !== 'otp_cooldown') throw otpErr;
-              }
-            }
-            const res = await LexLab.auth.verify(phone, code, { consent });
-            if (res && res.mfa) {
-              pendingMfaToken = res.mfaToken;
-              if (mfaGroup) mfaGroup.hidden = false;
-              showToast('2FA Authenticator kodini kiriting');
-              return;
+      withBusy(submitBtn, async () => {
+        if (pendingMfaToken) {
+          const totp = (mfaInput?.value || '').trim();
+          await LexLab.auth.verify2fa(pendingMfaToken, totp);
+        } else {
+          if (otpRequestedFor !== phone) {
+            try {
+              await LexLab.auth.requestOtp(phone);
+              otpRequestedFor = phone;
+            } catch (otpErr) {
+              if (!otpErr || otpErr.code !== 'otp_cooldown') throw otpErr;
             }
           }
+          const res = await LexLab.auth.verify(phone, code, { consent });
+          if (res && res.mfa) {
+            pendingMfaToken = res.mfaToken;
+            if (mfaGroup) mfaGroup.hidden = false;
+            showToast('2FA Authenticator kodini kiriting');
+            return;
+          }
+        }
 
-          closeModal(true);
-          showToast('Tizimga muvaffaqiyatli kirildi');
-          await reloadAllWidgets();
-        }).catch(() => {});
-      });
-    }
+        closeModal(true);
+        showToast('Tizimga muvaffaqiyatli kirildi');
+        await reloadAllWidgets();
+      }).catch(() => {});
+    });
   }
 
   async function loadMe() {
@@ -418,7 +539,6 @@
       badgeEl.textContent = me.identity_verified_via ? 'OneID tasdiqlangan' : 'Telefon tasdiqlangan';
     }
 
-    // Channel chips initial state from me.preferences.channels (default ['in_app', 'sms'])
     const channels = (me.preferences && me.preferences.channels) || ['in_app', 'sms'];
     document.querySelectorAll('.hp-channel-chip[data-channel]').forEach(chip => {
       const ch = chip.getAttribute('data-channel');
@@ -429,7 +549,6 @@
       }
     });
 
-    // Settings profile view update if present
     renderSettingsProfile(me);
   }
 
@@ -481,18 +600,16 @@
 
     const form = document.getElementById('profile-edit-form');
     const btn = document.getElementById('btn-save-profile');
-    if (form) {
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const full_name = (document.getElementById('profile-fullname-input')?.value || '').trim();
-        withBusy(btn, async () => {
-          await LexLab.me.profile({ full_name });
-          await loadMe();
-          closeModal();
-          showToast('Profil ma\'lumotlari saqlandi');
-        }).catch(() => {});
-      });
-    }
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const full_name = (document.getElementById('profile-fullname-input')?.value || '').trim();
+      withBusy(btn, async () => {
+        await LexLab.me.profile({ full_name });
+        await loadMe();
+        closeModal();
+        showToast('Profil ma\'lumotlari saqlandi');
+      }).catch(() => {});
+    });
   }
 
   // ==================== §5 DASHBOARD ====================
@@ -500,17 +617,14 @@
     const d = await LexLab.dashboard();
     state.dashboardData = d;
 
-    // 1. Nav contracts count
     const countBadge = document.getElementById('nav-contracts-count');
     if (countBadge) countBadge.textContent = String(d.contracts?.total ?? 0);
 
-    // 2. Notification unread dot
     const notifDot = document.querySelector('#btn-notif-panel .hp-notif-dot');
     if (notifDot) {
       notifDot.style.display = (d.notifications_unread || 0) > 0 ? 'block' : 'none';
     }
 
-    // 3. Invitations banner & party-b badge
     const invCount = d.invitations || 0;
     const badgeB = document.getElementById('party-b-pending-count');
     if (badgeB) {
@@ -526,8 +640,8 @@
           <div class="hp-guide-left">
             <span class="hp-guide-step-pill">YANGI TAKLIF (${invCount})</span>
             <div class="hp-guide-text">
-              <strong>Sizga imzolash uchun ${invCount} ta shartnoma taklifi kelgan</strong>
-              <span>Shartnoma matnini ko'rib chiqib, qabul qilishingiz va SMS-kod bilan imzolashingiz mumkin.</span>
+              <strong>Sizga ko'rib chiqish va kelishish uchun ${invCount} ta shartnoma taklifi kelgan</strong>
+              <span>Shartnoma matni va ogohlantirishlarni ko'rib chiqib, qabul qilishingiz mumkin.</span>
             </div>
           </div>
           <div class="hp-guide-actions">
@@ -540,13 +654,9 @@
       }
     }
 
-    // 4. Dashboard recent contracts table
     renderDashboardContractsTable(d.contracts?.recent || []);
-
-    // 5. Risk gauge & top findings
     renderDashboardLastScan(d.last_scan);
 
-    // 6. Obligations timeline
     const overdue = d.obligations?.overdue || [];
     const upcoming = d.obligations?.upcoming_30d || [];
     renderDashboardTimeline(overdue.concat(upcoming).slice(0, 3));
@@ -643,7 +753,7 @@
             <span class="hp-pill-badge ${pillCls}">${esc(pillText)}</span>
             <p class="hp-clause-text" id="dash-clause-1-text">
               ${esc(f0.explanation)}
-              ${f0.law_ref ? `<br/><small class="hp-text-muted">${esc(f0.law_ref)}</small>` : ''}
+              ${f0.law_ref ? `<br/><small class="hp-text-muted">${lawRefLink(f0.law_ref)}</small>` : ''}
             </p>
           </div>
           <div class="hp-clause-actions-row">
@@ -682,7 +792,7 @@
             <span class="hp-pill-badge ${pillCls}">${esc(pillText)}</span>
             <p class="hp-clause-text" id="dash-clause-2-text">
               ${esc(f1.explanation)}
-              ${f1.law_ref ? `<br/><small class="hp-text-muted">${esc(f1.law_ref)}</small>` : ''}
+              ${f1.law_ref ? `<br/><small class="hp-text-muted">${lawRefLink(f1.law_ref)}</small>` : ''}
             </p>
           </div>
         `;
@@ -748,7 +858,7 @@
         state.bhmBaseValue = Number(res.amount) || 375000;
       }
     } catch (e) {
-      // Fallback if not logged in yet
+      // ignore if not logged in
     }
     updateBhmCalculator();
   }
@@ -763,7 +873,7 @@
     outputEl.textContent = `${formatNumberUz(total, 0)} so'm`;
   }
 
-  // ==================== §6 BUILDER (#view-builder) ====================
+  // ==================== §6 & U2.1–U2.3 BUILDER & TWO-PARTY NEGOTIATION ====================
   function resolveTypeCode(code) {
     if (!code) return null;
     return LEGACY_TYPE_MAP[code] || code;
@@ -773,13 +883,12 @@
     return `lexlab.draft.${LexLab.activeSlot()}.${code}`;
   }
 
-  async function initBuilder(preselectCode) {
+  async function ensureContractTypesLoaded() {
     const selectEl = document.getElementById('cb-type');
     if (!selectEl) return;
-
-    const types = await LexLab.types.list();
-    state.contractTypes = types || [];
-
+    if (!state.contractTypes || state.contractTypes.length === 0) {
+      state.contractTypes = (await LexLab.types.list()) || [];
+    }
     selectEl.innerHTML = state.contractTypes.map(t => {
       const srcKind = t.source && t.source.kind;
       const suffix = srcKind === 'lexuz'
@@ -787,12 +896,47 @@
         : (srcKind === 'organization' ? ' (tashkilot shabloni)' : '');
       return `<option value="${esc(t.code)}">${esc(t.title_uz + suffix)}</option>`;
     }).join('');
+  }
 
+  async function initBuilder(preselectCode) {
+    await ensureContractTypesLoaded();
+    const selectEl = document.getElementById('cb-type');
     const targetCode = resolveTypeCode(preselectCode) || (state.contractTypes[0] && state.contractTypes[0].code);
     if (targetCode) {
-      selectEl.value = targetCode;
+      if (selectEl) selectEl.value = targetCode;
       await selectBuilderType(targetCode);
     }
+  }
+
+  async function openContractInBuilder(contractId) {
+    if (state.builderDebounceTimer) {
+      clearTimeout(state.builderDebounceTimer);
+      state.builderDebounceTimer = null;
+    }
+    state.builderPendingPatch = {};
+
+    await ensureContractTypesLoaded();
+    const c = await LexLab.contracts.get(contractId);
+    const typeObj = state.contractTypes.find(t => t.id === c.type_id) || state.contractTypes[0];
+    const code = typeObj ? typeObj.code : 'rent_commercial';
+
+    const selectEl = document.getElementById('cb-type');
+    if (selectEl) selectEl.value = code;
+
+    const t = await LexLab.types.get(code);
+    state.builderTypeCode = code;
+    state.builderTypeDetail = t;
+    state.builderContractId = c.id;
+    state.builderAnswers = c.answers || {};
+    sessionStorage.setItem(draftStorageKey(code), c.id);
+
+    const n = await LexLab.contracts.negotiation(c.id);
+    state.builderNegotiation = n;
+
+    renderQuestionnaireForm(t, state.builderAnswers, n);
+    renderBuilderNegotiationAndValidation(n);
+    await refreshBuilderPreview();
+    navigateTo('builder');
   }
 
   async function selectBuilderType(rawCode) {
@@ -809,7 +953,6 @@
     state.builderTypeCode = code;
     state.builderTypeDetail = t;
 
-    // Remember one draft per type in sessionStorage
     let draftContract = null;
     const savedId = sessionStorage.getItem(draftStorageKey(code));
     if (savedId) {
@@ -832,20 +975,39 @@
     state.builderContractId = draftContract.id;
     state.builderAnswers = draftContract.answers || {};
 
-    renderQuestionnaireForm(t, state.builderAnswers);
+    const n = await LexLab.contracts.negotiation(state.builderContractId);
+    state.builderNegotiation = n;
 
-    const validation = await LexLab.contracts.validate(state.builderContractId);
-    renderBuilderValidation(validation);
+    renderQuestionnaireForm(t, state.builderAnswers, n);
+    renderBuilderNegotiationAndValidation(n);
     await refreshBuilderPreview();
   }
 
-  function renderQuestionnaireForm(typeDetail, existingAnswers) {
+  function buildFieldOwnershipMap(neg) {
+    const map = {};
+    if (neg && Array.isArray(neg.fields)) {
+      neg.fields.forEach(f => {
+        map[f.key] = { side: f.side, editable: f.editable };
+      });
+    }
+    return map;
+  }
+
+  function getFieldOwnership(fieldKey, ownershipMap, neg) {
+    if (ownershipMap[fieldKey]) return ownershipMap[fieldKey];
+    const root = String(fieldKey).split('.')[0];
+    if (ownershipMap[root]) return ownershipMap[root];
+    const side = root === 'party_a' ? 'A' : (root === 'party_b' ? 'B' : 'shared');
+    const editable = !neg || !neg.both_joined || side === 'shared' || side === neg.my_side;
+    return { side, editable };
+  }
+
+  function renderQuestionnaireForm(typeDetail, existingAnswers, neg) {
     const form = document.getElementById('contract-builder-form');
     if (!form) return;
 
     let dynContainer = document.getElementById('cb-dynamic-questionnaire');
     if (!dynContainer) {
-      // Remove old fixed demo inputs (#cb-party-a, #cb-party-b, #cb-amount, #cb-penalty) while keeping #cb-type, #cb-rule-alerts-list, .hp-builder-actions
       const typeGroup = document.getElementById('cb-type')?.closest('.hp-form-group');
       const alertsEl = document.getElementById('cb-rule-alerts-list');
       const actionsEl = form.querySelector('.hp-builder-actions');
@@ -862,10 +1024,31 @@
       form.insertBefore(dynContainer, alertsEl);
     }
 
+    // Ensure "Norozilik bildirish" button exists in .hp-builder-actions
+    const actionsEl = form.querySelector('.hp-builder-actions');
+    if (actionsEl && !document.getElementById('btn-builder-object')) {
+      const objBtn = document.createElement('button');
+      objBtn.type = 'button';
+      objBtn.id = 'btn-builder-object';
+      objBtn.className = 'hp-btn-outline';
+      objBtn.textContent = 'Norozilik bildirish';
+      actionsEl.insertBefore(objBtn, document.getElementById('btn-builder-generate'));
+      objBtn.addEventListener('click', () => {
+        if (state.builderContractId) openObjectionModal(state.builderContractId);
+      });
+    }
+
     state.builderFieldMap = {};
+    state.builderFieldDefs = [];
+    const ownershipMap = buildFieldOwnershipMap(neg);
+    const mySide = (neg && neg.my_side) || 'A';
+
     const sections = (typeDetail.questionnaire && typeDetail.questionnaire.sections) || [];
     const allFields = [];
-    sections.forEach(s => (s.fields || []).forEach(f => allFields.push(f)));
+    sections.forEach(s => (s.fields || []).forEach(f => {
+      allFields.push(f);
+      state.builderFieldDefs.push(f);
+    }));
     const hasPartyBStir = allFields.some(f => f.key === 'party_b.stir');
 
     let html = '';
@@ -875,19 +1058,26 @@
       const fields = sec.fields || [];
       if (fields.length === 0) return;
 
-      html += `<div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-top:6px;">${esc(sec.title || '')}</div>`;
+      // U2.3.1: Next to a section owned by the other side, show a muted «2-tomon to'ldiradi»
+      const sectionSides = fields.map(f => getFieldOwnership(f.key, ownershipMap, neg).side);
+      const isOtherSideSection = sectionSides.length > 0 && sectionSides.every(s => s !== 'shared' && s !== mySide);
+      const otherNote = isOtherSideSection
+        ? ` <span class="hp-text-muted" style="font-weight:400;font-size:12px;">(2-tomon to'ldiradi)</span>`
+        : '';
+
+      html += `<div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-top:6px;">${esc(sec.title || '')}${otherNote}</div>`;
 
       let i = 0;
       while (i < fields.length) {
         const f1 = fields[i];
         const f2 = fields[i + 1];
         if (f1.type === 'text' || !f2 || f2.type === 'text') {
-          html += renderQuestionnaireFieldHtml(f1, existingAnswers, hasPartyBStir, defaultPatch);
+          html += renderQuestionnaireFieldHtml(f1, existingAnswers, hasPartyBStir, defaultPatch, ownershipMap, neg);
           i += 1;
         } else {
           html += `<div class="hp-form-row-2">
-            ${renderQuestionnaireFieldHtml(f1, existingAnswers, hasPartyBStir, defaultPatch)}
-            ${renderQuestionnaireFieldHtml(f2, existingAnswers, hasPartyBStir, defaultPatch)}
+            ${renderQuestionnaireFieldHtml(f1, existingAnswers, hasPartyBStir, defaultPatch, ownershipMap, neg)}
+            ${renderQuestionnaireFieldHtml(f2, existingAnswers, hasPartyBStir, defaultPatch, ownershipMap, neg)}
           </div>`;
           i += 2;
         }
@@ -896,25 +1086,25 @@
 
     dynContainer.innerHTML = html;
 
-    // If defaults were populated for empty fields, save them
     if (Object.keys(defaultPatch).length > 0 && state.builderContractId) {
       LexLab.contracts.saveAnswers(state.builderContractId, defaultPatch)
-        .then(r => {
-          renderBuilderValidation(r);
-          return refreshBuilderPreview();
-        })
+        .then(() => refreshBuilderNegotiation())
         .catch(() => {});
     }
   }
 
-  function renderQuestionnaireFieldHtml(field, existingAnswers, hasPartyBStir, defaultPatch) {
+  function renderQuestionnaireFieldHtml(field, existingAnswers, hasPartyBStir, defaultPatch, ownershipMap, neg) {
     const fType = field.type || 'string';
     const actualKey = fType === 'party' ? `${field.key}.name` : field.key;
     state.builderFieldMap[actualKey] = field.label || actualKey;
     state.builderFieldMap[field.key] = field.label || field.key;
 
+    const own = getFieldOwnership(actualKey, ownershipMap, neg);
+    const isEditable = own.editable !== false;
+    const disabledAttr = isEditable ? '' : 'disabled';
+
     let currentVal = getPath(existingAnswers, actualKey);
-    if ((currentVal === undefined || currentVal === null || currentVal === '') && field.default !== undefined) {
+    if ((currentVal === undefined || currentVal === null || currentVal === '') && field.default !== undefined && isEditable) {
       currentVal = field.default;
       defaultPatch[actualKey] = field.default;
     }
@@ -924,7 +1114,7 @@
 
     let inputHtml = '';
     if (fType === 'text') {
-      inputHtml = `<textarea class="hp-input" rows="2" data-q-key="${esc(actualKey)}" data-q-type="text" placeholder="${esc(placeholder)}">${esc(valStr)}</textarea>`;
+      inputHtml = `<textarea class="hp-input" rows="2" data-q-key="${esc(actualKey)}" data-q-type="text" placeholder="${esc(placeholder)}" ${disabledAttr}>${esc(valStr)}</textarea>`;
     } else if (fType === 'enum') {
       const opts = (field.options || []).map(o => {
         const oVal = typeof o === 'object' ? o.value : o;
@@ -933,7 +1123,7 @@
         return `<option value="${esc(oVal)}" ${sel}>${esc(oLabel)}</option>`;
       }).join('');
       inputHtml = `
-        <select class="hp-input" data-q-key="${esc(actualKey)}" data-q-type="enum">
+        <select class="hp-input" data-q-key="${esc(actualKey)}" data-q-type="enum" ${disabledAttr}>
           <option value="">— Tanlang —</option>
           ${opts}
         </select>
@@ -941,11 +1131,11 @@
     } else if (fType === 'number') {
       const minAttr = field.min !== undefined ? `min="${esc(field.min)}"` : '';
       const maxAttr = field.max !== undefined ? `max="${esc(field.max)}"` : '';
-      inputHtml = `<input type="number" class="hp-input" data-q-key="${esc(actualKey)}" data-q-type="number" value="${esc(valStr)}" ${minAttr} ${maxAttr} step="any" placeholder="${esc(placeholder)}" />`;
+      inputHtml = `<input type="number" class="hp-input" data-q-key="${esc(actualKey)}" data-q-type="number" value="${esc(valStr)}" ${minAttr} ${maxAttr} step="any" placeholder="${esc(placeholder)}" ${disabledAttr} />`;
     } else if (fType === 'date') {
-      inputHtml = `<input type="date" class="hp-input" data-q-key="${esc(actualKey)}" data-q-type="date" value="${esc(valStr)}" />`;
+      inputHtml = `<input type="date" class="hp-input" data-q-key="${esc(actualKey)}" data-q-type="date" value="${esc(valStr)}" ${disabledAttr} />`;
     } else {
-      inputHtml = `<input type="text" class="hp-input" data-q-key="${esc(actualKey)}" data-q-type="string" value="${esc(valStr)}" placeholder="${esc(placeholder)}" />`;
+      inputHtml = `<input type="text" class="hp-input" data-q-key="${esc(actualKey)}" data-q-type="string" value="${esc(valStr)}" placeholder="${esc(placeholder)}" ${disabledAttr} />`;
     }
 
     const isStirLookupField =
@@ -955,7 +1145,7 @@
       inputHtml = `
         <div class="hp-input-with-btn">
           ${inputHtml}
-          <button type="button" class="hp-mini-lookup-btn" id="btn-stir-lookup-b">STIR orqali topish</button>
+          <button type="button" class="hp-mini-lookup-btn" id="btn-stir-lookup-b" ${disabledAttr}>STIR orqali topish</button>
         </div>
       `;
     }
@@ -965,8 +1155,28 @@
         <label>${esc(field.label || actualKey)}${reqStar}</label>
         ${inputHtml}
         <span class="hp-field-hint" data-field-err="${esc(actualKey)}" style="color:#DC2626;" hidden></span>
+        <div data-field-warn="${esc(actualKey)}"></div>
       </div>
     `;
+  }
+
+  function applyFieldOwnershipAndValues(neg, answers) {
+    const ownershipMap = buildFieldOwnershipMap(neg);
+    document.querySelectorAll('#cb-dynamic-questionnaire [data-q-key]').forEach(el => {
+      const key = el.getAttribute('data-q-key');
+      const own = getFieldOwnership(key, ownershipMap, neg);
+      el.disabled = own.editable === false;
+      if (answers && document.activeElement !== el) {
+        const v = getPath(answers, key);
+        const vStr = v !== undefined && v !== null ? String(v) : '';
+        if (el.value !== vStr) el.value = vStr;
+      }
+    });
+    const stirBtn = document.getElementById('btn-stir-lookup-b');
+    if (stirBtn) {
+      const ownB = getFieldOwnership('party_b.stir', ownershipMap, neg);
+      stirBtn.disabled = ownB.editable === false;
+    }
   }
 
   function collectFieldValue(el) {
@@ -1000,15 +1210,56 @@
     if (Object.keys(patch).length === 0 || !state.builderContractId) return null;
 
     const r = await LexLab.contracts.saveAnswers(state.builderContractId, patch);
-    renderBuilderValidation(r);
+    await refreshBuilderNegotiation(r);
     await refreshBuilderPreview();
     return r;
   }
 
-  function renderBuilderValidation(r) {
-    if (!r) return;
+  async function refreshBuilderNegotiation(latestValidation) {
+    if (!state.builderContractId) return null;
+    const [c, n] = await Promise.all([
+      LexLab.contracts.get(state.builderContractId),
+      LexLab.contracts.negotiation(state.builderContractId)
+    ]);
+    state.builderAnswers = c.answers || {};
+    if (latestValidation && latestValidation.field_warnings) {
+      n.validation = latestValidation;
+    }
+    state.builderNegotiation = n;
+    applyFieldOwnershipAndValues(n, state.builderAnswers);
+    renderBuilderNegotiationAndValidation(n);
+    return n;
+  }
 
-    // 1. Clear field error highlights
+  function renderFieldWarnings(fieldWarnings) {
+    document.querySelectorAll('#cb-dynamic-questionnaire [data-field-warn]').forEach(wContainer => {
+      wContainer.innerHTML = '';
+    });
+    if (!fieldWarnings) return;
+
+    Object.keys(fieldWarnings).forEach(key => {
+      const warnings = fieldWarnings[key] || [];
+      const wContainer = document.querySelector(`#cb-dynamic-questionnaire [data-field-warn="${CSS.escape(key)}"]`);
+      if (wContainer && warnings.length > 0) {
+        wContainer.innerHTML = warnings.map(w => {
+          const cls = w.severity === 'red' ? 'hp-rule-red' : (w.severity === 'yellow' ? 'hp-rule-amber' : 'hp-rule-blue');
+          return `
+            <div class="hp-rule-item ${cls}" style="margin-top:4px;padding:6px 10px;">
+              <strong>${esc(w.message)}</strong>
+              ${w.fix_suggestion ? `<span>${esc(w.fix_suggestion)}</span>` : ''}
+              ${w.law_ref ? `<span>Asos: ${lawRefLink(w.law_ref, w.lex_url)}</span>` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+    });
+  }
+
+  function renderBuilderNegotiationAndValidation(n) {
+    if (!n) return;
+    const r = n.validation || {};
+
+    // 1. Field format errors
     document.querySelectorAll('#cb-dynamic-questionnaire [data-q-key]').forEach(inp => {
       inp.style.borderColor = '';
     });
@@ -1017,7 +1268,6 @@
       errEl.textContent = '';
     });
 
-    // 2. Highlight field_errors
     (r.field_errors || []).forEach(fe => {
       const inp = document.querySelector(`#cb-dynamic-questionnaire [data-q-key="${CSS.escape(fe.field)}"]`);
       const errEl = document.querySelector(`#cb-dynamic-questionnaire [data-field-err="${CSS.escape(fe.field)}"]`);
@@ -1028,20 +1278,61 @@
       }
     });
 
-    // 3. Render alerts in #cb-rule-alerts-list
+    // 2. Live warnings under individual fields (U2.3.2)
+    renderFieldWarnings(r.field_warnings);
+
+    // 3. Update primary Builder button (#btn-builder-generate) based on negotiation state (U2.2)
+    const genBtn = document.getElementById('btn-builder-generate');
+    if (genBtn) {
+      const nxt = n.next_action;
+      const waitActions = [
+        'wait_other_party_join',
+        'wait_other_party_data',
+        'wait_other_party_agreement',
+        'wait_objection_answer',
+        'wait_signatures'
+      ];
+      if (nxt === 'agree' || (n.both_joined && n.status === 'draft' && !waitActions.includes(nxt))) {
+        genBtn.textContent = 'Shartlarga roziman';
+        genBtn.disabled = !!(r.summary && r.summary.blocking);
+      } else if (waitActions.includes(nxt)) {
+        genBtn.textContent = n.next_action_text || 'Ikkinchi tomon kutilmoqda';
+        genBtn.disabled = true;
+      } else if (nxt === 'sign') {
+        genBtn.textContent = 'Imzolash (SMS-kod)';
+        genBtn.disabled = false;
+      } else if (['active', 'completed', 'disputed', 'expired', 'cancelled'].includes(nxt)) {
+        genBtn.textContent = 'Arxivda ko\'rish';
+        genBtn.disabled = false;
+      } else {
+        genBtn.textContent = 'Shartnomani yaratish';
+        genBtn.disabled = false;
+      }
+    }
+
+    // 4. Overall negotiation & validation alerts in #cb-rule-alerts-list
     const alertsContainer = document.getElementById('cb-rule-alerts-list');
     if (!alertsContainer) return;
 
     const itemsHtml = [];
+
+    // Negotiation next_action banner + primary action widget (U2.2)
+    itemsHtml.push(renderNegotiationActionCardHtml(n, 'builder'));
+
+    // Open objections cards (U2.3.4)
+    if (Array.isArray(n.objections_open) && n.objections_open.length > 0) {
+      itemsHtml.push(renderOpenObjectionsHtml(n.contract_id, n.objections_open, n.my_side));
+    }
+
+    // Overall legality status
     const counts = (r.summary && r.summary.counts) || {};
     const isBlocking = !!(r.summary && r.summary.blocking);
 
-    // Overall badge
     if (isBlocking) {
       itemsHtml.push(`
         <div class="hp-rule-item hp-rule-red">
           <strong>Holat: <span class="hp-pill-badge hp-pill-danger">Qonunga zid (${counts.red || 1})</span></strong>
-          <span>Qizil bandlarni tuzating yoki avtomatik moslashtiring.</span>
+          <span>Qonunga zid shartlar tuzatilmaguncha shartnoma yaratilmaydi.</span>
         </div>
       `);
     } else if ((counts.yellow || 0) > 0) {
@@ -1060,7 +1351,6 @@
       `);
     }
 
-    // Form requirement warning
     if (r.form && r.form.warning) {
       itemsHtml.push(`
         <div class="hp-rule-item hp-rule-amber">
@@ -1070,19 +1360,17 @@
       `);
     }
 
-    // Findings
     (r.findings || []).forEach(f => {
       const cls = f.severity === 'red' ? 'hp-rule-red' : (f.severity === 'yellow' ? 'hp-rule-amber' : 'hp-rule-blue');
       itemsHtml.push(`
         <div class="hp-rule-item ${cls}">
           <strong>${esc(f.message)}</strong>
-          ${f.law_ref ? `<span>Asos: ${esc(f.law_ref)}</span>` : ''}
+          ${f.law_ref ? `<span>Asos: ${lawRefLink(f.law_ref, f.lex_url)}</span>` : ''}
           ${f.fix_suggestion ? `<span>Tavsiya: ${esc(f.fix_suggestion)}</span>` : ''}
         </div>
       `);
     });
 
-    // Missing fields
     const missing = r.missing_fields || [];
     if (missing.length > 0) {
       const labels = missing.map(k => state.builderFieldMap[k] || k);
@@ -1095,6 +1383,220 @@
     }
 
     alertsContainer.innerHTML = itemsHtml.join('');
+  }
+
+  function renderNegotiationActionCardHtml(n, contextPrefix) {
+    if (!n) return '';
+    const nxt = n.next_action;
+    const partiesBadges = (n.parties || []).map(p => {
+      const statusText = p.signed_at
+        ? 'Imzolagan ✓'
+        : (p.agreed ? 'Rozi ✓' : (p.joined ? 'Qo\'shilgan' : (p.invited ? 'Taklif yuborilgan' : 'Taklif qilinmagan')));
+      const pillCls = p.signed_at || p.agreed ? 'hp-pill-success' : (p.joined ? 'hp-pill-warning' : 'hp-pill-neutral');
+      return `<span class="hp-pill-badge ${pillCls}">${esc(p.side)}-Tomon: ${esc(statusText)}</span>`;
+    }).join(' ');
+
+    let actionControls = '';
+    if (nxt === 'fill_your_data') {
+      actionControls = `
+        <button type="button" class="hp-btn-outline-sm" data-neg-focus-missing="${esc(n.contract_id)}">
+          Bo'sh maydonga o'tish
+        </button>
+      `;
+    } else if (nxt === 'invite_other_party') {
+      actionControls = `
+        <div class="hp-input-with-btn" style="margin-top:6px;">
+          <input type="text" id="${contextPrefix}-neg-invite-phone" class="hp-input" value="+998901110002" placeholder="+998901110002" />
+          <button type="button" class="hp-btn-navy-sm" data-neg-invite="${esc(n.contract_id)}" data-phone-input="${contextPrefix}-neg-invite-phone">
+            2-tomonni taklif qilish
+          </button>
+        </div>
+      `;
+    } else if (nxt === 'fix_illegal_terms') {
+      actionControls = `
+        <button type="button" class="hp-btn-outline-sm" data-neg-autofix="${esc(n.contract_id)}">
+          Avtomatik tuzatish
+        </button>
+      `;
+    } else if (nxt === 'agree') {
+      actionControls = `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+          <button type="button" class="hp-btn-navy-sm" data-neg-agree="${esc(n.contract_id)}">Shartlarga roziman</button>
+          <button type="button" class="hp-btn-outline-sm" data-neg-open-object="${esc(n.contract_id)}">Norozilik bildirish</button>
+        </div>
+      `;
+    } else if (nxt === 'generate') {
+      actionControls = `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+          <button type="button" class="hp-btn-navy-sm" data-neg-generate="${esc(n.contract_id)}">Shartnomani yaratish</button>
+        </div>
+      `;
+    } else if (nxt === 'sign') {
+      actionControls = `
+        <button type="button" class="hp-btn-navy-sm" data-inspect-contract="${esc(n.contract_id)}">
+          Imzolash (SMS-kod)
+        </button>
+      `;
+    } else if (['active', 'completed', 'disputed', 'expired', 'cancelled'].includes(nxt)) {
+      actionControls = `
+        <button type="button" class="hp-btn-outline-sm" data-goto="archive">
+          Arxivda ko'rish
+        </button>
+      `;
+    }
+
+    const ruleCls = nxt === 'fix_illegal_terms'
+      ? 'hp-rule-red'
+      : (nxt === 'resolve_objections' ? 'hp-rule-amber' : 'hp-rule-blue');
+
+    return `
+      <div class="hp-rule-item ${ruleCls}">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <strong>Keyingi qadam (${esc(n.my_side || 'A')}-Tomon): ${esc(n.next_action_text || '')}</strong>
+          <div>${partiesBadges}</div>
+        </div>
+        ${actionControls}
+      </div>
+    `;
+  }
+
+  function renderOpenObjectionsHtml(contractId, openObjections, mySide) {
+    return (openObjections || []).map(o => {
+      const isMine = o.side === mySide;
+      const proposedEntries = Object.entries(o.proposed || {});
+      const proposedHtml = proposedEntries.length > 0
+        ? `<div style="font-size:12.5px;margin-top:4px;">
+            <strong>Taklif qilingan o'zgarishlar:</strong>
+            ${proposedEntries.map(([k, v]) => `<div>• ${esc(state.builderFieldMap[k] || k)}: <strong>${esc(v)}</strong></div>`).join('')}
+           </div>`
+        : '';
+
+      const actionsHtml = isMine
+        ? `<button type="button" class="hp-btn-outline-sm" data-obj-resolve="${esc(o.id)}" data-obj-contract="${esc(contractId)}" data-obj-action="withdraw">Qaytarib olish</button>`
+        : `
+          <button type="button" class="hp-btn-navy-sm" data-obj-resolve="${esc(o.id)}" data-obj-contract="${esc(contractId)}" data-obj-action="accept">Qabul qilish</button>
+          <button type="button" class="hp-btn-outline-sm" data-obj-resolve="${esc(o.id)}" data-obj-contract="${esc(contractId)}" data-obj-action="reject">Rad etish</button>
+        `;
+
+      return `
+        <div class="hp-clause-alert hp-clause-risky" style="margin-top:6px;">
+          <div class="hp-clause-main-row">
+            <span class="hp-pill-badge hp-pill-warning">${esc(o.side)}-Tomon noroziligi</span>
+            <p class="hp-clause-text"><strong>${esc(o.comment)}</strong></p>
+          </div>
+          ${proposedHtml}
+          <div class="hp-clause-actions-row" style="margin-top:8px;">
+            <span></span>
+            <div class="hp-clause-btns">${actionsHtml}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // U2.3.4 Objection Modal
+  async function openObjectionModal(contractId) {
+    try {
+      const c = await LexLab.contracts.get(contractId);
+      const typeObj = state.contractTypes.find(t => t.id === c.type_id) || state.contractTypes[0];
+      const tDetail = state.builderTypeDetail && state.builderTypeDetail.id === c.type_id
+        ? state.builderTypeDetail
+        : (typeObj ? await LexLab.types.get(typeObj.code) : null);
+
+      const sharedFields = [];
+      if (tDetail && tDetail.questionnaire && tDetail.questionnaire.sections) {
+        tDetail.questionnaire.sections.forEach(sec => {
+          (sec.fields || []).forEach(f => {
+            const root = String(f.key).split('.')[0];
+            if (root !== 'party_a' && root !== 'party_b') {
+              sharedFields.push(f);
+            }
+          });
+        });
+      }
+
+      const fieldsHtml = sharedFields.map(f => {
+        const currentVal = getPath(c.answers || {}, f.key);
+        const valStr = currentVal !== undefined && currentVal !== null ? String(currentVal) : '';
+        if (f.type === 'enum') {
+          const opts = (f.options || []).map(o => {
+            const oVal = typeof o === 'object' ? o.value : o;
+            const oLabel = typeof o === 'object' ? o.label : o;
+            return `<option value="${esc(oVal)}">${esc(oLabel)}</option>`;
+          }).join('');
+          return `
+            <div class="hp-form-group">
+              <label>${esc(f.label)} (Taklifim)</label>
+              <select class="hp-input" data-prop-key="${esc(f.key)}" data-prop-type="enum" data-orig-val="${esc(valStr)}">
+                <option value="">— O'zgartirmaslik (${esc(valStr || 'bo\'sh')}) —</option>
+                ${opts}
+              </select>
+            </div>
+          `;
+        }
+        return `
+          <div class="hp-form-group">
+            <label>${esc(f.label)} (Taklifim)</label>
+            <input type="${f.type === 'number' ? 'number' : (f.type === 'date' ? 'date' : 'text')}"
+                   class="hp-input"
+                   data-prop-key="${esc(f.key)}"
+                   data-prop-type="${esc(f.type || 'string')}"
+                   data-orig-val="${esc(valStr)}"
+                   placeholder="Hozirgi: ${esc(valStr || '—')}" />
+          </div>
+        `;
+      }).join('');
+
+      openModal(
+        'Norozilik bildirish va muqobil taklif',
+        `
+        <form id="objection-submit-form" class="hp-builder-form">
+          <div class="hp-form-group">
+            <label for="obj-comment-input">Nimaga rozi emassiz va nima taklif qilasiz? *</label>
+            <textarea id="obj-comment-input" class="hp-input" rows="3" placeholder="Izohingizni yozing..." required></textarea>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:var(--text-secondary);">Shartlar bo'yicha taklifim (ixtiyoriy):</div>
+          <div style="max-height:240px;overflow-y:auto;padding-right:4px;" class="hp-builder-form">
+            ${fieldsHtml}
+          </div>
+          <div class="hp-builder-actions">
+            <button type="submit" class="hp-btn-navy" id="btn-submit-objection">Norozilikni yuborish</button>
+          </div>
+        </form>
+        `
+      );
+
+      const form = document.getElementById('objection-submit-form');
+      const btn = document.getElementById('btn-submit-objection');
+      form?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const comment = (document.getElementById('obj-comment-input')?.value || '').trim();
+        const proposed = {};
+        const fields = [];
+
+        form.querySelectorAll('[data-prop-key]').forEach(inp => {
+          const k = inp.getAttribute('data-prop-key');
+          const pType = inp.getAttribute('data-prop-type');
+          const raw = inp.value.trim();
+          if (raw !== '') {
+            fields.push(k);
+            proposed[k] = pType === 'number' ? Number(raw) : raw;
+          }
+        });
+
+        withBusy(btn, async () => {
+          await LexLab.contracts.object(contractId, { comment, fields, proposed });
+          closeModal();
+          showToast('Norozilik yuborildi');
+          if (state.builderContractId === contractId) {
+            await refreshBuilderNegotiation();
+          }
+          await loadDashboard();
+        }).catch(() => {});
+      });
+    } catch (e) {
+      handleErr(e);
+    }
   }
 
   function renderPreviewDocumentHtml(p) {
@@ -1120,9 +1622,10 @@
       <div style="font-size:13px;line-height:1.6;color:var(--text-main);">
         <div style="text-align:center;font-weight:800;font-size:14.5px;margin-bottom:8px;">${titleLines}</div>
         ${p.header ? `<div style="display:flex;justify-content:space-between;font-weight:600;margin-bottom:10px;white-space:pre-wrap;">${esc(p.header)}</div>` : ''}
+        ${p.subheader ? `<div style="text-align:center;margin-bottom:10px;white-space:pre-wrap;">${esc(p.subheader)}</div>` : ''}
         ${p.preamble ? `<p style="margin-bottom:10px;">${esc(p.preamble)}</p>` : ''}
         ${sectionsHtml}
-        ${p.closing ? `<p style="margin-top:12px;font-style:italic;">${esc(p.closing)}</p>` : ''}
+        ${p.closing ? `<p style="margin-top:12px;font-style:italic;white-space:pre-wrap;">${esc(p.closing)}</p>` : ''}
         ${sha ? `<div class="hp-text-muted" style="margin-top:16px;padding-top:10px;border-top:1px dashed var(--border-color);font-size:11.5px;word-break:break-all;">SHA-256: ${esc(sha)}</div>` : ''}
       </div>
     `;
@@ -1177,15 +1680,15 @@
         Object.keys(mapping).forEach(k => {
           if (mapping[k]) {
             const inp = document.querySelector(`#cb-dynamic-questionnaire [data-q-key="${CSS.escape(k)}"]`);
-            if (inp) {
+            if (inp && !inp.disabled) {
               inp.value = mapping[k];
               patch[k] = mapping[k];
             }
           }
         });
         if (Object.keys(patch).length > 0 && state.builderContractId) {
-          const r = await LexLab.contracts.saveAnswers(state.builderContractId, patch);
-          renderBuilderValidation(r);
+          await LexLab.contracts.saveAnswers(state.builderContractId, patch);
+          await refreshBuilderNegotiation();
           await refreshBuilderPreview();
         }
         showToast('Tashkilot ma\'lumotlari to\'ldirildi');
@@ -1195,42 +1698,96 @@
     });
   }
 
-  async function handleBuilderAutofix(btn) {
-    if (!state.builderContractId) return;
+  async function handleBuilderAutofix(btn, contractId) {
+    const targetId = contractId || state.builderContractId;
+    if (!targetId) return;
     await withBusy(btn, async () => {
-      await flushBuilderAnswers();
-      const r = await LexLab.contracts.autofix(state.builderContractId);
+      if (targetId === state.builderContractId) await flushBuilderAnswers();
+      const r = await LexLab.contracts.autofix(targetId);
       const applied = r.applied || [];
       if (applied.length === 0) {
         showToast('Avtomatik tuzatiladigan band yo\'q');
         return;
       }
-      applied.forEach(item => {
-        const inp = document.querySelector(`#cb-dynamic-questionnaire [data-q-key="${CSS.escape(item.field)}"]`);
-        if (inp) inp.value = item.value ?? '';
-      });
-      renderBuilderValidation(r);
-      await refreshBuilderPreview();
+      if (targetId === state.builderContractId) {
+        applied.forEach(item => {
+          const inp = document.querySelector(`#cb-dynamic-questionnaire [data-q-key="${CSS.escape(item.field)}"]`);
+          if (inp) inp.value = item.value ?? '';
+        });
+        await refreshBuilderNegotiation(r);
+        await refreshBuilderPreview();
+      }
+      if (state.openModalContractId === targetId) {
+        await openContractModal(targetId);
+      }
       showToast('Qonunga mos ravishda avtomatik tuzatildi');
     });
   }
 
-  async function handleBuilderGenerate(btn, acknowledgeRed = false) {
-    if (!state.builderContractId) return;
+  // U2.3.5 Consent (agree)
+  async function handleContractAgree(btn, contractId) {
+    const targetId = contractId || state.builderContractId;
+    if (!targetId) return;
     await withBusy(btn, async () => {
-      await flushBuilderAnswers();
+      if (targetId === state.builderContractId) await flushBuilderAnswers();
       try {
-        const g = await LexLab.contracts.generate(state.builderContractId, {
-          language: state.docPreviewLang,
-          acknowledgeRed: !!acknowledgeRed
+        const res = await LexLab.contracts.agree(targetId);
+        if (res && res.generated) {
+          showToast(`Umumiy shartnoma tayyor (v${res.generated.number})`);
+          if (state.builderContractId === targetId) await refreshBuilderNegotiation();
+          await loadDashboard();
+          await openContractModal(targetId);
+        } else {
+          showToast('Rozilik saqlandi. 2-tomon kutilmoqda');
+          if (state.builderContractId === targetId) await refreshBuilderNegotiation();
+          if (state.openModalContractId === targetId) await openContractModal(targetId);
+          await loadDashboard();
+        }
+      } catch (e) {
+        if (e && e.code === 'illegal_clauses') {
+          if (state.builderContractId === targetId) await refreshBuilderNegotiation();
+        }
+        throw e;
+      }
+    });
+  }
+
+  // U2.1 & §6.8 Generate (no acknowledge_red override — illegal terms are never generated)
+  async function handleBuilderPrimaryAction(btn) {
+    if (!state.builderContractId) return;
+    const n = state.builderNegotiation;
+    if (n) {
+      if (n.next_action === 'sign') {
+        await openContractModal(state.builderContractId);
+        return;
+      }
+      if (['active', 'completed', 'disputed', 'expired', 'cancelled'].includes(n.next_action)) {
+        navigateTo('archive');
+        return;
+      }
+      if (n.both_joined && n.status === 'draft') {
+        await handleContractAgree(btn, state.builderContractId);
+        return;
+      }
+    }
+    await handleContractGenerate(btn, state.builderContractId);
+  }
+
+  async function handleContractGenerate(btn, contractId) {
+    const targetId = contractId || state.builderContractId;
+    if (!targetId) return;
+    await withBusy(btn, async () => {
+      if (targetId === state.builderContractId) await flushBuilderAnswers();
+      try {
+        const g = await LexLab.contracts.generate(targetId, {
+          language: state.docPreviewLang
         });
-        const generatedContractId = state.builderContractId;
-        if (state.builderTypeCode) {
+        if (state.builderTypeCode && targetId === state.builderContractId) {
           sessionStorage.removeItem(draftStorageKey(state.builderTypeCode));
         }
-
         await loadDashboard();
-        openGeneratedVersionModal(generatedContractId, g.version);
+        if (targetId === state.builderContractId) await refreshBuilderNegotiation();
+        openGeneratedVersionModal(targetId, g.version);
       } catch (e) {
         if (e && e.code === 'answers_incomplete' && e.details) {
           (e.details.missing || []).forEach(k => {
@@ -1246,33 +1803,8 @@
               errEl.hidden = false;
             }
           });
-          handleErr(e);
-          return;
-        }
-        if (e && e.code === 'illegal_clauses') {
-          const redList = Array.isArray(e.details) ? e.details : [];
-          openModal(
-            'Diqqat: Qonunga zid bandlar mavjud',
-            `
-            <div class="hp-builder-form">
-              <div class="hp-rule-alerts">
-                ${redList.map(item => `
-                  <div class="hp-rule-item hp-rule-red">
-                    <strong>${esc(item.message)}</strong>
-                    ${item.law_ref ? `<span>${esc(item.law_ref)}</span>` : ''}
-                  </div>
-                `).join('')}
-              </div>
-              <div class="hp-builder-actions">
-                <button type="button" class="hp-btn-navy" id="btn-acknowledge-red-generate">Tushundim, baribir yaratish</button>
-              </div>
-            </div>
-            `
-          );
-          document.getElementById('btn-acknowledge-red-generate')?.addEventListener('click', (ev) => {
-            handleBuilderGenerate(ev.currentTarget, true).catch(() => {});
-          });
-          return;
+        } else if (e && e.code === 'illegal_clauses') {
+          if (targetId === state.builderContractId) await refreshBuilderNegotiation();
         }
         throw e;
       }
@@ -1319,7 +1851,8 @@
 
         <div id="gen-ai-review-container"></div>
       </div>
-      `
+      `,
+      { contractId }
     );
 
     wireContractActionHandlers({
@@ -1337,7 +1870,7 @@
     });
   }
 
-  // ==================== §7 CONTRACTS & CONTRACT MODAL & INVITATIONS ====================
+  // ==================== §7 & U2.2–U2.5 CONTRACTS & CONTRACT MODAL & INVITATIONS ====================
   async function loadFullContracts(filter = 'all') {
     state.contractFilter = filter;
     const tab = filter === 'all' ? undefined : filter;
@@ -1386,9 +1919,11 @@
 
   async function openContractModal(contractId) {
     try {
-      const [c, vs] = await Promise.all([
+      const [c, vs, neg, timelineEvents] = await Promise.all([
         LexLab.contracts.get(contractId),
-        LexLab.contracts.versions(contractId)
+        LexLab.contracts.versions(contractId),
+        LexLab.contracts.negotiation(contractId),
+        LexLab.contracts.timeline(contractId)
       ]);
       const latest = (vs && vs[0]) || null;
       const myId = state.me && state.me.id;
@@ -1397,26 +1932,48 @@
       const canInvite = isOwner && (c.status === 'draft' || c.status === 'pending_approval');
       const canApprove = c.status === 'pending_approval' && myParty && !myParty.confirmed_at && latest;
       const canSetActiveStatus = c.status === 'active';
+      const isEditable = c.status === 'draft' || c.status === 'pending_approval';
       const devOtp = (state.meta && state.meta.dev_otp_code) || '111111';
 
       const partiesHtml = (c.parties || []).map(p => {
         const pName = p.display_name || (c.party_names && c.party_names[p.role]) || `${p.role} tomon`;
+        const negParty = (neg.parties || []).find(np => np.role === p.role);
+        const hasPendingInvite = isOwner && p.invited_at && !p.joined_at && (negParty ? negParty.invited : true);
         const joinedBadge = p.confirmed_at
-          ? '<span class="hp-pill-badge hp-pill-success">Tasdiqlagan</span>'
-          : (p.joined_at
-            ? '<span class="hp-pill-badge hp-pill-warning">Qo\'shilgan (Imzo kutilmoqda)</span>'
-            : (p.invited_at
-              ? '<span class="hp-pill-badge hp-pill-neutral">Taklif yuborilgan</span>'
-              : '<span class="hp-pill-badge hp-pill-neutral">Taklif qilinmagan</span>'));
+          ? '<span class="hp-pill-badge hp-pill-success">Imzolagan ✓</span>'
+          : (negParty && negParty.agreed
+            ? '<span class="hp-pill-badge hp-pill-success">Shartlarga rozi ✓</span>'
+            : (p.joined_at
+              ? '<span class="hp-pill-badge hp-pill-warning">Qo\'shilgan</span>'
+              : (p.invited_at
+                ? '<span class="hp-pill-badge hp-pill-neutral">Taklif yuborilgan</span>'
+                : '<span class="hp-pill-badge hp-pill-neutral">Taklif qilinmagan</span>')));
+
         return `
           <div class="hp-ob-row-card" style="padding:10px 14px;">
             <div>
               <strong>${esc(p.role)}-Tomon: ${esc(pName)}</strong>
             </div>
-            ${joinedBadge}
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${joinedBadge}
+              ${hasPendingInvite ? `<button type="button" class="hp-btn-outline-sm" data-revoke-invite="${esc(p.id)}" data-revoke-contract="${esc(c.id)}">Taklifni bekor qilish</button>` : ''}
+            </div>
           </div>
         `;
       }).join('');
+
+      const timelineHtml = (timelineEvents || []).map((ev, idx) => `
+        <div class="hp-timeline-item">
+          <div class="hp-timeline-rail">
+            <span class="hp-timeline-dot hp-dot-emerald"></span>
+            ${idx < timelineEvents.length - 1 ? '<span class="hp-timeline-line hp-line-muted"></span>' : ''}
+          </div>
+          <div class="hp-timeline-content">
+            <span class="hp-timeline-title">${esc(ev.text)}</span>
+            <span class="hp-timeline-sub">${esc(formatDateDdMmYyyy(ev.at))}</span>
+          </div>
+        </div>
+      `).join('');
 
       const amtText = c.total_amount !== null && c.total_amount !== undefined
         ? `${formatNumberUz(c.total_amount)} ${c.currency || 'UZS'}`
@@ -1433,6 +1990,16 @@
             <div>${contractStatusBadgeHtml(c.status)}</div>
             <div style="font-size:13px;"><strong>Summa:</strong> ${esc(amtText)} · <strong>Muddat:</strong> ${esc(datesText)}</div>
           </div>
+
+          ${isOwner ? `
+            <div class="hp-input-with-btn">
+              <input type="text" id="cm-rename-input" class="hp-input" value="${esc(c.title)}" />
+              <button type="button" class="hp-btn-outline-sm" id="btn-cm-rename">Nomini saqlash</button>
+            </div>
+          ` : ''}
+
+          ${renderNegotiationActionCardHtml(neg, 'modal')}
+          ${renderOpenObjectionsHtml(c.id, neg.objections_open, neg.my_side)}
 
           ${c.form_requirement && c.form_requirement !== 'simple' ? `
             <div class="hp-rule-item hp-rule-amber">
@@ -1453,18 +2020,23 @@
           </div>
 
           <div class="hp-builder-actions" style="justify-content:flex-start;">
+            ${isEditable ? `<button type="button" class="hp-btn-navy-sm" id="btn-cm-open-builder">Savolnomada tahrirlash</button>` : ''}
+            ${isEditable && c.status === 'draft' ? `<button type="button" class="hp-btn-navy-sm" data-neg-agree="${esc(c.id)}">Shartlarga roziman</button>` : ''}
+            ${isEditable ? `<button type="button" class="hp-btn-outline-sm" data-neg-open-object="${esc(c.id)}">Norozilik bildirish</button>` : ''}
             ${latest ? `<button type="button" class="hp-btn-navy-sm" id="btn-cm-download">DOCX yuklab olish</button>` : ''}
             ${canSetActiveStatus ? `
               <button type="button" class="hp-btn-outline-sm" id="btn-cm-complete">Yakunlandi</button>
               <button type="button" class="hp-btn-outline-sm" id="btn-cm-dispute">Nizo</button>
             ` : ''}
+            <button type="button" class="hp-btn-outline-sm" id="btn-cm-duplicate">Shu asosida yangi shartnoma</button>
             <button type="button" class="hp-btn-outline-sm" id="btn-cm-ai-review">AI tekshiruv</button>
+            ${isOwner ? `<button type="button" class="hp-btn-outline-sm" id="btn-cm-delete" style="color:#DC2626;border-color:#FCA5A5;">O'chirish</button>` : ''}
           </div>
 
           ${canInvite ? `
             <div class="hp-card" style="padding:12px;">
               <div class="hp-form-group">
-                <label for="cm-invite-phone">Taklif qilish (2-Tomon telefoni)</label>
+                <label for="cm-invite-phone">2-tomonni taklif qilish (Telefon raqami)</label>
                 <div class="hp-input-with-btn">
                   <input type="text" id="cm-invite-phone" class="hp-input" value="+998901110002" placeholder="+998901110002" />
                   <button type="button" class="hp-btn-navy-sm" id="btn-cm-invite">Taklif qilish</button>
@@ -1497,9 +2069,70 @@
             </div>
             <div id="cm-ai-container" style="margin-top:8px;"></div>
           </div>
+
+          ${timelineHtml ? `
+            <div class="hp-card" style="padding:12px;">
+              <strong style="display:block;font-size:13.5px;margin-bottom:10px;">Kelishuv va harakatlar tarixi</strong>
+              <div class="hp-timeline">${timelineHtml}</div>
+            </div>
+          ` : ''}
         </div>
-        `
+        `,
+        { contractId: c.id }
       );
+
+      document.getElementById('btn-cm-open-builder')?.addEventListener('click', () => {
+        closeModal();
+        openContractInBuilder(c.id).catch(handleErr);
+      });
+
+      const renameBtn = document.getElementById('btn-cm-rename');
+      renameBtn?.addEventListener('click', () => {
+        const newTitle = (document.getElementById('cm-rename-input')?.value || '').trim();
+        if (!newTitle) return;
+        withBusy(renameBtn, async () => {
+          await LexLab.contracts.rename(c.id, newTitle);
+          showToast('Shartnoma nomi o\'zgartirildi');
+          await reloadAllWidgets();
+          await openContractModal(c.id);
+        }).catch(() => {});
+      });
+
+      const dupBtn = document.getElementById('btn-cm-duplicate');
+      dupBtn?.addEventListener('click', () => {
+        withBusy(dupBtn, async () => {
+          const dup = await LexLab.contracts.duplicate(c.id);
+          closeModal();
+          showToast('Yangi shartnoma qoralamasi yaratildi');
+          await openContractInBuilder(dup.id);
+        }).catch(() => {});
+      });
+
+      const delBtn = document.getElementById('btn-cm-delete');
+      delBtn?.addEventListener('click', () => {
+        confirmDeleteModal(
+          'Shartnomani o\'chirish / bekor qilish',
+          `"${c.title}" shartnomasini o'chirishni tasdiqlaysizmi?`,
+          async () => {
+            try {
+              const r = await LexLab.contracts.remove(c.id);
+              closeModal();
+              if (r && r.deleted) {
+                showToast('Qoralama o\'chirildi');
+                if (state.builderContractId === c.id) state.builderContractId = null;
+              } else {
+                showToast('Shartnoma bekor qilindi');
+              }
+              await reloadAllWidgets();
+            } catch (err) {
+              closeModal();
+              await openContractModal(c.id);
+              throw err;
+            }
+          },
+          () => openContractModal(c.id)
+        );
+      });
 
       wireContractActionHandlers({
         contractId: c.id,
@@ -1543,6 +2176,8 @@
         withBusy(invBtn, async () => {
           await LexLab.contracts.invite(cfg.contractId, phone, 'B');
           showToast(`Taklif ${phone} raqamiga yuborildi`);
+          if (state.builderContractId === cfg.contractId) await refreshBuilderNegotiation();
+          if (state.openModalContractId === cfg.contractId) await openContractModal(cfg.contractId);
           await loadDashboard();
         }).catch(() => {});
       });
@@ -1574,7 +2209,7 @@
           }
           const res = await LexLab.contracts.approve(cfg.contractId, code, cfg.sha256);
           if (res && res.contract_status === 'active') {
-            showToast('Shartnoma kuchga kirdi');
+            showToast('Shartnoma kuchga kirdi va shaxsiy arxivga saqlandi');
           } else {
             const waiting = (res && res.pending_parties && res.pending_parties.join(', ')) || '2-';
             showToast(`Imzo qo'yildi, ${waiting} tomon kutilmoqda`);
@@ -1651,6 +2286,7 @@
         <strong><span class="hp-sug-tag">AI</span> ${esc(iss.title || 'Tavsiya')}</strong>
         <span>${esc(iss.explanation || '')}</span>
         ${iss.suggestion ? `<span>Taklif: ${esc(iss.suggestion)}</span>` : ''}
+        ${iss.law_ref ? `<span>Asos: ${lawRefLink(iss.law_ref)}</span>` : ''}
       </div>
     `).join('');
 
@@ -1673,7 +2309,7 @@
     `;
   }
 
-  // §7.4 Invitations Modal
+  // §7.4 & U2.3.7 Invitations Modal with warnings preview
   async function openInvitationsModal() {
     try {
       const invs = await LexLab.contracts.invitations();
@@ -1699,23 +2335,105 @@
               <button type="button" class="hp-btn-outline-sm" data-inv-decline="${esc(inv.party_id)}">Rad etish</button>
             </div>
           </div>
+          <div id="inv-warnings-box-${esc(inv.party_id)}" style="margin-top:10px;" hidden></div>
           <div id="inv-preview-box-${esc(inv.party_id)}" style="margin-top:10px;" hidden></div>
         </div>
       `).join('');
 
       openModal('Menga kelgan shartnoma takliflari', `<div>${listHtml}</div>`);
+
+      // Automatically load warnings & preview for the first invitation so Party B immediately sees risky points
+      for (const inv of invs) {
+        loadInvitationPreviewAndWarnings(inv.party_id, false).catch(() => {});
+      }
     } catch (e) {
       handleErr(e);
     }
   }
 
-  // ==================== §8 SCANNER (#view-scanner) ====================
+  async function loadInvitationPreviewAndWarnings(partyId, showFullDoc) {
+    const warnBox = document.getElementById(`inv-warnings-box-${partyId}`);
+    const prevBox = document.getElementById(`inv-preview-box-${partyId}`);
+    const p = await LexLab.contracts.invitationPreview(partyId);
+
+    if (warnBox) {
+      const warnings = p.warnings || [];
+      const rc = p.risk_counts || {};
+      if (warnings.length > 0) {
+        warnBox.hidden = false;
+        warnBox.innerHTML = `
+          <div class="hp-rule-alerts">
+            <div style="font-size:12.5px;font-weight:700;">
+              Ogohlantirishlar (Qizil: ${rc.red || 0}, Qaltis: ${rc.yellow || 0}):
+            </div>
+            ${warnings.map(w => {
+              const cls = w.severity === 'red' ? 'hp-rule-red' : (w.severity === 'yellow' ? 'hp-rule-amber' : 'hp-rule-blue');
+              return `
+                <div class="hp-rule-item ${cls}">
+                  <strong>${esc(w.message)}</strong>
+                  ${w.fix_suggestion ? `<span>Tavsiya: ${esc(w.fix_suggestion)}</span>` : ''}
+                  ${w.law_ref ? `<span>Asos: ${lawRefLink(w.law_ref)}</span>` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+    }
+
+    if (prevBox && showFullDoc) {
+      prevBox.hidden = false;
+      prevBox.className = 'hp-doc-paper';
+      prevBox.innerHTML = renderPreviewDocumentHtml(p);
+    }
+  }
+
+  // ==================== §8 & U2.5 SCANNER (#view-scanner) ====================
+  async function loadScannerHistory() {
+    const scans = await LexLab.scans.list(10);
+    state.scansHistory = scans || [];
+    renderScannerHistoryStrip();
+  }
+
+  function renderScannerHistoryStrip() {
+    const uploadBar = document.querySelector('#view-scanner .hp-scanner-upload-bar');
+    if (!uploadBar) return;
+
+    let histBox = document.getElementById('scanner-history-list');
+    if (!histBox) {
+      histBox = document.createElement('div');
+      histBox.id = 'scanner-history-list';
+      histBox.style.marginTop = '12px';
+      uploadBar.appendChild(histBox);
+    }
+
+    if (!state.scansHistory || state.scansHistory.length === 0) {
+      histBox.innerHTML = '';
+      return;
+    }
+
+    histBox.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span class="hp-sample-label">Oxirgi tahlillar:</span>
+        ${state.scansHistory.slice(0, 5).map(s => `
+          <span style="display:inline-flex;align-items:center;gap:4px;">
+            <button type="button" class="hp-btn-outline-sm" data-open-scan="${esc(s.id)}">
+              Tahlil #${esc(String(s.id).slice(0, 6))} (${esc(s.risk_percent ?? 0)}%)
+            </button>
+            <button type="button" class="hp-btn-outline-sm" data-delete-scan="${esc(s.id)}" title="O'chirish" style="color:#DC2626;">✕</button>
+          </span>
+        `).join('')}
+      </div>
+    `;
+  }
+
   async function runScannerUpload(file) {
     if (!file) return;
     showToast(`"${file.name}" yuklanmoqda va tahlil qilinmoqda...`);
     try {
       const s = await LexLab.scans.upload(file);
       await processScanJob(s.id, file.name);
+      await loadScannerHistory();
     } catch (e) {
       handleErr(e);
     }
@@ -1735,6 +2453,7 @@
     await withBusy(btn, async () => {
       const s = await LexLab.scans.fromText(sampleText);
       await processScanJob(s.id, titles[presetKey] || 'Namunaviy shartnoma');
+      await loadScannerHistory();
     });
   }
 
@@ -1789,6 +2508,28 @@
     }
   }
 
+  // No analysis selected: the report area is empty (no demo data, nothing from another user).
+  function renderScanEmptyState() {
+    state.currentScanId = null;
+    state.currentScanReport = null;
+    state.currentScanTitle = null;
+
+    const titleEl = document.getElementById('scan-report-doc-title');
+    const badgeEl = document.getElementById('scan-report-risk-badge');
+    const illegalEl = document.getElementById('scan-count-illegal');
+    const riskyEl = document.getElementById('scan-count-risky');
+    const dutiesEl = document.getElementById('scan-duties-list');
+    const cardsEl = document.getElementById('scan-decision-cards');
+
+    if (titleEl) titleEl.textContent = '2. Tekshiruv xulosasi';
+    if (badgeEl) { badgeEl.hidden = true; badgeEl.textContent = ''; }
+    if (illegalEl) illegalEl.textContent = '—';
+    if (riskyEl) riskyEl.textContent = '—';
+    if (dutiesEl) dutiesEl.innerHTML = '<li class="hp-text-muted">Hali tahlil yo\'q — shartnoma faylini yuklang.</li>';
+    if (cardsEl) cardsEl.innerHTML = '';
+    document.querySelectorAll('[data-scan-preset]').forEach(b => b.classList.remove('active'));
+  }
+
   function renderScanReport(r, docTitle) {
     if (!r || !r.overall) return;
 
@@ -1809,6 +2550,7 @@
       const riskLvl = r.overall.risk_level;
       badgeEl.className = `hp-pill-badge ${riskLvl === 'high' ? 'hp-pill-danger' : (riskLvl === 'medium' ? 'hp-pill-warning' : 'hp-pill-success')}`;
       badgeEl.textContent = `${r.overall.risk_label || 'Xavf'} (${r.overall.risk_percent ?? 0}/100)`;
+      badgeEl.hidden = false;
     }
     if (illegalEl) illegalEl.textContent = String(redList.length);
     if (riskyEl) riskyEl.textContent = String(riskyList.length);
@@ -1829,6 +2571,7 @@
         <li style="list-style:none;margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
           <button type="button" class="hp-btn-outline-sm" id="btn-scan-to-obligations">Majburiyatlarni eslatmalarga qo'shish</button>
           <button type="button" class="hp-btn-navy-sm" id="btn-scan-download-report">Hisobotni yuklab olish</button>
+          <button type="button" class="hp-btn-outline-sm" data-delete-scan="${esc(r.id)}" style="color:#DC2626;">Tahlilni o'chirish</button>
         </li>
       `;
     }
@@ -1882,7 +2625,7 @@
               <span class="hp-pill-badge ${pillCls}">${esc(pillLabel)}</span>${sourceTag}
               <strong style="font-size:13.8px;">${esc(explanation)}</strong>
             </div>
-            ${f.law_ref ? `<div class="hp-text-muted" style="font-size:12px;margin-bottom:4px;">Huquqiy asos: ${esc(f.law_ref)}</div>` : ''}
+            ${f.law_ref ? `<div class="hp-text-muted" style="font-size:12px;margin-bottom:4px;">Huquqiy asos: ${lawRefLink(f.law_ref)}</div>` : ''}
             ${f.clause_text ? `<div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:8px;">"${esc(f.clause_text)}"</div>` : ''}
             <div class="hp-clause-actions-row">
               <span class="hp-decision-feedback">
@@ -1906,7 +2649,7 @@
     }
   }
 
-  // ==================== §9 REMINDERS, ARCHIVE, NOTIFICATIONS, SEARCH ====================
+  // ==================== §9, U2.4 & U2.5 REMINDERS, PERSONAL ARCHIVE, NOTIFICATIONS, SEARCH ====================
   async function loadObligationsView() {
     const list = await LexLab.obligations.list();
     const container = document.getElementById('full-obligations-list');
@@ -1922,7 +2665,7 @@
         ? `${formatNumberUz(ob.amount)} ${ob.currency || 'UZS'}`
         : '';
       const nextStatus = ob.status === 'done' ? 'pending' : 'done';
-      const btnText = ob.status === 'done' ? 'Qaytarish' : 'Bajarildi';
+      const btnText = ob.status === 'done' ? 'Bajarildini bekor qilish' : 'Bajarildi';
 
       return `
         <div class="hp-ob-row-card">
@@ -1942,6 +2685,7 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             ${!ob.confirmed ? `<button type="button" class="hp-btn-navy-sm" data-confirm-ob="${esc(ob.id)}">Tasdiqlash</button>` : ''}
             <button type="button" class="hp-btn-outline-sm" data-complete-ob="${esc(ob.id)}" data-next-status="${esc(nextStatus)}">${esc(btnText)}</button>
+            <button type="button" class="hp-btn-outline-sm" data-delete-ob="${esc(ob.id)}" data-ob-title="${esc(ob.title)}" style="color:#DC2626;">O'chirish</button>
           </div>
         </div>
       `;
@@ -1994,47 +2738,178 @@
     });
   }
 
-  async function loadArchiveView() {
+  // U2.4 Personal Archive + Lawyer Case File Timeline in #view-archive
+  async function loadArchiveView(qFilter) {
     const timelineEl = document.getElementById('lawyer-case-timeline');
     const form = document.getElementById('case-step-form');
     if (!timelineEl) return;
 
+    if (qFilter !== undefined) state.archiveQuery = qFilter;
+
     const isLawyer = state.me && state.me.role === 'lawyer';
     setArchiveFormLawyerMode(form, isLawyer);
 
-    const cases = await LexLab.cases.list();
+    const [archiveItems, cases] = await Promise.all([
+      LexLab.archive.list(state.archiveQuery ? { q: state.archiveQuery } : {}),
+      LexLab.cases.list()
+    ]);
+
+    state.archiveItems = archiveItems || [];
     state.casesList = cases || [];
 
-    if (state.casesList.length === 0) {
-      state.currentCaseId = null;
-      timelineEl.innerHTML = `<p class="hp-text-muted">Hozircha arxivda ishlar yo'q.</p>`;
-      return;
-    }
-
-    state.currentCaseId = state.casesList[0].id;
-    const detail = await LexLab.cases.get(state.currentCaseId);
-    const steps = detail.steps || [];
-
-    if (steps.length === 0) {
-      timelineEl.innerHTML = `<p class="hp-text-muted">Hozircha qadamlar qo'shilmagan.</p>`;
-      return;
-    }
-
-    timelineEl.innerHTML = steps.map(step => {
-      const tag = (step.tags && step.tags[0]) || 'Qadam';
-      return `
-        <div class="hp-case-step-card">
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-              <span class="hp-sug-tag">${esc(tag)}</span>
-              <span style="font-size:12px;color:var(--text-muted);">${esc(formatDateDdMmYyyy(step.step_at))}</span>
-            </div>
-            <strong style="display:block;font-size:14.5px;margin-bottom:3px;">${esc(step.title)}</strong>
-            <p style="font-size:13px;color:var(--text-secondary);">${esc(step.description || '')}</p>
+    let html = `
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+          <strong style="font-size:15px;">Mening arxivim (Imzolangan shartnomalar)</strong>
+          <div class="hp-input-with-btn" style="max-width:260px;">
+            <input type="text" id="archive-search-input" class="hp-input" value="${esc(state.archiveQuery)}" placeholder="Arxivdan qidirish..." />
+            <button type="button" class="hp-btn-outline-sm" id="btn-archive-search">Qidirish</button>
           </div>
         </div>
+        ${state.archiveItems.length === 0 ? `<p class="hp-text-muted">Hozircha imzolangan shartnomalar arxivda yo'q.</p>` : ''}
+        <div class="hp-case-timeline">
+          ${state.archiveItems.map(item => {
+            const amt = item.total_amount ? ` · ${formatNumberUz(item.total_amount)} ${item.currency || 'UZS'}` : '';
+            return `
+              <div class="hp-case-step-card">
+                <div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+                    <span class="hp-pill-badge hp-pill-success">SHA-256 tasdiqlangan ✓</span>
+                    <span class="hp-sug-tag">v${esc(item.version)} · ${esc(item.side || 'A')}-Tomon</span>
+                    <span style="font-size:12px;color:var(--text-muted);">${esc(formatDateDdMmYyyy(item.signed_at))}</span>
+                  </div>
+                  <strong style="display:block;font-size:14.5px;margin-bottom:3px;">${esc(item.title)}</strong>
+                  <p style="font-size:13px;color:var(--text-secondary);">
+                    Ikkinchi tomon: <strong>${esc(item.counterparty || '—')}</strong>${esc(amt)}
+                  </p>
+                  ${item.note ? `<p class="hp-text-muted" style="font-size:12px;margin-top:3px;">Izoh: ${esc(item.note)}</p>` : ''}
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button type="button" class="hp-btn-outline-sm" data-archive-view="${esc(item.id)}">Ko'rish</button>
+                  <button type="button" class="hp-btn-navy-sm" data-archive-download="${esc(item.id)}">Yuklab olish</button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+
+    // For lawyers (or if shared cases exist), keep the case-file timeline below Mening arxivim
+    if (isLawyer || state.casesList.length > 0) {
+      let stepsHtml = '';
+      if (state.casesList.length > 0) {
+        state.currentCaseId = state.casesList[0].id;
+        const detail = await LexLab.cases.get(state.currentCaseId);
+        const steps = detail.steps || [];
+        stepsHtml = steps.length > 0
+          ? steps.map(step => {
+              const tag = (step.tags && step.tags[0]) || 'Qadam';
+              return `
+                <div class="hp-case-step-card">
+                  <div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                      <span class="hp-sug-tag">${esc(tag)}</span>
+                      <span style="font-size:12px;color:var(--text-muted);">${esc(formatDateDdMmYyyy(step.step_at))}</span>
+                    </div>
+                    <strong style="display:block;font-size:14.5px;margin-bottom:3px;">${esc(step.title)}</strong>
+                    <p style="font-size:13px;color:var(--text-secondary);">${esc(step.description || '')}</p>
+                  </div>
+                </div>
+              `;
+            }).join('')
+          : `<p class="hp-text-muted">Yurist ishida hozircha qadamlar yo'q.</p>`;
+      } else {
+        state.currentCaseId = null;
+        stepsHtml = `<p class="hp-text-muted">Hozircha yurist ishlari yo'q.</p>`;
+      }
+
+      html += `
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border-color);">
+          <strong style="display:block;font-size:14.5px;margin-bottom:10px;">Yurist ish yuritish xronologiyasi</strong>
+          <div class="hp-case-timeline">${stepsHtml}</div>
+        </div>
       `;
-    }).join('');
+    }
+
+    timelineEl.innerHTML = html;
+
+    document.getElementById('btn-archive-search')?.addEventListener('click', () => {
+      const q = (document.getElementById('archive-search-input')?.value || '').trim();
+      loadArchiveView(q).catch(handleErr);
+    });
+  }
+
+  async function openArchiveItemModal(itemId) {
+    try {
+      const item = await LexLab.archive.get(itemId);
+      const intact = item.integrity && item.integrity.intact;
+      const sigsHtml = (item.signatures || []).map(s => `
+        <div class="hp-ob-row-card" style="padding:10px 14px;">
+          <div>
+            <strong>${esc(s.side || '—')}-Tomon (${esc(s.method.toUpperCase())})</strong>
+            <div class="hp-text-muted" style="font-size:12px;">Imzolangan vaqt: ${esc(formatDateDdMmYyyy(s.signed_at))}</div>
+          </div>
+          <span class="hp-pill-badge hp-pill-success">Tasdiqlangan ✓</span>
+        </div>
+      `).join('');
+
+      openModal(
+        `Arxiv: ${item.title} (v${item.version})`,
+        `
+        <div class="hp-builder-form">
+          <div class="hp-rule-item ${intact ? 'hp-rule-blue' : 'hp-rule-red'}">
+            <strong>Hujjat yaxlitligi: <span class="hp-pill-badge ${intact ? 'hp-pill-success' : 'hp-pill-danger'}">${intact ? 'SHA-256 tasdiqlangan ✓' : 'Xesh mos kelmadi'}</span></strong>
+            <span style="word-break:break-all;">SHA-256: ${esc(item.sha256)}</span>
+          </div>
+
+          <div class="hp-obligations-full-list">${sigsHtml}</div>
+
+          <div class="hp-builder-actions" style="justify-content:flex-start;">
+            <button type="button" class="hp-btn-navy-sm" id="btn-arch-modal-dl">DOCX yuklab olish</button>
+          </div>
+
+          <form id="archive-note-form" class="hp-builder-form" style="margin-top:8px;">
+            <div class="hp-form-group">
+              <label for="arch-note-input">Shaxsiy izoh (faqat sizga ko'rinadi)</label>
+              <textarea id="arch-note-input" class="hp-input" rows="2" placeholder="Shaxsiy eslatma...">${esc(item.note || '')}</textarea>
+            </div>
+            <div class="hp-form-group">
+              <label for="arch-tags-input">Teglar (vergul bilan)</label>
+              <input type="text" id="arch-tags-input" class="hp-input" value="${esc((item.tags || []).join(', '))}" placeholder="ijara, 2026, muhim" />
+            </div>
+            <div class="hp-builder-actions">
+              <button type="submit" class="hp-btn-outline-sm" id="btn-arch-save-note">Izohni saqlash</button>
+            </div>
+          </form>
+        </div>
+        `
+      );
+
+      const dlBtn = document.getElementById('btn-arch-modal-dl');
+      dlBtn?.addEventListener('click', () => {
+        withBusy(dlBtn, async () => {
+          await LexLab.archive.download(item);
+          showToast('DOCX yuklab olindi');
+        }).catch(() => {});
+      });
+
+      const noteForm = document.getElementById('archive-note-form');
+      const saveBtn = document.getElementById('btn-arch-save-note');
+      noteForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const note = document.getElementById('arch-note-input')?.value || '';
+        const rawTags = document.getElementById('arch-tags-input')?.value || '';
+        const tags = rawTags.split(',').map(t => t.trim()).filter(Boolean);
+        withBusy(saveBtn, async () => {
+          await LexLab.archive.update(item.id, { note, tags });
+          showToast('Arxiv izohi saqlandi');
+          await loadArchiveView();
+        }).catch(() => {});
+      });
+    } catch (e) {
+      handleErr(e);
+    }
   }
 
   function setArchiveFormLawyerMode(form, isAllowed) {
@@ -2055,31 +2930,54 @@
     }
   }
 
+  // §9 & U2.5 Notifications modal with delete one / clear read
   async function openNotificationsModal() {
     try {
       const res = await LexLab.notifications.list();
       const items = (res && res.items) || [];
 
-      if (items.length === 0) {
-        openModal('Bildirishnomalar', `<p class="hp-text-muted">Yangi bildirishnomalar yo'q.</p>`);
-      } else {
-        const html = items.map(n => `
-          <div class="hp-case-step-card" style="margin-bottom:8px;">
-            <div>
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                <strong>${esc(n.title)}</strong>
-                <span class="hp-text-muted" style="font-size:12px;">${esc(formatDateDdMmYyyy(n.created_at))}</span>
-              </div>
-              <p style="font-size:13px;color:var(--text-secondary);margin-top:3px;">${esc(n.body)}</p>
-            </div>
-          </div>
-        `).join('');
-        openModal('Bildirishnomalar', `<div>${html}</div>`);
-      }
-
       await LexLab.notifications.markRead();
       const notifDot = document.querySelector('#btn-notif-panel .hp-notif-dot');
       if (notifDot) notifDot.style.display = 'none';
+
+      if (items.length === 0) {
+        openModal('Bildirishnomalar', `<p class="hp-text-muted">Yangi bildirishnomalar yo'q.</p>`);
+        return;
+      }
+
+      const html = `
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+          <button type="button" class="hp-btn-outline-sm" id="btn-clear-read-notifs">O'qilganlarni tozalash</button>
+        </div>
+        <div>
+          ${items.map(n => `
+            <div class="hp-case-step-card" style="margin-bottom:8px;">
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <strong>${esc(n.title)}</strong>
+                  <span class="hp-text-muted" style="font-size:12px;">${esc(formatDateDdMmYyyy(n.created_at))}</span>
+                </div>
+                <p style="font-size:13px;color:var(--text-secondary);margin-top:3px;">${esc(n.body)}</p>
+              </div>
+              <button type="button" class="hp-btn-outline-sm" data-delete-notif="${esc(n.id)}" title="O'chirish" style="color:#DC2626;">✕</button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      openModal('Bildirishnomalar', html);
+
+      document.getElementById('btn-clear-read-notifs')?.addEventListener('click', () => {
+        confirmDeleteModal(
+          'Bildirishnomalarni tozalash',
+          'O\'qilgan barcha bildirishnomalarni o\'chirishni tasdiqlaysizmi?',
+          async () => {
+            await LexLab.notifications.clear(true);
+            showToast('O\'qilgan bildirishnomalar tozalandi');
+            await openNotificationsModal();
+          },
+          () => openNotificationsModal()
+        );
+      });
     } catch (e) {
       handleErr(e);
     }
@@ -2176,15 +3074,42 @@
       if (state.currentView === 'contracts') await loadFullContracts(state.contractFilter);
       if (state.currentView === 'reminders') await loadObligationsView();
       if (state.currentView === 'archive') await loadArchiveView();
+      if (state.currentView === 'scanner') await loadScannerHistory();
     } catch (e) {
       handleErr(e);
     }
   }
 
+  // U2.2: Poll every 15s while contract modal or builder is open
+  function startNegotiationPolling() {
+    if (state.pollTimer) clearInterval(state.pollTimer);
+    state.pollTimer = setInterval(async () => {
+      if (!LexLab.auth.isLoggedIn(LexLab.activeSlot())) return;
+      try {
+        if (state.currentView === 'builder' && state.builderContractId && !state.builderDebounceTimer) {
+          await refreshBuilderNegotiation();
+          await refreshBuilderPreview();
+        }
+        if (state.openModalContractId) {
+          await openContractModal(state.openModalContractId);
+        }
+      } catch (e) {
+        // ignore background poll error
+      }
+    }, 15000);
+  }
+
   // ==================== EVENT LISTENERS ====================
   function initEventListeners() {
     document.addEventListener('click', async (e) => {
-      // Navigation
+      // FRONTEND_GEMINI_4: law reference -> article text from lex.uz
+      const lawBtn = e.target.closest('[data-law-ref]');
+      if (lawBtn) {
+        e.preventDefault();
+        openLawReference(lawBtn).catch(() => {});
+        return;
+      }
+
       const navBtn = e.target.closest('[data-nav]');
       if (navBtn) {
         navigateTo(navBtn.getAttribute('data-nav'));
@@ -2193,6 +3118,7 @@
 
       const gotoBtn = e.target.closest('[data-goto]');
       if (gotoBtn) {
+        closeModal();
         navigateTo(gotoBtn.getAttribute('data-goto'));
         return;
       }
@@ -2204,6 +3130,7 @@
         LexLab.useSlot(slot);
         syncSlotButtons();
         state.builderContractId = null;
+        renderScanEmptyState();
         if (!LexLab.auth.isLoggedIn(slot)) {
           showLoginModal();
         } else {
@@ -2220,19 +3147,13 @@
         }
       }
 
-      // Invitation preview / accept / decline (§7.4)
+      // Invitation preview / accept / decline (§7.4 & U2.3.7)
       const invPrevBtn = e.target.closest('[data-inv-preview]');
       if (invPrevBtn) {
         const pid = invPrevBtn.getAttribute('data-inv-preview');
-        const box = document.getElementById(`inv-preview-box-${pid}`);
-        if (box) {
-          await withBusy(invPrevBtn, async () => {
-            const p = await LexLab.contracts.invitationPreview(pid);
-            box.hidden = false;
-            box.className = 'hp-doc-paper';
-            box.innerHTML = renderPreviewDocumentHtml(p);
-          }).catch(() => {});
-        }
+        await withBusy(invPrevBtn, async () => {
+          await loadInvitationPreviewAndWarnings(pid, true);
+        }).catch(() => {});
         return;
       }
 
@@ -2242,8 +3163,13 @@
         await withBusy(invAccBtn, async () => {
           const c = await LexLab.contracts.acceptInvitation(pid);
           showToast('Taklif qabul qilindi');
+          closeModal();
           await loadDashboard();
-          await openContractModal(c.id);
+          if (c.status === 'draft') {
+            await openContractInBuilder(c.id);
+          } else {
+            await openContractModal(c.id);
+          }
         }).catch(() => {});
         return;
       }
@@ -2257,6 +3183,174 @@
           await loadDashboard();
           await openInvitationsModal();
         }).catch(() => {});
+        return;
+      }
+
+      // Negotiation action card buttons (U2.2)
+      const focusMissBtn = e.target.closest('[data-neg-focus-missing]');
+      if (focusMissBtn) {
+        const n = state.builderNegotiation;
+        if (n && n.missing_by_side) {
+          const keys = (n.missing_by_side[n.my_side] || []).concat(n.missing_by_side.shared || []);
+          if (keys[0]) {
+            const inp = document.querySelector(`#cb-dynamic-questionnaire [data-q-key="${CSS.escape(keys[0])}"]`);
+            inp?.focus();
+          }
+        }
+        return;
+      }
+
+      const negInvBtn = e.target.closest('[data-neg-invite]');
+      if (negInvBtn) {
+        const cid = negInvBtn.getAttribute('data-neg-invite');
+        const phoneInputId = negInvBtn.getAttribute('data-phone-input');
+        const phone = (document.getElementById(phoneInputId)?.value || '').trim();
+        await withBusy(negInvBtn, async () => {
+          await LexLab.contracts.invite(cid, phone, 'B');
+          showToast(`Taklif ${phone} raqamiga yuborildi`);
+          if (state.builderContractId === cid) await refreshBuilderNegotiation();
+          if (state.openModalContractId === cid) await openContractModal(cid);
+          await loadDashboard();
+        }).catch(() => {});
+        return;
+      }
+
+      const negAutofixBtn = e.target.closest('[data-neg-autofix]');
+      if (negAutofixBtn) {
+        const cid = negAutofixBtn.getAttribute('data-neg-autofix');
+        await handleBuilderAutofix(negAutofixBtn, cid).catch(() => {});
+        return;
+      }
+
+      const negAgreeBtn = e.target.closest('[data-neg-agree]');
+      if (negAgreeBtn) {
+        const cid = negAgreeBtn.getAttribute('data-neg-agree');
+        await handleContractAgree(negAgreeBtn, cid).catch(() => {});
+        return;
+      }
+
+      const negOpenObjBtn = e.target.closest('[data-neg-open-object]');
+      if (negOpenObjBtn) {
+        const cid = negOpenObjBtn.getAttribute('data-neg-open-object');
+        await openObjectionModal(cid);
+        return;
+      }
+
+      const negGenBtn = e.target.closest('[data-neg-generate]');
+      if (negGenBtn) {
+        const cid = negGenBtn.getAttribute('data-neg-generate');
+        await handleContractGenerate(negGenBtn, cid).catch(() => {});
+        return;
+      }
+
+      // Objection resolve: accept / reject / withdraw (U2.3.4)
+      const objResBtn = e.target.closest('[data-obj-resolve]');
+      if (objResBtn) {
+        const oid = objResBtn.getAttribute('data-obj-resolve');
+        const cid = objResBtn.getAttribute('data-obj-contract');
+        const act = objResBtn.getAttribute('data-obj-action');
+        await withBusy(objResBtn, async () => {
+          await LexLab.contracts.resolveObjection(cid, oid, act);
+          const msgMap = {
+            accept: 'Taklif qabul qilindi va shartlarga qo\'llandi',
+            reject: 'Norozilik rad etildi',
+            withdraw: 'Norozilik qaytarib olindi'
+          };
+          showToast(msgMap[act] || 'Bajarildi');
+          if (state.builderContractId === cid) {
+            await refreshBuilderNegotiation();
+            await refreshBuilderPreview();
+          }
+          if (state.openModalContractId === cid) {
+            await openContractModal(cid);
+          }
+          await loadDashboard();
+        }).catch(() => {});
+        return;
+      }
+
+      // Revoke pending invitation (U2.5)
+      const revInvBtn = e.target.closest('[data-revoke-invite]');
+      if (revInvBtn) {
+        const pid = revInvBtn.getAttribute('data-revoke-invite');
+        const cid = revInvBtn.getAttribute('data-revoke-contract');
+        confirmDeleteModal(
+          'Taklifni bekor qilish',
+          'Yuborilgan taklifni bekor qilishni tasdiqlaysizmi?',
+          async () => {
+            await LexLab.contracts.revokeInvitation(cid, pid);
+            showToast('Taklif bekor qilindi');
+            if (state.builderContractId === cid) await refreshBuilderNegotiation();
+            await openContractModal(cid);
+          },
+          () => openContractModal(cid)
+        );
+        return;
+      }
+
+      // Personal Archive view & download (U2.4)
+      const archViewBtn = e.target.closest('[data-archive-view]');
+      if (archViewBtn) {
+        const itemId = archViewBtn.getAttribute('data-archive-view');
+        await openArchiveItemModal(itemId);
+        return;
+      }
+
+      const archDlBtn = e.target.closest('[data-archive-download]');
+      if (archDlBtn) {
+        const itemId = archDlBtn.getAttribute('data-archive-download');
+        const item = state.archiveItems.find(x => x.id === itemId);
+        if (item) {
+          await withBusy(archDlBtn, async () => {
+            await LexLab.archive.download(item);
+            showToast('DOCX yuklab olindi');
+          }).catch(() => {});
+        }
+        return;
+      }
+
+      // Scanner history open & delete (U2.5)
+      const openScanBtn = e.target.closest('[data-open-scan]');
+      if (openScanBtn) {
+        const sid = openScanBtn.getAttribute('data-open-scan');
+        await withBusy(openScanBtn, async () => {
+          await processScanJob(sid, `Tahlil #${String(sid).slice(0, 6)}`);
+        }).catch(() => {});
+        return;
+      }
+
+      const delScanBtn = e.target.closest('[data-delete-scan]');
+      if (delScanBtn) {
+        const sid = delScanBtn.getAttribute('data-delete-scan');
+        confirmDeleteModal(
+          'Tahlilni o\'chirish',
+          'Ushbu skaner tahlili va yuklangan faylni o\'chirishni tasdiqlaysizmi?',
+          async () => {
+            await LexLab.scans.remove(sid);
+            if (sid === state.currentScanId) renderScanEmptyState();
+            closeModal();
+            showToast('Tahlil o\'chirildi');
+            await loadScannerHistory();
+            await loadDashboard();
+          }
+        );
+        return;
+      }
+
+      // Delete notification (U2.5)
+      const delNotifBtn = e.target.closest('[data-delete-notif]');
+      if (delNotifBtn) {
+        const nid = delNotifBtn.getAttribute('data-delete-notif');
+        confirmDeleteModal(
+          'Bildirishnomani o\'chirish',
+          'Ushbu bildirishnomani o\'chirishni tasdiqlaysizmi?',
+          async () => {
+            await LexLab.notifications.remove(nid);
+            showToast('Bildirishnoma o\'chirildi');
+            await openNotificationsModal();
+          },
+          () => openNotificationsModal()
+        );
         return;
       }
 
@@ -2357,7 +3451,7 @@
         return;
       }
 
-      // Obligations toggle & confirm (§9)
+      // Obligations toggle, confirm & delete (§9 & U2.5)
       const confirmObBtn = e.target.closest('[data-confirm-ob]');
       if (confirmObBtn) {
         const obId = confirmObBtn.getAttribute('data-confirm-ob');
@@ -2380,6 +3474,29 @@
           await loadObligationsView();
           await loadDashboard();
         }).catch(() => {});
+        return;
+      }
+
+      const delObBtn = e.target.closest('[data-delete-ob]');
+      if (delObBtn) {
+        const obId = delObBtn.getAttribute('data-delete-ob');
+        const obTitle = delObBtn.getAttribute('data-ob-title') || 'Eslatma';
+        confirmDeleteModal(
+          'Eslatmani o\'chirish',
+          `"${obTitle}" eslatmasini o'chirishni tasdiqlaysizmi?`,
+          async () => {
+            try {
+              await LexLab.obligations.remove(obId);
+              closeModal();
+              showToast('Eslatma o\'chirildi');
+              await loadObligationsView();
+              await loadDashboard();
+            } catch (err) {
+              closeModal();
+              throw err;
+            }
+          }
+        );
         return;
       }
 
@@ -2497,7 +3614,7 @@
     });
 
     document.getElementById('btn-builder-generate')?.addEventListener('click', (e) => {
-      handleBuilderGenerate(e.currentTarget, false).catch(() => {});
+      handleBuilderPrimaryAction(e.currentTarget).catch(() => {});
     });
 
     document.querySelectorAll('[data-doc-lang]').forEach(tab => {
@@ -2600,7 +3717,7 @@
     if (exportZipBtn) {
       exportZipBtn.addEventListener('click', () => {
         if (!state.currentCaseId) {
-          showToast('Eksport qilish uchun arxivda ish mavjud emas');
+          showToast('Eksport qilish uchun yurist arxivida ish mavjud emas');
           return;
         }
         withBusy(exportZipBtn, async () => {
@@ -2633,6 +3750,7 @@
     // Header actions: Logout, Profile, Notifications, Lang, Theme
     document.getElementById('btn-logout')?.addEventListener('click', async () => {
       await LexLab.auth.logout();
+      renderScanEmptyState();
       showLoginModal();
     });
 
@@ -2670,8 +3788,11 @@
 
     initEventListeners();
     syncSlotButtons();
+    renderScanEmptyState();
+    startNegotiationPolling();
 
     LexLab.on('logout', () => {
+      renderScanEmptyState();
       if (!LexLab.auth.isLoggedIn(LexLab.activeSlot())) {
         showLoginModal();
       }

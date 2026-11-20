@@ -202,3 +202,13 @@ def test_pii_masking_roundtrip() -> None:
     masked, mapping = mask(text)
     assert "31234567890123" not in masked and "a@b.uz" not in masked and "Karimovich" not in masked
     assert unmask(masked, mapping) == text
+
+
+def test_db_transaction_commits_before_response() -> None:
+    """Regression: with the default «request» scope the commit ran after the response was sent, so a fast
+    client could verify an OTP / refresh a token before the previous request's data was committed."""
+    from typing import get_args
+
+    from app.api.deps import DB
+
+    assert get_args(DB)[1].scope == "function"

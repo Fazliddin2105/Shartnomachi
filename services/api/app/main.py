@@ -27,8 +27,10 @@ from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
 from app.modules.calc.router import router as calc_router
 from app.modules.cases.router import router as cases_router
+from app.modules.contracts.negotiation_router import router as negotiation_router
 from app.modules.contracts.router import router as contracts_router
 from app.modules.files.router import router as files_router
+from app.modules.laws.router import router as laws_router
 from app.modules.moderation.router import router as moderation_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.obligations.router import router as obligations_router
@@ -97,6 +99,9 @@ def create_app() -> FastAPI:
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
+        if request.url.path.startswith("/sdk/"):
+            # the SDK changes together with the API: browsers must revalidate it (ETag) on every load
+            response.headers["Cache-Control"] = "no-cache"
         if not s.is_dev:
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
         return response
@@ -111,6 +116,7 @@ def create_app() -> FastAPI:
         admin_users_router,
         calc_router,
         contracts_router,
+        negotiation_router,
         rules_router,
         templates_router,
         moderation_router,
@@ -122,6 +128,7 @@ def create_app() -> FastAPI:
         audit_router,
         anchoring_router,
         assistant_router,
+        laws_router,
     ):
         api.include_router(r)
     app.include_router(api)
@@ -155,6 +162,11 @@ def create_app() -> FastAPI:
         async with get_engine().connect() as conn:
             await conn.execute(text("SELECT 1"))
         return {"status": "ready"}
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon() -> Response:
+        # The web app has no icon file; answer the browser's automatic request instead of a console 404.
+        return Response(status_code=204)
 
     # Web SDK (packages/web-sdk): the JS client the web app loads from /sdk/lexlab-api.js,
     # versioned together with the API it talks to.

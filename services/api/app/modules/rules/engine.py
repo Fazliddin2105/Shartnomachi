@@ -136,6 +136,10 @@ _OPS: dict[str, Callable[[Any, Any, dict[str, Any]], bool]] = {
     "lt": _cmp(lambda a, b: a < b),
     "lte": _cmp(lambda a, b: a <= b),
     "between": lambda a, b, _: _num(a) is not None and float(b[0]) <= _num(a) <= float(b[1]),  # type: ignore[operator]
+    # date `a` lies more than cond["days"] days before date `b` (e.g. a power of attorney older than its validity)
+    "older_than_days": lambda a, b, c: (
+        (da := _date(a)) is not None and (db_ := _date(b)) is not None and (db_ - da).days > int(c.get("days", 0))
+    ),
     "in": lambda a, b, _: a is not _MISSING and a in b,
     "not_in": lambda a, b, _: a is _MISSING or a not in b,
     "exists": lambda a, b, _: (not _is_empty(a)) == bool(b if b is not None else True),

@@ -153,9 +153,53 @@ class ContractParty(UUIDPk, Base):
     invited_at: Mapped[datetime | None] = mapped_column()
     joined_at: Mapped[datetime | None] = mapped_column()
     confirmed_at: Mapped[datetime | None] = mapped_column()  # approved current version
+    # Negotiation: consent to the *terms* (answers + clauses) before the common document is generated
+    agreed_terms_sha256: Mapped[str | None] = mapped_column(String(64))
+    agreed_at: Mapped[datetime | None] = mapped_column()
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     contract: Mapped[Contract] = relationship(back_populates="parties")
+
+
+class ObjectionStatus(StrEnum):
+    OPEN = "open"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    WITHDRAWN = "withdrawn"
+
+
+class ContractObjection(UUIDPk, Base):
+    """A party's disagreement with the terms, optionally with concrete proposed values (counter-offer)."""
+
+    __tablename__ = "contract_objections"
+
+    contract_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("contracts.id", ondelete="CASCADE"), index=True)
+    party_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("contract_parties.id", ondelete="SET NULL"))
+    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    side: Mapped[str] = mapped_column(String(8))  # A | B
+    comment: Mapped[str] = mapped_column(EncryptedString)
+    fields: Mapped[list[str]] = mapped_column(JSONType, default=list)  # questionnaire keys concerned
+    proposed: Mapped[dict[str, Any]] = mapped_column(EncryptedJSON, default=dict)  # {key: value}
+    status: Mapped[ObjectionStatus] = mapped_column(
+        StrEnumType(ObjectionStatus), default=ObjectionStatus.OPEN, index=True
+    )
+    resolved_by: Mapped[uuid.UUID | None] = mapped_column()
+    resolved_at: Mapped[datetime | None] = mapped_column()
+    resolution_note: Mapped[str | None] = mapped_column(EncryptedString)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class ContractEvent(UUIDPk, Base):
+    """Human-readable negotiation timeline (the tamper-evident trail stays in the audit log)."""
+
+    __tablename__ = "contract_events"
+
+    contract_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("contracts.id", ondelete="CASCADE"), index=True)
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    side: Mapped[str | None] = mapped_column(String(8))
+    kind: Mapped[str] = mapped_column(String(32))
+    payload: Mapped[dict[str, Any]] = mapped_column(EncryptedJSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow, index=True)
 
 
 class ApprovalMethod(StrEnum):
@@ -182,3 +226,32 @@ class ContractApproval(UUIDPk, Base):
     proof: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
     # HMAC over (version sha, party, user, method, signed_at) => server-side seal
     seal: Mapped[str] = mapped_column(String(64))
+
+
+class ArchivedContract(UUIDPk, Base):
+    """A signed contract in a party's personal archive (created when all parties have signed).
+
+    One row per user: each side keeps its own entry (notes/tags are private to that user), while the
+    document itself stays the immutable signed version referenced by `version_id` / `sha256`.
+    """
+
+    __tablename__ = "archived_contracts"
+    __table_args__ = (UniqueConstraint("user_id", "version_id"),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    contract_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("contracts.id", ondelete="CASCADE"), index=True)
+    version_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("contract_versions.id", ondelete="RESTRICT"))
+    version_number: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64))
+    side: Mapped[str | None] = mapped_column(String(8))  # A | B — the owner's side in the contract
+    title: Mapped[str] = mapped_column(String(255))
+    type_code: Mapped[str | None] = mapped_column(String(64))
+    counterparty: Mapped[str | None] = mapped_column(EncryptedString)
+    total_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    currency: Mapped[str] = mapped_column(String(3), default="UZS")
+    starts_on: Mapped[date | None] = mapped_column(Date)
+    ends_on: Mapped[date | None] = mapped_column(Date)
+    signed_at: Mapped[datetime] = mapped_column()
+    note: Mapped[str | None] = mapped_column(EncryptedString)  # private note of this user
+    tags: Mapped[list[str]] = mapped_column(JSONType, default=list)
+    archived_at: Mapped[datetime] = mapped_column(default=utcnow, index=True)

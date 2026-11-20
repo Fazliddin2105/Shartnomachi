@@ -5,25 +5,100 @@
   "description": "Buyurtmachi topshirig'iga ko'ra xizmat ko'rsatish",
   "form_requirement": "simple",
   "form_rules": [],
-  "detect_keywords": ["xizmat ko'rsatish", "buyurtmachi", "ijrochi", "услуг", "заказчик", "исполнитель"],
+  "detect_keywords": [
+    "xizmat ko'rsatish",
+    "buyurtmachi",
+    "ijrochi",
+    "услуг",
+    "заказчик",
+    "исполнитель"
+  ],
   "questionnaire": {
-    "meta_fields": {"amount": "price", "starts_on": "start_date", "ends_on": "end_date"},
+    "meta_fields": {
+      "amount": "price",
+      "starts_on": "start_date",
+      "ends_on": "end_date"
+    },
     "sections": [
-      {"key": "parties", "title": "Tomonlar", "fields": [
-        {"key": "party_a", "label": "Buyurtmachi", "type": "party", "required": true},
-        {"key": "party_b", "label": "Ijrochi", "type": "party", "required": true}
-      ]},
-      {"key": "terms", "title": "Shartlar", "fields": [
-        {"key": "city", "label": "Shahar", "type": "string", "required": true},
-        {"key": "contract_date", "label": "Shartnoma sanasi", "type": "date", "required": true},
-        {"key": "service_description", "label": "Xizmat tavsifi", "type": "string", "required": true},
-        {"key": "price", "label": "Xizmat narxi (so'm)", "type": "number", "required": true, "min": 0},
-        {"key": "prepayment_percent", "label": "Oldindan to'lov (%)", "type": "number", "min": 0, "max": 100},
-        {"key": "start_date", "label": "Boshlanish sanasi", "type": "date", "required": true},
-        {"key": "end_date", "label": "Xizmat ko'rsatish muddati (tugash)", "type": "date"},
-        {"key": "acceptance_days", "label": "Qabul qilish muddati (kun)", "type": "number", "min": 0},
-        {"key": "penalty_percent_per_day", "label": "Kechiktirganlik uchun penya (% / kun)", "type": "number", "min": 0}
-      ]}
+      {
+        "key": "parties",
+        "title": "Tomonlar",
+        "fields": [
+          {
+            "key": "party_a",
+            "label": "Buyurtmachi",
+            "type": "party",
+            "required": true
+          },
+          {
+            "key": "party_b",
+            "label": "Ijrochi",
+            "type": "party",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "terms",
+        "title": "Shartlar",
+        "fields": [
+          {
+            "key": "city",
+            "label": "Shahar",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "contract_date",
+            "label": "Shartnoma sanasi",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "service_description",
+            "label": "Xizmat tavsifi",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "price",
+            "label": "Xizmat narxi (so'm)",
+            "type": "number",
+            "required": true,
+            "min": 0
+          },
+          {
+            "key": "prepayment_percent",
+            "label": "Oldindan to'lov (%)",
+            "type": "number",
+            "min": 0,
+            "max": 100
+          },
+          {
+            "key": "start_date",
+            "label": "Boshlanish sanasi",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "end_date",
+            "label": "Xizmat ko'rsatish muddati (tugash)",
+            "type": "date"
+          },
+          {
+            "key": "acceptance_days",
+            "label": "Qabul qilish muddati (kun)",
+            "type": "number",
+            "min": 0
+          },
+          {
+            "key": "penalty_percent_per_day",
+            "label": "Kechiktirganlik uchun penya (% / kun)",
+            "type": "number",
+            "min": 0
+          }
+        ]
+      }
     ]
   },
   "template": {
@@ -31,30 +106,140 @@
     "header": "{{ a.city }} sh.                                                    {{ a.contract_date | date }}",
     "preamble": "{{ party_a.name }} (keyingi o'rinlarda «Buyurtmachi») va {{ party_b.name }} (keyingi o'rinlarda «Ijrochi») ushbu shartnomani tuzdilar:",
     "clauses": [
-      {"key": "subject", "category": "subject", "title": "1. Shartnoma predmeti",
-       "body": "1.1. Ijrochi Buyurtmachining topshirig'iga ko'ra quyidagi xizmatlarni ko'rsatadi: {{ a.service_description }}."},
-      {"key": "term", "category": "term", "title": "2. Muddatlar",
-       "body": "2.1. Xizmat ko'rsatish {{ a.start_date | date }} dan boshlanadi{% if a.end_date %} va {{ a.end_date | date }} gacha yakunlanadi{% endif %}.{% if a.acceptance_days %}\n2.2. Buyurtmachi xizmat natijasini {{ a.acceptance_days }} kun ichida qabul qiladi yoki asoslantirilgan e'tiroz bildiradi.{% endif %}"},
-      {"key": "price", "category": "price", "title": "3. Narx va to'lov",
-       "body": "3.1. Xizmat narxi {{ a.price | money }} so'm.{% if a.prepayment_percent %}\n3.2. Buyurtmachi narxning {{ a.prepayment_percent }}% qismini oldindan to'laydi, qolgan qismini xizmat qabul qilingandan keyin to'laydi.{% else %}\n3.2. To'lov xizmat qabul qilingandan keyin amalga oshiriladi.{% endif %}"},
-      {"key": "penalty", "category": "penalty", "title": "4. Javobgarlik", "if": "a.penalty_percent_per_day",
-       "body": "4.1. Majburiyat kechiktirilganda aybdor tomon har bir kun uchun kechiktirilgan majburiyat qiymatining {{ a.penalty_percent_per_day }}% miqdorida penya to'laydi."},
-      {"key": "dispute", "category": "dispute", "title": "5. Nizolarni hal qilish",
-       "body": "5.1. Nizolar muzokaralar yo'li bilan, kelishuvga erishilmasa sud tartibida hal qilinadi."}
+      {
+        "key": "subject",
+        "category": "subject",
+        "title": "1. Shartnoma predmeti",
+        "body": "1.1. Ijrochi Buyurtmachining topshirig'iga ko'ra quyidagi xizmatlarni ko'rsatadi: {{ a.service_description }}."
+      },
+      {
+        "key": "term",
+        "category": "term",
+        "title": "2. Muddatlar",
+        "body": "2.1. Xizmat ko'rsatish {{ a.start_date | date }} dan boshlanadi{% if a.end_date %} va {{ a.end_date | date }} gacha yakunlanadi{% endif %}.{% if a.acceptance_days %}\n2.2. Buyurtmachi xizmat natijasini {{ a.acceptance_days }} kun ichida qabul qiladi yoki asoslantirilgan e'tiroz bildiradi.{% endif %}"
+      },
+      {
+        "key": "price",
+        "category": "price",
+        "title": "3. Narx va to'lov",
+        "body": "3.1. Xizmat narxi {{ a.price | money }} so'm.{% if a.prepayment_percent %}\n3.2. Buyurtmachi narxning {{ a.prepayment_percent }}% qismini oldindan to'laydi, qolgan qismini xizmat qabul qilingandan keyin to'laydi.{% else %}\n3.2. To'lov xizmat qabul qilingandan keyin amalga oshiriladi.{% endif %}"
+      },
+      {
+        "key": "penalty",
+        "category": "penalty",
+        "title": "4. Javobgarlik",
+        "if": "a.penalty_percent_per_day",
+        "body": "4.1. Majburiyat kechiktirilganda aybdor tomon har bir kun uchun kechiktirilgan majburiyat qiymatining {{ a.penalty_percent_per_day }}% miqdorida penya to'laydi."
+      },
+      {
+        "key": "dispute",
+        "category": "dispute",
+        "title": "5. Nizolarni hal qilish",
+        "body": "5.1. Nizolar muzokaralar yo'li bilan, kelishuvga erishilmasa sud tartibida hal qilinadi."
+      }
     ]
   },
   "required_elements": [
-    {"code": "subject", "title": "Xizmat predmeti", "patterns": ["xizmat", "услуг"]},
-    {"code": "price", "title": "Narx", "patterns": ["narx", "qiymat", "стоимост", "цена", "so'm", "сум"]},
-    {"code": "term", "title": "Muddat", "patterns": ["muddat", "срок"]}
+    {
+      "code": "subject",
+      "title": "Xizmat predmeti",
+      "patterns": [
+        "xizmat",
+        "услуг"
+      ]
+    },
+    {
+      "code": "price",
+      "title": "Narx",
+      "patterns": [
+        "narx",
+        "qiymat",
+        "стоимост",
+        "цена",
+        "so'm",
+        "сум"
+      ]
+    },
+    {
+      "code": "term",
+      "title": "Muddat",
+      "patterns": [
+        "muddat",
+        "срок"
+      ]
+    }
   ],
   "obligation_templates": [
-    {"title": "Xizmatni ko'rsatib bo'lish", "party": "B", "kind": "duty", "clause_ref": "2.1",
-     "due": {"type": "date", "field": "end_date"}},
-    {"title": "Xizmat natijasini qabul qilish", "party": "A", "kind": "duty", "clause_ref": "2.2",
-     "due": {"type": "offset_days", "start_field": "end_date", "days": 5}},
-    {"title": "Xizmat haqini to'lash", "party": "A", "kind": "duty", "amount_field": "price", "clause_ref": "3.2",
-     "due": {"type": "offset_days", "start_field": "end_date", "days": 10}}
+    {
+      "title": "Xizmatni ko'rsatib bo'lish",
+      "party": "B",
+      "kind": "duty",
+      "clause_ref": "2.1",
+      "due": {
+        "type": "date",
+        "field": "end_date"
+      }
+    },
+    {
+      "title": "Xizmat natijasini qabul qilish",
+      "party": "A",
+      "kind": "duty",
+      "clause_ref": "2.2",
+      "due": {
+        "type": "offset_days",
+        "start_field": "end_date",
+        "days": 5
+      }
+    },
+    {
+      "title": "Xizmat haqini to'lash",
+      "party": "A",
+      "kind": "duty",
+      "amount_field": "price",
+      "clause_ref": "3.2",
+      "due": {
+        "type": "offset_days",
+        "start_field": "end_date",
+        "days": 10
+      }
+    }
   ],
-  "legal_refs": [{"law_ref": "O'zbekiston Respublikasi Fuqarolik kodeksi — haq evaziga xizmat ko'rsatish bo'limi"}]
+  "legal_refs": [
+    {
+      "law_ref": "FK 703-modda. Haq evaziga xizmat koʻrsatish shartnomasi",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189499",
+      "code": "fk2",
+      "number": "703"
+    },
+    {
+      "law_ref": "FK 704-modda. Haq evaziga xizmat koʻrsatish shartnomasini bajarish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189507",
+      "code": "fk2",
+      "number": "704"
+    },
+    {
+      "law_ref": "FK 705-modda. Xizmatlarga haq toʻlash",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189512",
+      "code": "fk2",
+      "number": "705"
+    },
+    {
+      "law_ref": "FK 706-modda. Haq evaziga xizmat koʻrsatish shartnomasini buzganlik uchun ijrochining javobgarligi",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189519",
+      "code": "fk2",
+      "number": "706"
+    },
+    {
+      "law_ref": "FK 707-modda. Haq evaziga xizmat koʻrsatish shartnomasini bekor qilish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189524",
+      "code": "fk2",
+      "number": "707"
+    },
+    {
+      "law_ref": "FK 326-modda. Neustoykani kamaytirish",
+      "lex_url": "https://lex.uz/uz/docs/-111189#-155297",
+      "code": "fk1",
+      "number": "326"
+    }
+  ]
 }

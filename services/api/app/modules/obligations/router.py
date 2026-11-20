@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser, PageParams
-from app.core.errors import ValidationFailed
+from app.core.errors import Conflict, ValidationFailed
 from app.modules.files import service as files
 from app.modules.obligations import service
 from app.modules.obligations.models import (
@@ -122,8 +122,12 @@ async def patch_obligation(obligation_id: uuid.UUID, body: ObligationPatch, db: 
         await service.complete(db, ob, actor=user)
     elif new_status == ObligationStatus.CANCELLED:
         await service.cancel(db, ob, actor=user)
+    elif new_status == ObligationStatus.PENDING:
+        # «bajarilmadi» — undo a mistaken completion/cancellation; reminders are rescheduled
+        ob.status, ob.completed_at = ObligationStatus.PENDING, None
+        await reminders.schedule_for(db, ob)
     elif new_status is not None:
-        raise ValidationFailed("Only 'done' or 'cancelled' can be set manually", code="status_invalid")
+        raise ValidationFailed("Only 'done', 'cancelled' or 'pending' can be set manually", code="status_invalid")
     elif {"due_date", "confirmed"} & changes.keys():
         await reminders.schedule_for(db, ob)
     await db.flush()
@@ -150,3 +154,18 @@ async def complete_with_proof(
         proof_id = stored.id
     await service.complete(db, ob, actor=user, proof_file_id=proof_id)
     return ObligationOut.model_validate(ob)
+
+
+@router.delete(
+    "/{obligation_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="O'zi qo'shgan / skanerdan olingan eslatmani o'chirish (shartnomadagi majburiyat o'chmaydi)",
+)
+async def delete_obligation(obligation_id: uuid.UUID, db: DB, user: CurrentUser) -> None:
+    ob = await service.get_owned(db, obligation_id, user)
+    if ob.source == ObligationSource.CONTRACT:
+        raise Conflict(
+            "Obligations of a signed contract cannot be deleted; mark them done or cancelled",
+            code="obligation_from_contract",
+        )
+    await db.delete(ob)

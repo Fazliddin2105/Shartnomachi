@@ -4,39 +4,145 @@
   "title_ru": "Договор аренды жилого помещения",
   "description": "Kvartira yoki uy-joyni vaqtincha foydalanishga berish",
   "form_requirement": "simple",
-  "form_rules": [
-    {
-      "when": {"all": [{"field": "contract.duration_days", "op": "gte", "value": 365}]},
-      "form": "registration",
-      "reason": "Bir yil va undan ortiq muddatga tuzilgan ijara shartnomasi davlat ro'yxatidan o'tkazilishi talab etilishi mumkin (huquqiy ekspert tasdig'i kerak)."
-    }
+  "form_rules": [],
+  "detect_keywords": [
+    "ijara",
+    "ijaraga beruvchi",
+    "ijarachi",
+    "turar joy",
+    "kvartira",
+    "аренд",
+    "наниматель",
+    "наймодатель"
   ],
-  "detect_keywords": ["ijara", "ijaraga beruvchi", "ijarachi", "turar joy", "kvartira", "аренд", "наниматель", "наймодатель"],
   "questionnaire": {
-    "meta_fields": {"amount": "rent_amount", "starts_on": "start_date", "ends_on": "end_date"},
+    "meta_fields": {
+      "amount": "rent_amount",
+      "starts_on": "start_date",
+      "ends_on": "end_date"
+    },
     "sections": [
-      {"key": "parties", "title": "Tomonlar", "fields": [
-        {"key": "party_a", "label": "Ijaraga beruvchi", "type": "party", "required": true},
-        {"key": "party_b", "label": "Ijarachi", "type": "party", "required": true}
-      ]},
-      {"key": "subject", "title": "Ijara obyekti", "fields": [
-        {"key": "city", "label": "Shahar", "type": "string", "required": true},
-        {"key": "contract_date", "label": "Shartnoma sanasi", "type": "date", "required": true},
-        {"key": "property_address", "label": "Obyekt manzili", "type": "string", "required": true},
-        {"key": "property_area", "label": "Maydoni (kv.m)", "type": "number", "min": 1},
-        {"key": "rooms", "label": "Xonalar soni", "type": "number", "min": 1}
-      ]},
-      {"key": "terms", "title": "Asosiy shartlar", "fields": [
-        {"key": "rent_amount", "label": "Oylik ijara haqi (so'm)", "type": "number", "required": true, "min": 0},
-        {"key": "payment_day", "label": "To'lov kuni (oyning nechanchi kuni)", "type": "number", "required": true, "min": 1, "max": 28},
-        {"key": "deposit_amount", "label": "Garov puli (so'm)", "type": "number", "min": 0},
-        {"key": "start_date", "label": "Ijara boshlanishi", "type": "date", "required": true},
-        {"key": "end_date", "label": "Ijara tugashi", "type": "date"},
-        {"key": "utilities_paid_by", "label": "Kommunal to'lovlar kim zimmasida", "type": "enum", "required": true,
-         "options": [{"value": "tenant", "label": "Ijarachi"}, {"value": "landlord", "label": "Ijaraga beruvchi"}]},
-        {"key": "notice_days", "label": "Muddatidan oldin bekor qilish uchun ogohlantirish (kun)", "type": "number", "min": 0},
-        {"key": "penalty_percent_per_day", "label": "Kechiktirilgan to'lov uchun penya (% / kun)", "type": "number", "min": 0}
-      ]}
+      {
+        "key": "parties",
+        "title": "Tomonlar",
+        "fields": [
+          {
+            "key": "party_a",
+            "label": "Ijaraga beruvchi",
+            "type": "party",
+            "required": true
+          },
+          {
+            "key": "party_b",
+            "label": "Ijarachi",
+            "type": "party",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "subject",
+        "title": "Ijara obyekti",
+        "fields": [
+          {
+            "key": "city",
+            "label": "Shahar",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "contract_date",
+            "label": "Shartnoma sanasi",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "property_address",
+            "label": "Obyekt manzili",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "property_area",
+            "label": "Maydoni (kv.m)",
+            "type": "number",
+            "min": 1
+          },
+          {
+            "key": "rooms",
+            "label": "Xonalar soni",
+            "type": "number",
+            "min": 1
+          }
+        ]
+      },
+      {
+        "key": "terms",
+        "title": "Asosiy shartlar",
+        "fields": [
+          {
+            "key": "rent_amount",
+            "label": "Oylik ijara haqi (so'm)",
+            "type": "number",
+            "required": true,
+            "min": 0
+          },
+          {
+            "key": "payment_day",
+            "label": "To'lov kuni (oyning nechanchi kuni)",
+            "type": "number",
+            "required": true,
+            "min": 1,
+            "max": 28
+          },
+          {
+            "key": "deposit_amount",
+            "label": "Garov puli (so'm)",
+            "type": "number",
+            "min": 0
+          },
+          {
+            "key": "start_date",
+            "label": "Ijara boshlanishi",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "end_date",
+            "label": "Ijara tugashi",
+            "type": "date"
+          },
+          {
+            "key": "utilities_paid_by",
+            "label": "Kommunal to'lovlar kim zimmasida",
+            "type": "enum",
+            "required": true,
+            "options": [
+              {
+                "value": "tenant",
+                "label": "Ijarachi"
+              },
+              {
+                "value": "landlord",
+                "label": "Ijaraga beruvchi"
+              }
+            ]
+          },
+          {
+            "key": "notice_days",
+            "label": "Ijarachining shartnomani bekor qilish haqida ogohlantirish muddati (kun)",
+            "type": "number",
+            "min": 0,
+            "hint": "Qonun bo'yicha 90 kun (FK 615); bo'sh qoldirilsa 90 kun yoziladi"
+          },
+          {
+            "key": "penalty_percent_per_day",
+            "label": "Kechiktirilgan to'lov uchun penya (% / kun)",
+            "type": "number",
+            "min": 0
+          }
+        ]
+      }
     ]
   },
   "template": {
@@ -44,39 +150,196 @@
     "header": "{{ a.city }} sh.                                                    {{ a.contract_date | date }}",
     "preamble": "{{ party_a.name }} (keyingi o'rinlarda «Ijaraga beruvchi») bir tomondan, {{ party_b.name }} (keyingi o'rinlarda «Ijarachi») ikkinchi tomondan, quyidagilar haqida ushbu shartnomani tuzdilar:",
     "clauses": [
-      {"key": "subject", "category": "subject", "title": "1. Shartnoma predmeti",
-       "body": "1.1. Ijaraga beruvchi {{ a.property_address }} manzilida joylashgan{% if a.rooms %} {{ a.rooms }} xonali{% endif %} turar joyni{% if a.property_area %} (umumiy maydoni {{ a.property_area }} kv.m){% endif %} Ijarachiga vaqtincha egalik qilish va foydalanish uchun beradi.\n1.2. Turar joy faqat yashash maqsadida foydalaniladi."},
-      {"key": "term", "category": "term", "title": "2. Shartnoma muddati",
-       "body": "2.1. Ijara muddati {{ a.start_date | date }} dan{% if a.end_date %} {{ a.end_date | date }} gacha{% else %} boshlab muddatsiz{% endif %}.\n2.2. Turar joy topshirish-qabul qilish dalolatnomasi asosida topshiriladi."},
-      {"key": "price", "category": "price", "title": "3. Ijara haqi va to'lov tartibi",
-       "body": "3.1. Oylik ijara haqi {{ a.rent_amount | money }} so'mni tashkil etadi.\n3.2. Ijara haqi har oyning {{ a.payment_day }}-sanasigacha to'lanadi.{% if a.deposit_amount %}\n3.3. Ijarachi {{ a.deposit_amount | money }} so'm garov pulini to'laydi; u shartnoma tugaganda zarar bo'lmasa to'liq qaytariladi.{% endif %}\n3.4. Kommunal to'lovlar {% if a.utilities_paid_by == 'tenant' %}Ijarachi{% else %}Ijaraga beruvchi{% endif %} zimmasida."},
-      {"key": "duties", "category": "liability", "title": "4. Tomonlarning huquq va majburiyatlari",
-       "body": "4.1. Ijaraga beruvchi turar joyni foydalanishga yaroqli holatda topshirishi va kapital ta'mirni amalga oshirishi shart.\n4.2. Ijarachi turar joydan maqsadiga muvofiq foydalanishi, joriy ta'mirni amalga oshirishi va ijara haqini o'z vaqtida to'lashi shart.\n4.3. Ijarachi Ijaraga beruvchining yozma roziligisiz turar joyni qayta ijaraga bera olmaydi."},
-      {"key": "penalty", "category": "penalty", "title": "5. Javobgarlik", "if": "a.penalty_percent_per_day",
-       "body": "5.1. Ijara haqi kechiktirilganda Ijarachi kechiktirilgan har bir kun uchun to'lanmagan summaning {{ a.penalty_percent_per_day }}% miqdorida penya to'laydi."},
-      {"key": "termination", "category": "termination", "title": "6. Shartnomani bekor qilish",
-       "body": "6.1. Tomonlar shartnomani o'zaro kelishuv asosida yoki qonunda nazarda tutilgan hollarda bekor qilishi mumkin.{% if a.notice_days %}\n6.2. Muddatidan oldin bekor qilmoqchi bo'lgan tomon ikkinchi tomonni kamida {{ a.notice_days }} kun oldin yozma ogohlantiradi.{% endif %}"},
-      {"key": "dispute", "category": "dispute", "title": "7. Nizolarni hal qilish",
-       "body": "7.1. Nizolar muzokaralar yo'li bilan, kelishuvga erishilmasa O'zbekiston Respublikasi qonunchiligiga muvofiq sudda hal qilinadi."}
+      {
+        "key": "subject",
+        "category": "subject",
+        "title": "1. Shartnoma predmeti",
+        "body": "1.1. Ijaraga beruvchi {{ a.property_address }} manzilida joylashgan{% if a.rooms %} {{ a.rooms }} xonali{% endif %} turar joyni{% if a.property_area %} (umumiy maydoni {{ a.property_area }} kv.m){% endif %} Ijarachiga vaqtincha egalik qilish va foydalanish uchun beradi.\n1.2. Turar joy faqat yashash maqsadida foydalaniladi."
+      },
+      {
+        "key": "term",
+        "category": "term",
+        "title": "2. Shartnoma muddati",
+        "body": "2.1. Ijara muddati {{ a.start_date | date }} dan{% if a.end_date %} {{ a.end_date | date }} gacha{% else %} boshlab besh yil muddatga (shartnomada muddat ko'rsatilmaganligi sababli — FK 612-modda){% endif %}.\n2.2. Turar joy topshirish-qabul qilish dalolatnomasi asosida topshiriladi."
+      },
+      {
+        "key": "price",
+        "category": "price",
+        "title": "3. Ijara haqi va to'lov tartibi",
+        "body": "3.1. Oylik ijara haqi {{ a.rent_amount | money }} so'mni tashkil etadi.\n3.2. Ijara haqi har oyning {{ a.payment_day }}-sanasigacha to'lanadi.{% if a.deposit_amount %}\n3.3. Ijarachi {{ a.deposit_amount | money }} so'm garov pulini to'laydi; u shartnoma tugaganda zarar bo'lmasa to'liq qaytariladi.{% endif %}\n3.4. Kommunal to'lovlar {% if a.utilities_paid_by == 'tenant' %}Ijarachi{% else %}Ijaraga beruvchi{% endif %} zimmasida."
+      },
+      {
+        "key": "duties",
+        "category": "liability",
+        "title": "4. Tomonlarning huquq va majburiyatlari",
+        "body": "4.1. Ijaraga beruvchi turar joyni foydalanishga yaroqli holatda topshirishi va kapital ta'mirni amalga oshirishi shart.\n4.2. Ijarachi turar joydan maqsadiga muvofiq foydalanishi, joriy ta'mirni amalga oshirishi va ijara haqini o'z vaqtida to'lashi shart.\n4.3. Ijarachi Ijaraga beruvchining yozma roziligisiz turar joyni qayta ijaraga bera olmaydi."
+      },
+      {
+        "key": "penalty",
+        "category": "penalty",
+        "title": "5. Javobgarlik",
+        "if": "a.penalty_percent_per_day",
+        "body": "5.1. Ijara haqi kechiktirilganda Ijarachi kechiktirilgan har bir kun uchun to'lanmagan summaning {{ a.penalty_percent_per_day }}% miqdorida penya to'laydi."
+      },
+      {
+        "key": "termination",
+        "category": "termination",
+        "title": "6. Shartnomani bekor qilish",
+        "body": "6.1. Shartnoma taraflarning kelishuvi bilan bekor qilinadi.\n6.2. Ijarachi o'zi bilan birga doimiy yashaydigan fuqarolarning roziligi bilan Ijaraga beruvchini kamida {{ a.notice_days or 90 }} kun oldin yozma ravishda ogohlantirib, shartnomani istalgan vaqtda bekor qilishga haqli.\n6.3. Ijaraga beruvchining talabi bilan shartnoma faqat qonunda (FK 615-modda) nazarda tutilgan hollarda sud tartibida bekor qilinishi mumkin."
+      },
+      {
+        "key": "dispute",
+        "category": "dispute",
+        "title": "7. Nizolarni hal qilish",
+        "body": "7.1. Nizolar muzokaralar yo'li bilan, kelishuvga erishilmasa O'zbekiston Respublikasi qonunchiligiga muvofiq sudda hal qilinadi."
+      }
     ]
   },
   "required_elements": [
-    {"code": "subject", "title": "Ijara obyekti (manzil)", "patterns": ["manzil", "адрес", "joylashgan"]},
-    {"code": "price", "title": "Ijara haqi miqdori", "patterns": ["ijara haqi", "арендн\\w* плат", "so'm", "сум"]},
-    {"code": "term", "title": "Ijara muddati", "patterns": ["muddat", "срок"]},
-    {"code": "dispute", "title": "Nizolarni hal qilish tartibi",
-     "patterns": ["nizo", "спор", "sud tartibida", "sudda hal", "в судебном порядке", "арбитраж"],
-     "suggestion": "Nizolar muzokara, so'ngra sud tartibida hal qilinishi haqidagi bandni qo'shing."}
+    {
+      "code": "subject",
+      "title": "Ijara obyekti (manzil)",
+      "patterns": [
+        "manzil",
+        "адрес",
+        "joylashgan"
+      ]
+    },
+    {
+      "code": "price",
+      "title": "Ijara haqi miqdori",
+      "patterns": [
+        "ijara haqi",
+        "арендн\\w* плат",
+        "so'm",
+        "сум"
+      ]
+    },
+    {
+      "code": "term",
+      "title": "Ijara muddati",
+      "patterns": [
+        "muddat",
+        "срок"
+      ]
+    },
+    {
+      "code": "dispute",
+      "title": "Nizolarni hal qilish tartibi",
+      "patterns": [
+        "nizo",
+        "спор",
+        "sud tartibida",
+        "sudda hal",
+        "в судебном порядке",
+        "арбитраж"
+      ],
+      "suggestion": "Nizolar muzokara, so'ngra sud tartibida hal qilinishi haqidagi bandni qo'shing."
+    }
   ],
   "obligation_templates": [
-    {"title": "Oylik ijara haqini to'lash", "party": "B", "kind": "duty", "amount_field": "rent_amount", "clause_ref": "3.2",
-     "due": {"type": "recurring_monthly", "day_field": "payment_day", "start_field": "start_date", "until_field": "end_date"}},
-    {"title": "Ijara haqini olish", "party": "A", "kind": "right", "amount_field": "rent_amount", "clause_ref": "3.1",
-     "due": {"type": "recurring_monthly", "day_field": "payment_day", "start_field": "start_date", "until_field": "end_date"}},
-    {"title": "Turar joyni qaytarib topshirish", "party": "B", "kind": "duty", "clause_ref": "2.1",
-     "due": {"type": "date", "field": "end_date"}},
-    {"title": "Garov pulini qaytarib olish", "party": "B", "kind": "right", "amount_field": "deposit_amount", "clause_ref": "3.3",
-     "due": {"type": "date", "field": "end_date"}}
+    {
+      "title": "Oylik ijara haqini to'lash",
+      "party": "B",
+      "kind": "duty",
+      "amount_field": "rent_amount",
+      "clause_ref": "3.2",
+      "due": {
+        "type": "recurring_monthly",
+        "day_field": "payment_day",
+        "start_field": "start_date",
+        "until_field": "end_date"
+      }
+    },
+    {
+      "title": "Ijara haqini olish",
+      "party": "A",
+      "kind": "right",
+      "amount_field": "rent_amount",
+      "clause_ref": "3.1",
+      "due": {
+        "type": "recurring_monthly",
+        "day_field": "payment_day",
+        "start_field": "start_date",
+        "until_field": "end_date"
+      }
+    },
+    {
+      "title": "Turar joyni qaytarib topshirish",
+      "party": "B",
+      "kind": "duty",
+      "clause_ref": "2.1",
+      "due": {
+        "type": "date",
+        "field": "end_date"
+      }
+    },
+    {
+      "title": "Garov pulini qaytarib olish",
+      "party": "B",
+      "kind": "right",
+      "amount_field": "deposit_amount",
+      "clause_ref": "3.3",
+      "due": {
+        "type": "date",
+        "field": "end_date"
+      }
+    }
   ],
-  "legal_refs": [{"law_ref": "O'zbekiston Respublikasi Fuqarolik kodeksi — mulk ijarasi va turar joy ijarasi bo'limlari"}]
+  "legal_refs": [
+    {
+      "law_ref": "FK 600-modda. Uy-joyni ijaraga berish shartnomasi",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186480",
+      "code": "fk2",
+      "number": "600"
+    },
+    {
+      "law_ref": "FK 603-modda. Uy-joyni ijaraga berish shartnomasining shakli",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186493",
+      "code": "fk2",
+      "number": "603"
+    },
+    {
+      "law_ref": "FK 605-modda. Uy-joyni ijaraga beruvchining majburiyatlari",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186497",
+      "code": "fk2",
+      "number": "605"
+    },
+    {
+      "law_ref": "FK 607-modda. Uy-joyni ijaraga oluvchining majburiyatlari",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186506",
+      "code": "fk2",
+      "number": "607"
+    },
+    {
+      "law_ref": "FK 610-modda. Ijaraga berilgan uy-joyni taʼmirlash",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186517",
+      "code": "fk2",
+      "number": "610"
+    },
+    {
+      "law_ref": "FK 611-modda. Uy-joy uchun toʻlanadigan haq",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186521",
+      "code": "fk2",
+      "number": "611"
+    },
+    {
+      "law_ref": "FK 612-modda. Uy-joyni ijaraga berish shartnomasining muddati",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186525",
+      "code": "fk2",
+      "number": "612"
+    },
+    {
+      "law_ref": "FK 615-modda. Ijara shartnomasini bekor qilish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186540",
+      "code": "fk2",
+      "number": "615"
+    },
+    {
+      "law_ref": "FK 326-modda. Neustoykani kamaytirish",
+      "lex_url": "https://lex.uz/uz/docs/-111189#-155297",
+      "code": "fk1",
+      "number": "326"
+    }
+  ]
 }

@@ -165,7 +165,22 @@
     validation_failed: 'Kiritilgan ma\'lumot noto\'g\'ri',
     contract_locked: 'Shartnoma tasdiqlash bosqichida yoki faol — tahrirlab bo\'lmaydi',
     answers_incomplete: 'Savolnomaning majburiy maydonlarini to\'ldiring yoki formatini tuzating',
-    illegal_clauses: 'Shartnomada qonunga zid bandlar bor — avval tuzating yoki ogohlantirishni tasdiqlang',
+    illegal_clauses: 'Shartnomada qonunga zid shartlar bor — ular tuzatilmaguncha shartnoma tuzilmaydi',
+    field_not_yours: 'Bu maydon ikkinchi tomonga tegishli — uni faqat o\'sha tomon o\'zgartira oladi',
+    merge_required: 'Ikkala tomon ishtirok etmoqda — faqat o\'zgargan maydonlarni yuboring',
+    agreement_required: 'Avval ikkala tomon bir xil shartlarga rozilik bildirishi kerak',
+    not_draft: 'Shartlar hozir kelishuv bosqichida emas',
+    not_participant: 'Bu amalni faqat shartnoma tomoni bajara oladi',
+    not_owner: 'Bu amalni faqat shartnomani boshlagan tomon bajara oladi',
+    not_editor: 'Tahrirlash uchun huquqingiz yo\'q',
+    own_objection: 'O\'z noroziligingiz bo\'yicha qarorni ikkinchi tomon qabul qiladi',
+    not_author: 'Norozilikni faqat uning muallifi qaytarib olishi mumkin',
+    objection_closed: 'Bu norozilik allaqachon hal qilingan',
+    unknown_fields: 'Savolnomada bunday maydon yo\'q',
+    contract_signed: 'Imzolangan shartnomani o\'chirib bo\'lmaydi — yakunlang yoki nizo oching',
+    contract_kept: 'Imzolash bosqichidan o\'tgan shartnoma dalil sifatida saqlanadi',
+    obligation_from_contract: 'Shartnomadagi majburiyatni o\'chirib bo\'lmaydi — bajarildi yoki bekor deb belgilang',
+    status_invalid: 'Bunday holatga o\'tkazib bo\'lmaydi',
     language_unavailable: 'Bu tildagi shablon hali tayyor emas',
     version_mismatch: 'Hujjat siz ochganingizdan keyin o\'zgargan. Qaytadan oching',
     already_approved: 'Siz bu versiyani allaqachon tasdiqlagansiz',
@@ -252,9 +267,8 @@
     autofix: (id) => post(`/contracts/${id}/autofix`),
     /** Rendered text {title, header, preamble, sections[{title,text}], parties, content_sha256} */
     preview: (id, language) => get(`/contracts/${id}/preview`, { language: language || 'uz' }),
-    generate: (id, opts) => post(`/contracts/${id}/generate`, {
-      language: (opts && opts.language) || 'uz', acknowledge_red: !!(opts && opts.acknowledgeRed),
-    }),
+    /** Contracts with illegal (red) terms are never generated. With both sides in, both must agree() first. */
+    generate: (id, opts) => post(`/contracts/${id}/generate`, { language: (opts && opts.language) || 'uz' }),
     versions: (id) => get(`/contracts/${id}/versions`),
     content: (id, n) => get(`/contracts/${id}/versions/${n}/content`),
     verify: (id, n) => get(`/contracts/${id}/versions/${n}/verify`),
@@ -271,6 +285,41 @@
     acceptInvitation: (partyId) => post(`/contracts/invitations/${partyId}/accept`),
     declineInvitation: (partyId) => post(`/contracts/invitations/${partyId}/decline`),
     anchor: (id, n) => get(`/contracts/${id}/versions/${n}/anchor`),
+
+    // ---- negotiation (two parties) ----
+    /**
+     * Everything the screen needs: {my_side, status, next_action, next_action_text, parties[{side, joined, agreed,
+     * signed_at, is_me}], fields[{key, side:'A'|'B'|'shared', editable}], missing_by_side, objections_open[],
+     * validation{findings, field_warnings, summary, ready}, terms_sha256}
+     */
+    negotiation: (id) => get(`/contracts/${id}/negotiation`),
+    /** Consent to the current terms. Returns {waiting_for[], generated:{number, sha256}|null} */
+    agree: (id) => post(`/contracts/${id}/agree`),
+    objections: (id) => get(`/contracts/${id}/objections`),
+    /** Disagree: {comment, fields?:[keys], proposed?:{key: value}} */
+    object: (id, body) => post(`/contracts/${id}/objections`, body),
+    /** action: 'accept' (applies proposed values) | 'reject' | 'withdraw' */
+    resolveObjection: (id, objectionId, action, note) =>
+      post(`/contracts/${id}/objections/${objectionId}/${action}`, note ? { note } : undefined),
+    timeline: (id) => get(`/contracts/${id}/timeline`),
+
+    // ---- housekeeping ----
+    /** Draft without versions -> deleted; with versions -> cancelled; signed -> error contract_signed */
+    remove: (id) => del(`/contracts/${id}`),
+    rename: (id, title) => patch(`/contracts/${id}`, { title }),
+    revokeInvitation: (id, partyId) => del(`/contracts/${id}/parties/${partyId}/invitation`),
+    /** New draft with the same terms (the other side's personal data is not copied) */
+    duplicate: (id) => post(`/contracts/${id}/duplicate`),
+  };
+
+  const archive = {
+    /** Signed contracts of the current user (both sides get their own entry) */
+    list: (params) => get('/archive', Object.assign({ limit: 100 }, params || {})),
+    /** + integrity{intact}, signatures[] */
+    get: (id) => get(`/archive/${id}`),
+    update: (id, body) => patch(`/archive/${id}`, body),
+    download: (item) => download(`/contracts/${item.contract_id}/versions/${item.version}/download`,
+      `shartnoma-v${item.version}.docx`, { format: 'docx' }),
   };
 
   const scans = {
@@ -315,15 +364,18 @@
     aiReview: (id) => post(`/scans/${id}/ai/review`),
     aiAsk: (id, question) => post(`/scans/${id}/ai/ask`, { question }),
     downloadReport: (id) => download(`/scans/${id}/report/download`, 'tahlil.docx'),
+    remove: (id) => del(`/scans/${id}`),
   };
 
   const obligations = {
     list: (params) => get('/obligations', Object.assign({ limit: 100 }, params || {})),
     dashboard: () => get('/obligations/dashboard'),
     create: (body) => post('/obligations', body),
-    /** status: 'done' | 'pending' | 'cancelled' */
+    /** status: 'done' | 'pending' (undo) | 'cancelled' */
     setStatus: (id, status) => patch(`/obligations/${id}`, { status }),
     confirm: (id) => patch(`/obligations/${id}`, { confirmed: true }),
+    /** Only manual / scanner reminders; contract obligations -> error obligation_from_contract */
+    remove: (id) => del(`/obligations/${id}`),
   };
 
   const cases = {
@@ -366,6 +418,7 @@
       get: (code) => request('GET', `/contract-types/${code}`, { auth: false }),
     },
     contracts,
+    archive,
     scans,
     obligations,
     cases,
@@ -373,9 +426,19 @@
       list: (params) => get('/notifications', Object.assign({ limit: 30 }, params || {})),
       /** ids omitted => mark all as read */
       markRead: (ids) => post('/notifications/read', ids || null),
+      remove: (id) => del(`/notifications/${id}`),
+      /** onlyRead=true (default) keeps unread ones */
+      clear: (onlyRead) => request('DELETE', '/notifications', { query: { only_read: onlyRead === false ? 'false' : 'true' } }),
     },
     calc: { bhm: (onDate) => get('/calc/bhm', { on_date: onDate }) },
-    version: '1.0.0',
+    /** Law texts from lex.uz: list(), article(code, number), search(q), resolve('FK 615-modda ...') */
+    laws: {
+      list: () => request('GET', '/laws', { auth: false }),
+      article: (code, number) => request('GET', `/laws/${code}/articles/${number}`, { auth: false }),
+      search: (q, code) => request('GET', '/laws/search', { auth: false, query: { q, code } }),
+      resolve: (ref) => request('GET', '/laws/resolve', { auth: false, query: { ref } }),
+    },
+    version: '1.2.0',
   };
 
   global.LexLab = LexLab;

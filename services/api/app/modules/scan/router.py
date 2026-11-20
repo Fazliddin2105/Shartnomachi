@@ -6,15 +6,16 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, File, Form, Response, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field, computed_field
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.api.deps import DB, CurrentUser, PageParams
 from app.core.config import get_settings
 from app.core.errors import Conflict, ValidationFailed
 from app.core.ratelimit import get_limiter
+from app.modules.files import service as files
 from app.modules.files.models import StoredFile
 from app.modules.scan import analysis, report_docx, service
-from app.modules.scan.models import Decision, ScanJob, ScanStatus
+from app.modules.scan.models import Decision, ScanFinding, ScanJob, ScanStatus
 from app.workers import queue
 
 router = APIRouter(prefix="/scans", tags=["scan"])
@@ -164,6 +165,17 @@ async def ai_ask(scan_id: uuid.UUID, body: AskIn, db: DB, user: CurrentUser) -> 
 @router.get("/{scan_id}/report", summary="Hisobot")
 async def get_report(scan_id: uuid.UUID, db: DB, user: CurrentUser) -> dict[str, Any]:
     return await service.report(db, await service.get_owned(db, scan_id, user))
+
+
+@router.delete("/{scan_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Tahlilni va yuklangan faylni o'chirish")
+async def delete_scan(scan_id: uuid.UUID, db: DB, user: CurrentUser) -> None:
+    job = await service.get_owned(db, scan_id, user)
+    file_id = job.file_id
+    await db.execute(delete(ScanFinding).where(ScanFinding.job_id == job.id))
+    await db.delete(job)
+    await db.flush()
+    if file_id:
+        await files.delete_file(db, file_id)
 
 
 @router.get("/{scan_id}/report/download", summary="Hisobotni DOCX ko'rinishida yuklab olish")

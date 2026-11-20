@@ -131,17 +131,30 @@ async def approve(
     signing = [p for p in c.parties if p.role in contracts.SIGNING_ROLES]
     approved_ids = set(await db.scalars(select(ContractApproval.party_id).where(ContractApproval.version_id == v.id)))
     all_done = bool(signing) and all(p.id in approved_ids for p in signing)
+    await contracts.log_event(
+        db,
+        c,
+        actor_id=user.id,
+        side=party.role.value,
+        kind="signed",
+        payload={"version": v.number, "method": method.value},
+    )
     if all_done:
         await contracts.activate(db, c)
         await _build_signature_container(db, v, user)
         await anchor_hooks.contract_signed(db, version=v, approvals=await list_for_version(db, v.id))
+        from app.modules.contracts import archive
+
+        await archive.archive_signed(db, c, v)
+        await contracts.log_event(db, c, actor_id=user.id, side=None, kind="activated", payload={"version": v.number})
         await contracts.notify_parties(
             db,
             c,
             except_user=None,
             event="contract.activated",
             title="Shartnoma kuchga kirdi",
-            body=f'"{c.title}" barcha tomonlar tomonidan tasdiqlandi. Majburiyatlar eslatmalarga qo\'shildi.',
+            body=f'"{c.title}" barcha tomonlar tomonidan imzolandi va arxivingizga saqlandi. '
+            "Majburiyatlar eslatmalarga qo'shildi.",
         )
     else:
         await contracts.notify_parties(

@@ -310,7 +310,40 @@
   ],
   "legal_refs": [
     {
-      "law_ref": "O‘zbekiston Respublikasi Fuqarolik kodeksi — qarz (732–738-moddalar, shablonda ko‘rsatilganidek)"
+      "law_ref": "FK 732-modda. Qarz shartnomasi",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-190102",
+      "code": "fk2",
+      "number": "732"
+    },
+    {
+      "law_ref": "FK 733-modda. Qarz shartnomasining shakli",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-190114",
+      "code": "fk2",
+      "number": "733"
+    },
+    {
+      "law_ref": "FK 734-modda. Qarz shartnomasi boʻyicha foizlar",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-190130",
+      "code": "fk2",
+      "number": "734"
+    },
+    {
+      "law_ref": "FK 735-modda. Qarz oluvchining qarz summasini qaytarish majburiyati",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-190167",
+      "code": "fk2",
+      "number": "735"
+    },
+    {
+      "law_ref": "FK 736-modda. Qarz oluvchi tomonidan qarz shartnomasini buzish oqibatlari",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-190181",
+      "code": "fk2",
+      "number": "736"
+    },
+    {
+      "law_ref": "FK 326-modda. Neustoykani kamaytirish",
+      "lex_url": "https://lex.uz/uz/docs/-111189#-155297",
+      "code": "fk1",
+      "number": "326"
     }
   ]
 }

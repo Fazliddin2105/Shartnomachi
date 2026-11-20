@@ -1,0 +1,516 @@
+{
+  "code": "medical_paid",
+  "title_uz": "Pullik tibbiy xizmat ko‘rsatish shartnomasi",
+  "title_ru": "Договор на оказание платных медицинских услуг",
+  "description": "Tibbiyot muassasasi (yuridik shaxs) va Buyurtmachi (fuqaro) o‘rtasida pullik tibbiy xizmat. Tashkilot shabloni asosida.",
+  "form_requirement": "simple",
+  "form_rules": [],
+  "detect_keywords": [
+    "tibbiy xizmat",
+    "tibbiyot muassasasi",
+    "pullik tibbiy",
+    "davolash",
+    "tibbiy",
+    "медицинск",
+    "лечени"
+  ],
+  "source": {
+    "kind": "organization",
+    "title": "Pullik tibbiy xizmat ko‘rsatish bo‘yicha shartnoma (tashkilot shabloni)",
+    "file": "Pullik_tibbiy_xizmat_korsatish_shartnomasi.docx",
+    "sha256": "ad8025baed4ccf789820231bfbb1c06ee30f29dcf299628d43c3f4b248ebee7a",
+    "imported_at": "2026-11-20",
+    "note": "Matn so‘zma-so‘z; «qonunchilik va shartnomada nazarda tutilgan boshqa ...» bandlaridagi bo‘sh joylar ixtiyoriy maydon — to‘ldirilmasa, band umumiy shaklda qoladi."
+  },
+  "questionnaire": {
+    "meta_fields": {
+      "amount": "price",
+      "starts_on": "start_date",
+      "ends_on": "end_date"
+    },
+    "sections": [
+      {
+        "key": "contract",
+        "title": "Shartnoma",
+        "fields": [
+          {
+            "key": "contract_number",
+            "label": "Shartnoma raqami",
+            "type": "string"
+          },
+          {
+            "key": "city",
+            "label": "Shartnoma tuzilgan joy (shahar/tuman)",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "contract_date",
+            "label": "Shartnoma sanasi",
+            "type": "date",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "clinic",
+        "title": "Tibbiyot muassasasi",
+        "fields": [
+          {
+            "key": "party_a.name",
+            "label": "To‘liq nomi va tashkiliy-huquqiy shakli",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.director_position",
+            "label": "Rahbarning lavozimi",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.director",
+            "label": "Rahbarning F.I.Sh.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.address",
+            "label": "Manzil",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.account",
+            "label": "Hisob raqami (H/r)",
+            "type": "string",
+            "required": true,
+            "pattern": "^\\d{20}$"
+          },
+          {
+            "key": "party_a.bank",
+            "label": "Bank nomi",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.mfo",
+            "label": "MFO",
+            "type": "string",
+            "required": true,
+            "pattern": "^\\d{5}$"
+          },
+          {
+            "key": "party_a.stir",
+            "label": "STIR",
+            "type": "string",
+            "required": true,
+            "pattern": "^\\d{9}$"
+          },
+          {
+            "key": "party_a.oked",
+            "label": "OKED",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.phone",
+            "label": "Telefon",
+            "type": "string",
+            "required": true,
+            "pattern": "^\\+?998\\d{9}$"
+          }
+        ]
+      },
+      {
+        "key": "patient",
+        "title": "Buyurtmachi",
+        "fields": [
+          {
+            "key": "party_b.name",
+            "label": "F.I.Sh.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.address",
+            "label": "Yashash manzili",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.passport",
+            "label": "Pasport/ID seriyasi va raqami",
+            "type": "string",
+            "required": true,
+            "pattern": "^[A-Z]{2}\\s?\\d{7}$",
+            "hint": "Masalan: AA 1234567"
+          },
+          {
+            "key": "party_b.passport_issued_date",
+            "label": "Pasport berilgan sana",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "party_b.passport_issued_by",
+            "label": "Pasportni bergan IIB",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.tin",
+            "label": "STIR / JShShIR",
+            "type": "string",
+            "required": true,
+            "pattern": "^(\\d{9}|\\d{14})$"
+          },
+          {
+            "key": "party_b.phone",
+            "label": "Telefon",
+            "type": "string",
+            "required": true,
+            "pattern": "^\\+?998\\d{9}$"
+          }
+        ]
+      },
+      {
+        "key": "service",
+        "title": "Xizmat",
+        "fields": [
+          {
+            "key": "service_address",
+            "label": "Xizmat ko‘rsatiladigan bino manzili",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "start_date",
+            "label": "Xizmat boshlanadigan sana",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "end_date",
+            "label": "Xizmat yakunlanadigan sana",
+            "type": "date",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "payment",
+        "title": "Moliyaviy shartlar",
+        "fields": [
+          {
+            "key": "price",
+            "label": "Tibbiy xizmat uchun to‘lov (so‘m)",
+            "type": "number",
+            "required": true,
+            "min": 1
+          },
+          {
+            "key": "payment_days",
+            "label": "To‘lov muddati (shartnomadan keyin, bank ish kuni)",
+            "type": "number",
+            "required": true,
+            "min": 0
+          },
+          {
+            "key": "payment_method",
+            "label": "To‘lov usuli",
+            "type": "enum",
+            "required": true,
+            "options": [
+              {
+                "value": "cash",
+                "label": "Naqd pul"
+              },
+              {
+                "value": "card",
+                "label": "Bank kartasi"
+              },
+              {
+                "value": "transfer",
+                "label": "Pul o‘tkazish"
+              }
+            ]
+          },
+          {
+            "key": "materials_included",
+            "label": "Dori vositalari va bir martalik anjomlar to‘lov summasiga",
+            "type": "enum",
+            "required": true,
+            "options": [
+              {
+                "value": "included",
+                "label": "kiradi"
+              },
+              {
+                "value": "excluded",
+                "label": "kirmaydi"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "extra",
+        "title": "Qo‘shimcha huquq va majburiyatlar (ixtiyoriy)",
+        "fields": [
+          {
+            "key": "clinic_extra_rights",
+            "label": "Tibbiyot muassasasining boshqa huquqlari",
+            "type": "text"
+          },
+          {
+            "key": "clinic_extra_duties",
+            "label": "Tibbiyot muassasasining boshqa majburiyatlari",
+            "type": "text"
+          },
+          {
+            "key": "patient_extra_rights",
+            "label": "Buyurtmachining boshqa huquqlari",
+            "type": "text"
+          },
+          {
+            "key": "patient_extra_duties",
+            "label": "Buyurtmachining boshqa majburiyatlari",
+            "type": "text"
+          }
+        ]
+      }
+    ]
+  },
+  "template": {
+    "title": "PULLIK TIBBIY XIZMAT KO‘RSATISH BO‘YICHA SHARTNOMA № {{ a.contract_number or '____' }}",
+    "header": "{{ a.city }}                                                    {{ a.contract_date | date }}",
+    "preamble": "Ustav asosida ish ko‘ruvchi {{ party_a.name }} (keyingi o‘rinlarda «Tibbiyot muassasasi» deb yuritiladi) nomidan {{ party_a.director_position }} {{ party_a.director }} bir tomonidan, ushbu muassasada tibbiy xizmatdan foydalanuvchi {{ party_b.address }} manzilida yashovchi {{ party_b.name }} (keyingi o‘rinlarda «Buyurtmachi» deb yuritiladi) ikkinchi tomondan mazkur shartnomani quyidagilar to‘g‘risida tuzdilar:",
+    "party_titles": {
+      "A": "«TIBBIYOT MUASSASASI»",
+      "B": "«BUYURTMACHI»"
+    },
+    "clauses": [
+      {
+        "key": "subject",
+        "category": "subject",
+        "title": "1. SHARTNOMA PREDMETI",
+        "body": "1.1. Ushbu shartnoma bo‘yicha «Tibbiyot muassasasi» «Buyurtmachi»ga shartnomada belgilangan tartibda va shartlarda pullik tibbiy xizmat ko‘rsatadi, «Buyurtmachi» esa shartnomada belgilangan tartibda va miqdorda xizmat haqi to‘laydi.\n1.2. Tibbiy xizmat «Tibbiyot muassasasi»ga tegishli bo‘lgan {{ a.service_address }} manzilida joylashgan tibbiy xizmat ko‘rsatishga mo‘ljallangan binoda ko‘rsatiladi. Xizmat ko‘rsatish {{ a.start_date | date }}-yil kuni boshlanib, {{ a.end_date | date }}-yil kuni yakunlanadi."
+      },
+      {
+        "key": "clinic",
+        "category": "rights",
+        "title": "2. «TIBBIYOT MUASSASASI»NING HUQUQ VA MAJBURIYATLARI",
+        "body": "2.1. «Tibbiyot muassasasi»ning huquqlari:\n— tekshirish va tahlil (analiz) natijalaridan kelib chiqqan holda davolash usullari va tartibini belgilash;\n— «Buyurtmachi»ning jismoniy holati, kasallik darajasi va boshqa holatlardan kelib chiqqan holda muassasada beriladigan oziq-ovqatlar va ovqatlanish tartibini belgilash;\n— «Buyurtmachi»dan mazkur shartnomada belgilangan to‘lovlarni o‘z vaqtida to‘lashni talab qilish;\n— to‘lovlar o‘z vaqtida amalga oshirilmagan taqdirda «Buyurtmachi»ni davolash ishlarini to‘xtatib qo‘yish (birinchi tibbiy yordam va kechiktirib bo‘lmaydigan davolash ishlari bundan mustasno);\n— qonunchilik va shartnomada nazarda tutilgan boshqa huquqlar{% if a.clinic_extra_rights %}: {{ a.clinic_extra_rights }}{% endif %}.\n2.2. «Tibbiyot muassasasi»ning majburiyatlari:\n— tibbiy xizmat ko‘rsatishda tibbiyot sohasidagi qonunchilik talablariga rioya qilish;\n— «Buyurtmachi»ga tibbiy xizmat ko‘rsatishda, xizmat ko‘rsatiladigan davrda yashash xonasi bilan ta’minlashda va ovqatlanishida sanitariya-gigiyena qoidalariga rioya qilish;\n— «Buyurtmachi»ga sifatli tibbiy xizmat ko‘rsatish;\n— tibbiy xizmat ko‘rsatilishi, «Buyurtmachi»ning sog‘lig‘i holati va undagi o‘zgarishlar to‘g‘risida «Buyurtmachi»ga va uning yaqin qarindoshlariga ma’lumot berib borish;\n— «Buyurtmachi»ga nisbatan ishlatiladigan dori vositalari, tibbiyot anjomlari va tibbiy xizmat vositalari to‘g‘risida unga ma’lumotlar berish;\n— qonunchilik va shartnomada nazarda tutilgan boshqa majburiyatlar{% if a.clinic_extra_duties %}: {{ a.clinic_extra_duties }}{% endif %}."
+      },
+      {
+        "key": "patient",
+        "category": "rights",
+        "title": "3. «BUYURTMACHI»NING HUQUQ VA MAJBURIYATLARI",
+        "body": "3.1. «Buyurtmachi»ning huquqlari:\n— «Tibbiyot muassasasi»dan tibbiy xizmat ko‘rsatishda tibbiyot sohasidagi qonunchilik talablariga rioya qilinishini talab qilish;\n— «Tibbiyot muassasasi»dan o‘ziga tibbiy xizmat ko‘rsatishda, xizmat ko‘rsatiladigan davrda yashash xonasi bilan ta’minlashda va ovqatlanishida sanitariya-gigiyena qoidalariga rioya qilinishini talab qilish;\n— o‘ziga sifatli tibbiy xizmat ko‘rsatilishini talab qilish;\n— o‘ziga tibbiy xizmat ko‘rsatilishi, sog‘lig‘i holati va undagi o‘zgarishlar to‘g‘risida ma’lumotlar olish;\n— o‘ziga nisbatan ishlatiladigan dori vositalari, tibbiyot anjomlari va tibbiy xizmat vositalari to‘g‘risida ma’lumotlar olish;\n— qonunchilik va shartnomada nazarda tutilgan boshqa huquqlar{% if a.patient_extra_rights %}: {{ a.patient_extra_rights }}{% endif %}.\n3.2. «Buyurtmachi»ning majburiyatlari:\n— «Tibbiyot muassasasi»ga tegishli bo‘lgan binolar, tibbiyot anjomlari va tibbiy xizmat vositalaridan to‘g‘ri foydalanish, ularga zarar yetkazmaslik;\n— mazkur shartnomada belgilangan to‘lovlarni «Tibbiyot muassasasi»ga o‘z vaqtida va kelishilgan miqdorda to‘lash;\n— qonunchilik va shartnomada nazarda tutilgan boshqa majburiyatlar{% if a.patient_extra_duties %}: {{ a.patient_extra_duties }}{% endif %}."
+      },
+      {
+        "key": "price",
+        "category": "price",
+        "title": "4. MOLIYAVIY SHARTLAR",
+        "body": "4.1. Taraflarning kelishuviga ko‘ra, ko‘rsatiladigan tibbiy xizmat uchun to‘lov {{ a.price | money }} ({{ a.price | words }}) so‘mni tashkil etadi.\n4.2. To‘lov ushbu shartnoma tuzilgandan so‘ng {{ a.payment_days }} bank ish kuni davomida {% if a.payment_method == 'cash' %}naqd pul{% elif a.payment_method == 'card' %}bank kartasi{% else %}pul o‘tkazish{% endif %} usulida to‘lanadi.\n4.3. «Buyurtmachi» qabul qiladigan dori vositalari, bir martalik asbob-anjomlar va tibbiy xizmatni ko‘rsatish bilan bog‘liq xarajatlar ushbu shartnoma bo‘yicha belgilangan to‘lov summasiga {% if a.materials_included == 'included' %}kiradi{% else %}kirmaydi{% endif %}.\n4.4. Taraflar ushbu shartnomani muddatidan ilgari bekor qilishganda, «Buyurtmachi» tomonidan to‘langan pul ko‘rsatilgan tibbiy xizmat haqi chegirib qolingan holda «Buyurtmachi»ga qaytariladi."
+      },
+      {
+        "key": "term",
+        "category": "term",
+        "title": "5. SHARTNOMANING AMAL QILISH MUDDATI",
+        "body": "5.1. Shartnoma tomonlar uni imzolagan kundan kuchga kiradi va taraflar majburiyatlarni to‘liq bajargunga qadar amal qiladi."
+      },
+      {
+        "key": "termination",
+        "category": "termination",
+        "title": "6. SHARTNOMANI BEKOR QILISH HOLATLARI",
+        "body": "6.1. Quyidagi hollarda shartnoma bekor qilinadi:\n— taraflarning kelishuviga muvofiq;\n— «Buyurtmachi» davolanish tartibi va shartlarini muntazam ravishda buzib kelganda;\n— «Tibbiyot muassasasi»ning aybi bilan «Buyurtmachi»ning sog‘lig‘i yomonlashganda yoki unga boshqacha usulda jiddiy zarar yetkazilganda;\n— tomonlardan biri shartnoma bo‘yicha o‘z majburiyatlarini bajarmaganda;\n— qonun hujjatlarida ko‘rsatilgan boshqa hollarda."
+      },
+      {
+        "key": "other",
+        "category": "dispute",
+        "title": "7. BOSHQA SHARTLAR",
+        "body": "7.1. Ushbu shartnomaning har bir tomoni o‘ziga nisbatan qo‘llaniladigan barcha, shu jumladan O‘zbekiston Respublikasining amaldagi qonunchilik va normativ hujjatlaridagi korrupsiyaga qarshi tegishli shartlar va talablarni tushunishi haqida bir-birini ishontiradi va ularga amal qilishini kafolatlaydi.\n7.2. Ushbu shartnomadan kelib chiqadigan nizolar qonun hujjatlarida belgilangan tartibda ko‘rib chiqiladi. Agar nizolarni muzokaralar o‘tkazish yo‘li bilan hal etishning iloji bo‘lmasa, nizo qonun hujjatlarida belgilangan tartibda «Tibbiyot muassasasi» joylashgan hududdagi sudda ko‘rib chiqiladi.\n7.3. Ushbu shartnomaga yozma ravishda kiritilgan va ikki tomonlama imzolangan barcha ilovalar, qo‘shimchalar va o‘zgartirishlar shartnomaning ajralmas qismi bo‘ladi va yuridik kuchga ega deb hisoblanadi.\n7.4. Shartnoma teng yuridik kuchga ega bo‘lgan ikki nusxada tuziladi. Shartnomaning bir nusxasi «Tibbiyot muassasasi»da, ikkinchi nusxasi «Buyurtmachi»da saqlanadi."
+      }
+    ],
+    "requisites": {
+      "title": "8. TOMONLARNING MANZILI, BANK REKVIZITLARI VA BOSHQA MA’LUMOTLARI",
+      "labels": {
+        "A": [
+          [
+            "name",
+            "To‘liq nomi va tashkiliy-huquqiy shakli"
+          ],
+          [
+            "address",
+            "Manzil"
+          ],
+          [
+            "account",
+            "H/r"
+          ],
+          [
+            "bank",
+            "Bank nomi"
+          ],
+          [
+            "mfo",
+            "MFO"
+          ],
+          [
+            "stir",
+            "STIR"
+          ],
+          [
+            "oked",
+            "OKED"
+          ],
+          [
+            "phone",
+            "Telefon"
+          ],
+          [
+            "director_position",
+            "Rahbar lavozimi"
+          ],
+          [
+            "director",
+            "Rahbar F.I.Sh."
+          ]
+        ],
+        "B": [
+          [
+            "name",
+            "F.I.Sh."
+          ],
+          [
+            "address",
+            "Manzil"
+          ],
+          [
+            "passport",
+            "Pasport / ID seriyasi va raqami"
+          ],
+          [
+            "passport_issued_by",
+            "Kim tomonidan berilgan"
+          ],
+          [
+            "tin",
+            "STIR / JShShIR"
+          ],
+          [
+            "phone",
+            "Telefon"
+          ]
+        ]
+      },
+      "signature": {
+        "A": [
+          "",
+          "Imzo: ___________________",
+          "M.O‘."
+        ],
+        "B": [
+          "",
+          "Imzo: ___________________"
+        ]
+      }
+    }
+  },
+  "required_elements": [
+    {
+      "code": "price",
+      "title": "Xizmat narxi",
+      "patterns": [
+        "so‘m",
+        "so'm",
+        "сум",
+        "to‘lov",
+        "to'lov"
+      ]
+    },
+    {
+      "code": "term",
+      "title": "Xizmat muddati",
+      "patterns": [
+        "boshlan",
+        "yakunlan",
+        "muddat",
+        "срок"
+      ]
+    },
+    {
+      "code": "dispute",
+      "title": "Nizolarni hal qilish tartibi",
+      "patterns": [
+        "nizo",
+        "sud",
+        "спор"
+      ]
+    }
+  ],
+  "obligation_templates": [
+    {
+      "title": "Tibbiy xizmat haqini to‘lash",
+      "party": "B",
+      "kind": "duty",
+      "amount_field": "price",
+      "clause_ref": "4.2",
+      "due": {
+        "type": "offset_days",
+        "start_field": "contract_date",
+        "days_field": "payment_days"
+      }
+    },
+    {
+      "title": "Tibbiy xizmatni ko‘rsatib bo‘lish",
+      "party": "A",
+      "kind": "duty",
+      "clause_ref": "1.2",
+      "due": {
+        "type": "date",
+        "field": "end_date"
+      }
+    }
+  ],
+  "legal_refs": [
+    {
+      "law_ref": "FK 703-modda. Haq evaziga xizmat koʻrsatish shartnomasi",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189499",
+      "code": "fk2",
+      "number": "703"
+    },
+    {
+      "law_ref": "FK 704-modda. Haq evaziga xizmat koʻrsatish shartnomasini bajarish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189507",
+      "code": "fk2",
+      "number": "704"
+    },
+    {
+      "law_ref": "FK 705-modda. Xizmatlarga haq toʻlash",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189512",
+      "code": "fk2",
+      "number": "705"
+    },
+    {
+      "law_ref": "FK 706-modda. Haq evaziga xizmat koʻrsatish shartnomasini buzganlik uchun ijrochining javobgarligi",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189519",
+      "code": "fk2",
+      "number": "706"
+    },
+    {
+      "law_ref": "FK 707-modda. Haq evaziga xizmat koʻrsatish shartnomasini bekor qilish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189524",
+      "code": "fk2",
+      "number": "707"
+    },
+    {
+      "law_ref": "FK 708-modda. Haq evaziga xizmat koʻrsatish shartnomasini huquqiy jihatdan tartibga solish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-189527",
+      "code": "fk2",
+      "number": "708"
+    }
+  ]
+}

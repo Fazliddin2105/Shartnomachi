@@ -5,31 +5,138 @@
   "description": "Ish beruvchi va xodim o'rtasidagi mehnat munosabatlari",
   "form_requirement": "simple",
   "form_rules": [],
-  "detect_keywords": ["mehnat shartnomasi", "ish beruvchi", "xodim", "lavozim", "трудов", "работодатель", "работник"],
+  "detect_keywords": [
+    "mehnat shartnomasi",
+    "ish beruvchi",
+    "xodim",
+    "lavozim",
+    "трудов",
+    "работодатель",
+    "работник"
+  ],
   "questionnaire": {
-    "meta_fields": {"amount": "salary", "starts_on": "start_date", "ends_on": "end_date"},
+    "meta_fields": {
+      "amount": "salary",
+      "starts_on": "start_date",
+      "ends_on": "end_date"
+    },
     "sections": [
-      {"key": "parties", "title": "Tomonlar", "fields": [
-        {"key": "party_a", "label": "Ish beruvchi", "type": "party", "required": true},
-        {"key": "party_b", "label": "Xodim", "type": "party", "required": true}
-      ]},
-      {"key": "job", "title": "Ish", "fields": [
-        {"key": "city", "label": "Shahar", "type": "string", "required": true},
-        {"key": "contract_date", "label": "Shartnoma sanasi", "type": "date", "required": true},
-        {"key": "position", "label": "Lavozim", "type": "string", "required": true},
-        {"key": "workplace", "label": "Ish joyi", "type": "string", "required": true},
-        {"key": "contract_kind", "label": "Shartnoma turi", "type": "enum", "required": true,
-         "options": [{"value": "indefinite", "label": "Nomuayyan muddatga"}, {"value": "fixed", "label": "Muayyan muddatga"}]},
-        {"key": "start_date", "label": "Ishni boshlash sanasi", "type": "date", "required": true},
-        {"key": "end_date", "label": "Tugash sanasi (muayyan muddatli bo'lsa)", "type": "date"}
-      ]},
-      {"key": "conditions", "title": "Mehnat sharoitlari", "fields": [
-        {"key": "salary", "label": "Oylik ish haqi (so'm)", "type": "number", "required": true, "min": 0},
-        {"key": "payment_day", "label": "Ish haqi to'lanadigan kun", "type": "number", "required": true, "min": 1, "max": 28},
-        {"key": "probation_months", "label": "Dastlabki sinov muddati (oy)", "type": "number", "min": 0},
-        {"key": "weekly_hours", "label": "Haftalik ish vaqti (soat)", "type": "number", "required": true, "min": 1},
-        {"key": "annual_leave_days", "label": "Yillik asosiy ta'til (kalendar kun)", "type": "number", "required": true, "min": 0}
-      ]}
+      {
+        "key": "parties",
+        "title": "Tomonlar",
+        "fields": [
+          {
+            "key": "party_a",
+            "label": "Ish beruvchi",
+            "type": "party",
+            "required": true
+          },
+          {
+            "key": "party_b",
+            "label": "Xodim",
+            "type": "party",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "job",
+        "title": "Ish",
+        "fields": [
+          {
+            "key": "city",
+            "label": "Shahar",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "contract_date",
+            "label": "Shartnoma sanasi",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "position",
+            "label": "Lavozim",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "workplace",
+            "label": "Ish joyi",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "contract_kind",
+            "label": "Shartnoma turi",
+            "type": "enum",
+            "required": true,
+            "options": [
+              {
+                "value": "indefinite",
+                "label": "Nomuayyan muddatga"
+              },
+              {
+                "value": "fixed",
+                "label": "Muayyan muddatga"
+              }
+            ]
+          },
+          {
+            "key": "start_date",
+            "label": "Ishni boshlash sanasi",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "end_date",
+            "label": "Tugash sanasi (muayyan muddatli bo'lsa)",
+            "type": "date"
+          }
+        ]
+      },
+      {
+        "key": "conditions",
+        "title": "Mehnat sharoitlari",
+        "fields": [
+          {
+            "key": "salary",
+            "label": "Oylik ish haqi (so'm)",
+            "type": "number",
+            "required": true,
+            "min": 0
+          },
+          {
+            "key": "payment_day",
+            "label": "Ish haqi to'lanadigan kun",
+            "type": "number",
+            "required": true,
+            "min": 1,
+            "max": 28
+          },
+          {
+            "key": "probation_months",
+            "label": "Dastlabki sinov muddati (oy)",
+            "type": "number",
+            "min": 0
+          },
+          {
+            "key": "weekly_hours",
+            "label": "Haftalik ish vaqti (soat)",
+            "type": "number",
+            "required": true,
+            "min": 1
+          },
+          {
+            "key": "annual_leave_days",
+            "label": "Yillik asosiy ta'til (kalendar kun)",
+            "type": "number",
+            "required": true,
+            "min": 0
+          }
+        ]
+      }
     ]
   },
   "template": {
@@ -37,29 +144,145 @@
     "header": "{{ a.city }} sh.                                                    {{ a.contract_date | date }}",
     "preamble": "{{ party_a.name }} (keyingi o'rinlarda «Ish beruvchi») va {{ party_b.name }} (keyingi o'rinlarda «Xodim») ushbu mehnat shartnomasini tuzdilar:",
     "clauses": [
-      {"key": "subject", "category": "subject", "title": "1. Shartnoma predmeti",
-       "body": "1.1. Xodim {{ a.workplace }}da {{ a.position }} lavozimida ishga qabul qilinadi.\n1.2. Shartnoma {% if a.contract_kind == 'fixed' %}{{ a.end_date | date }} gacha muayyan muddatga{% else %}nomuayyan muddatga{% endif %} tuziladi. Ishni boshlash sanasi: {{ a.start_date | date }}.{% if a.probation_months %}\n1.3. Xodimga {{ a.probation_months }} oy dastlabki sinov muddati belgilanadi.{% endif %}"},
-      {"key": "time", "category": "term", "title": "2. Ish vaqti va dam olish vaqti",
-       "body": "2.1. Ish vaqtining davomiyligi haftasiga {{ a.weekly_hours }} soat.\n2.2. Xodimga {{ a.annual_leave_days }} kalendar kunlik yillik asosiy haq to'lanadigan ta'til beriladi."},
-      {"key": "pay", "category": "price", "title": "3. Mehnatga haq to'lash",
-       "body": "3.1. Xodimning oylik ish haqi {{ a.salary | money }} so'm.\n3.2. Ish haqi har oyning {{ a.payment_day }}-sanasigacha to'lanadi.\n3.3. Ish beruvchi qonunchilikda belgilangan soliq va majburiy to'lovlarni ushlab qoladi va to'laydi."},
-      {"key": "duties", "category": "liability", "title": "4. Tomonlarning majburiyatlari",
-       "body": "4.1. Xodim mehnat vazifalarini vijdonan bajarishi, ichki mehnat tartibi qoidalariga rioya qilishi shart.\n4.2. Ish beruvchi xavfsiz mehnat sharoitlarini ta'minlashi va ish haqini o'z vaqtida to'lashi shart."},
-      {"key": "dispute", "category": "dispute", "title": "5. Nizolarni hal qilish",
-       "body": "5.1. Mehnat nizolari mehnat to'g'risidagi qonunchilikda belgilangan tartibda ko'rib chiqiladi."}
+      {
+        "key": "subject",
+        "category": "subject",
+        "title": "1. Shartnoma predmeti",
+        "body": "1.1. Xodim {{ a.workplace }}da {{ a.position }} lavozimida ishga qabul qilinadi.\n1.2. Shartnoma {% if a.contract_kind == 'fixed' %}{{ a.end_date | date }} gacha muayyan muddatga{% else %}nomuayyan muddatga{% endif %} tuziladi. Ishni boshlash sanasi: {{ a.start_date | date }}.{% if a.probation_months %}\n1.3. Xodimga {{ a.probation_months }} oy dastlabki sinov muddati belgilanadi.{% endif %}"
+      },
+      {
+        "key": "time",
+        "category": "term",
+        "title": "2. Ish vaqti va dam olish vaqti",
+        "body": "2.1. Ish vaqtining davomiyligi haftasiga {{ a.weekly_hours }} soat.\n2.2. Xodimga {{ a.annual_leave_days }} kalendar kunlik yillik asosiy haq to'lanadigan ta'til beriladi."
+      },
+      {
+        "key": "pay",
+        "category": "price",
+        "title": "3. Mehnatga haq to'lash",
+        "body": "3.1. Xodimning oylik ish haqi {{ a.salary | money }} so'm.\n3.2. Ish haqi har oyning {{ a.payment_day }}-sanasigacha to'lanadi.\n3.3. Ish beruvchi qonunchilikda belgilangan soliq va majburiy to'lovlarni ushlab qoladi va to'laydi."
+      },
+      {
+        "key": "duties",
+        "category": "liability",
+        "title": "4. Tomonlarning majburiyatlari",
+        "body": "4.1. Xodim mehnat vazifalarini vijdonan bajarishi, ichki mehnat tartibi qoidalariga rioya qilishi shart.\n4.2. Ish beruvchi xavfsiz mehnat sharoitlarini ta'minlashi va ish haqini o'z vaqtida to'lashi shart."
+      },
+      {
+        "key": "dispute",
+        "category": "dispute",
+        "title": "5. Nizolarni hal qilish",
+        "body": "5.1. Mehnat nizolari mehnat to'g'risidagi qonunchilikda belgilangan tartibda ko'rib chiqiladi."
+      }
     ]
   },
   "required_elements": [
-    {"code": "position", "title": "Lavozim / mehnat vazifasi", "patterns": ["lavozim", "должност"]},
-    {"code": "salary", "title": "Ish haqi miqdori", "patterns": ["ish haqi", "заработн\\w* плат", "oklad", "оклад"]},
-    {"code": "start", "title": "Ishni boshlash sanasi", "patterns": ["boshla", "начал\\w* работ", "приступ"]},
-    {"code": "working_time", "title": "Ish vaqti", "patterns": ["ish vaqti", "рабоч\\w* врем"]}
+    {
+      "code": "position",
+      "title": "Lavozim / mehnat vazifasi",
+      "patterns": [
+        "lavozim",
+        "должност"
+      ]
+    },
+    {
+      "code": "salary",
+      "title": "Ish haqi miqdori",
+      "patterns": [
+        "ish haqi",
+        "заработн\\w* плат",
+        "oklad",
+        "оклад"
+      ]
+    },
+    {
+      "code": "start",
+      "title": "Ishni boshlash sanasi",
+      "patterns": [
+        "boshla",
+        "начал\\w* работ",
+        "приступ"
+      ]
+    },
+    {
+      "code": "working_time",
+      "title": "Ish vaqti",
+      "patterns": [
+        "ish vaqti",
+        "рабоч\\w* врем"
+      ]
+    }
   ],
   "obligation_templates": [
-    {"title": "Xodimga ish haqini to'lash", "party": "A", "kind": "duty", "amount_field": "salary", "clause_ref": "3.2",
-     "due": {"type": "recurring_monthly", "day_field": "payment_day", "start_field": "start_date", "until_field": "end_date"}},
-    {"title": "Ish haqini olish", "party": "B", "kind": "right", "amount_field": "salary", "clause_ref": "3.1",
-     "due": {"type": "recurring_monthly", "day_field": "payment_day", "start_field": "start_date", "until_field": "end_date"}}
+    {
+      "title": "Xodimga ish haqini to'lash",
+      "party": "A",
+      "kind": "duty",
+      "amount_field": "salary",
+      "clause_ref": "3.2",
+      "due": {
+        "type": "recurring_monthly",
+        "day_field": "payment_day",
+        "start_field": "start_date",
+        "until_field": "end_date"
+      }
+    },
+    {
+      "title": "Ish haqini olish",
+      "party": "B",
+      "kind": "right",
+      "amount_field": "salary",
+      "clause_ref": "3.1",
+      "due": {
+        "type": "recurring_monthly",
+        "day_field": "payment_day",
+        "start_field": "start_date",
+        "until_field": "end_date"
+      }
+    }
   ],
-  "legal_refs": [{"law_ref": "O'zbekiston Respublikasi Mehnat kodeksi"}]
+  "legal_refs": [
+    {
+      "law_ref": "MK 104-modda. Mehnat shartnomasining mazmuni",
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6260140",
+      "code": "mk",
+      "number": "104"
+    },
+    {
+      "law_ref": "MK 114-modda. Mehnat shartnomasining muddatini belgilash usullari",
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6260278",
+      "code": "mk",
+      "number": "114"
+    },
+    {
+      "law_ref": "MK 130-modda. Dastlabki sinov muddati",
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6260649",
+      "code": "mk",
+      "number": "130"
+    },
+    {
+      "law_ref": "MK 182-modda. Ish vaqtining normal davomiyligi",
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6262333",
+      "code": "mk",
+      "number": "182"
+    },
+    {
+      "law_ref": "MK 217-modda. Har yilgi asosiy eng kam mehnat taʼtilining davomiyligi",
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6263022",
+      "code": "mk",
+      "number": "217"
+    },
+    {
+      "law_ref": "MK 262-modda. Ish vaqtidan tashqari ish uchun haq toʻlash",
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6264049",
+      "code": "mk",
+      "number": "262"
+    },
+    {
+      "law_ref": "MK 312-modda. Intizomiy jazo choralari",
+      "lex_url": "https://lex.uz/uz/docs/-6257288#-6264926",
+      "code": "mk",
+      "number": "312"
+    }
+  ]
 }

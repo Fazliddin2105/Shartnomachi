@@ -15,7 +15,10 @@ from app.core.security import TokenClaims, decode_access_token
 from app.db.session import get_db
 from app.modules.users.models import User, UserStatus
 
-DB = Annotated[AsyncSession, Depends(get_db)]
+# scope="function": the transaction commits *before* the response is sent. With the default ("request")
+# the commit ran after the response, so a fast client (OTP request -> verify, token refresh) could read
+# state that was not committed yet.
+DB = Annotated[AsyncSession, Depends(get_db, scope="function")]
 
 _bearer = HTTPBearer(auto_error=False)
 

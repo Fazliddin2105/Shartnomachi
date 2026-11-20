@@ -15,6 +15,7 @@ from app.core.errors import AppError, Conflict, NotFound, ValidationFailed
 from app.core.timeutils import utcnow
 from app.db.session import session_scope
 from app.modules.audit import service as audit
+from app.modules.contracts import service as contracts_service
 from app.modules.contracts.models import ContractType
 from app.modules.contracts.reference import reference_for
 from app.modules.files import service as files
@@ -427,6 +428,7 @@ async def ai_review(job_id: uuid.UUID) -> None:
                 rule_findings=[{"clause_index": r.clause_index, "message": r.explanation} for r in rule_rows],
                 template_clauses=ref.texts if ref else None,
                 template_label=ref.label if ref else None,
+                law_texts=contracts_service.laws_for_type(ctype),
             )
         except AppError as e:
             job.ai_status, job.ai_summary = "failed", {"error": e.code, "message": e.message}

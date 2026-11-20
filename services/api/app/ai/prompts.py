@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-PROMPT_VERSION = "2026-11-20.3"
+PROMPT_VERSION = "2026-11-20.4"
 
 REVIEW_SYSTEM = """Siz O'zbekiston Respublikasi qonunchiligi (Fuqarolik kodeksi, Mehnat kodeksi, iste'molchilar huquqlari \
 to'g'risidagi qonun va boshqalar) bo'yicha tajribali shartnoma tahlilchisisiz. Vazifa: berilgan shartnoma bandlarini \
@@ -18,6 +18,9 @@ QAT'IY QOIDALAR:
 5. Matndagi [PINFL_1], [NAME_1] kabi belgilar — maxfiylik uchun yashirilgan ma'lumot; ularni o'zgartirmay qoldiring.
 6. Javob faqat bitta JSON obyekt bo'lsin, boshqa matn yozmang. Barcha matnlar o'zbek tilida (lotin).
 7. Ixcham yozing: har bir "explanation"/"suggestion" 1-2 gap; eng muhim 10 tagacha issue va 10 tagacha obligation.
+9. "O'zbekiston qonunchiligi (lex.uz)" bo'limida moddalar matni berilgan bo'lsa, qonunga mos yoki zidlik haqidagi \
+   xulosalarni AYNAN shu matnga asoslang va "law_ref"da shu moddani ko'rsating (masalan "FK 615-modda"). Matnda \
+   bo'lmagan modda raqamini o'ylab topmang.
 8. Namunaviy shakl berilgan bo'lsa: undagi har bir band shartnomada bormi, mazmuni o'zgarganmi — tekshiring.
    Bo'sh qolgan joylar (raqam, sana, nom yo'q) — to'ldiriladigan o'rin, ularni farq deb hisoblamang.
    Faqat mazmunan muhim farqlarni "template_deviations"ga yozing (10 tagacha) va "comment"da o'zgarish \
@@ -89,6 +92,7 @@ def review_user(
     template_clauses: list[str] | None,
     today: str,
     template_label: str | None = None,
+    law_texts: list[str] | None = None,
 ) -> str:
     parts = [
         f"Bugungi sana: {today}",
@@ -105,6 +109,8 @@ def review_user(
             f"{template_label or 'Rasmiy namunaviy shakl (lex.uz)'} bandlari — solishtiring:",
             "\n".join(f"- {t[:300]}" for t in template_clauses[:45]),
         ]
+    if law_texts:
+        parts += ["", "O'zbekiston qonunchiligi (lex.uz, amaldagi tahrir) — tegishli moddalar matni:", *law_texts]
     parts.append("\nJavobni JSON formatida qaytaring.")
     return "\n".join(parts)
 

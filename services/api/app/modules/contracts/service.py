@@ -167,6 +167,13 @@ async def create(
         raise ValidationFailed("Initiator must be party A, B or a lawyer", code="role_invalid")
     db.add(c)
     await db.flush()
+    await log_event(
+        db,
+        c,
+        actor_id=user.id,
+        side=represents.value if my_role == PartyRole.LAWYER and represents else my_role.value,
+        kind="created",
+    )
     await audit.record(
         db,
         action="contract.create",
@@ -182,6 +189,15 @@ def _fields(questionnaire: dict[str, Any]) -> list[dict[str, Any]]:
     return [f for s in questionnaire.get("sections", []) for f in s.get("fields", [])]
 
 
+def _required_if(f: dict[str, Any], answers: dict[str, Any]) -> bool:
+    """`"required_if": {"field": "b_via_representative", "in": ["yes"]}` — conditionally mandatory field."""
+    cond = f.get("required_if")
+    if not cond:
+        return False
+    v = engine.get_path(answers, cond["field"])
+    return v is not engine._MISSING and v in cond.get("in", [])
+
+
 def check_answers(questionnaire: dict[str, Any], answers: dict[str, Any]) -> tuple[list[str], list[dict[str, str]]]:
     """Returns (missing required fields, type errors)."""
     missing: list[str] = []
@@ -190,7 +206,7 @@ def check_answers(questionnaire: dict[str, Any], answers: dict[str, Any]) -> tup
         key, ftype = f["key"], f.get("type", "string")
         v = engine.get_path(answers, key)
         if v is engine._MISSING or v in (None, "", []):
-            if f.get("required"):
+            if f.get("required") or _required_if(f, answers):
                 missing.append(key)
             continue
         if ftype == "party":
@@ -264,7 +280,14 @@ def deep_merge(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
     """Nested dicts are merged key by key, so saving one field of a party keeps the others."""
     out = dict(base)
     for k, v in patch.items():
-        out[k] = deep_merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+        if v is None or v == "":
+            out.pop(k, None)  # «tozalash»: an emptied field disappears from the answers
+        elif isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = deep_merge(out[k], v)
+            if not out[k]:
+                out.pop(k)
+        else:
+            out[k] = v
     return out
 
 
@@ -426,9 +449,24 @@ async def validate(db: AsyncSession, c: Contract) -> dict[str, Any]:
     form, reasons = _form_requirement(ctype, ctx)
     c.form_requirement = form
     summary = engine.summarize(findings)
+    field_warnings: dict[str, list[dict[str, Any]]] = {}
+    for f in findings:
+        for path in f.fields or []:
+            if str(path).startswith("answers."):
+                field_warnings.setdefault(str(path).removeprefix("answers."), []).append(
+                    {
+                        "severity": f.severity.value,
+                        "rule_code": f.rule_code,
+                        "message": f.message,
+                        "fix_suggestion": f.fix_suggestion,
+                        "law_ref": f.law_ref,
+                        "lex_url": f.lex_url,
+                    }
+                )
     result = {
         "findings": [f.to_dict() for f in findings],
         "summary": summary,
+        "field_warnings": field_warnings,
         "missing_fields": missing,
         "field_errors": type_errors,
         "form": {
@@ -447,7 +485,7 @@ async def validate(db: AsyncSession, c: Contract) -> dict[str, Any]:
 
 
 async def generate(
-    db: AsyncSession, c: Contract, user: User, *, language: str, acknowledge_red: bool
+    db: AsyncSession, c: Contract, user: User, *, language: str
 ) -> tuple[ContractVersion, dict[str, Any]]:
     if c.status not in EDITABLE:
         raise Conflict("Contract can no longer be regenerated", code="contract_locked")
@@ -460,7 +498,8 @@ async def generate(
             code="answers_incomplete",
             details={"missing": report["missing_fields"], "errors": report["field_errors"]},
         )
-    if report["summary"]["blocking"] and not acknowledge_red:
+    if report["summary"]["blocking"]:
+        # Policy: a contract with clauses contrary to law is never produced by the platform.
         raise ValidationFailed(
             "Contract contains clauses contrary to law",
             code="illegal_clauses",
@@ -504,7 +543,7 @@ async def generate(
         sha256=digest,
         file_id=stored.id,
         validation=report["summary"],
-        red_acknowledged=acknowledge_red and report["summary"]["blocking"],
+        red_acknowledged=False,
         created_by=user.id,
     )
     db.add(v)
@@ -591,6 +630,37 @@ async def _notify(db: AsyncSession, user_id: uuid.UUID | None, msg: Message, cha
         await notify(db, target, msg, channels)
 
 
+async def log_event(
+    db: AsyncSession,
+    c: Contract,
+    *,
+    actor_id: uuid.UUID | None,
+    side: str | None,
+    kind: str,
+    payload: dict[str, Any] | None = None,
+    merge_window_s: int | None = None,
+) -> None:
+    """Append a negotiation timeline entry; with `merge_window_s`, a burst of the same actor's edits
+    (autosave on every keystroke) is folded into one entry instead of flooding the timeline."""
+    from app.modules.contracts.models import ContractEvent
+
+    if merge_window_s:
+        last = await db.scalar(
+            select(ContractEvent)
+            .where(ContractEvent.contract_id == c.id, ContractEvent.kind == kind, ContractEvent.actor_id == actor_id)
+            .order_by(ContractEvent.created_at.desc())
+            .limit(1)
+        )
+        if last is not None and utcnow() - ensure_utc(last.created_at) < timedelta(seconds=merge_window_s):
+            old = dict(last.payload or {})
+            fields = sorted(set(old.get("fields", [])) | set((payload or {}).get("fields", [])))
+            last.payload = {**old, **(payload or {}), "fields": fields[:100]}
+            last.created_at = utcnow()
+            return
+    db.add(ContractEvent(contract_id=c.id, actor_id=actor_id, side=side, kind=kind, payload=payload or {}))
+    await db.flush()
+
+
 async def notify_parties(
     db: AsyncSession, c: Contract, *, except_user: uuid.UUID | None, title: str, body: str, event: str
 ) -> None:
@@ -632,6 +702,7 @@ async def invite(
     party.invite_phone_hash = phone_hash(phone)
     party.display_name = display_name
     await db.flush()
+    await log_event(db, c, actor_id=user.id, side=None, kind="invited", payload={"role": role.value})
     await get_sms_sender().send(
         phone, f'LexLab: sizni "{c.title[:40]}" shartnomasiga taklif qilishdi. Taklif kodi: {token}'
     )
@@ -746,6 +817,14 @@ async def _join(db: AsyncSession, user: User, party: ContractParty) -> Contract:
         raise Conflict("You are already a signing party of this contract", code="already_party")
     party.user_id, party.joined_at, party.invite_token_hash = user.id, utcnow(), None
     party.invite_phone_hash = None
+    await log_event(
+        db,
+        c,
+        actor_id=user.id,
+        side=party.represents.value if party.represents else party.role.value,
+        kind="joined",
+        payload={"role": party.role.value},
+    )
     await audit.record(
         db, action="contract.join", entity="contract", entity_id=c.id, actor_id=user.id, meta={"role": party.role.value}
     )
@@ -879,6 +958,15 @@ async def _clauses_for_ai(db: AsyncSession, c: Contract) -> list[dict[str, Any]]
     return [{"index": i, "text": f"{s_['title']}\n{s_['text']}".strip()} for i, s_ in enumerate(content["sections"])]
 
 
+def laws_for_type(ctype: ContractType | None) -> list[str] | None:
+    """Article texts (lex.uz) relevant to the contract type, for the AI prompt."""
+    from app.modules.laws import corpus
+
+    if ctype is None:
+        return None
+    return corpus.prompt_block(corpus.articles_for(ctype.legal_refs)) or None
+
+
 async def ai_review(db: AsyncSession, c: Contract) -> dict[str, Any]:
     from app.ai import service as ai
 
@@ -895,6 +983,7 @@ async def ai_review(db: AsyncSession, c: Contract) -> dict[str, Any]:
         rule_findings=rule_findings,
         template_clauses=ref.texts if ref else None,
         template_label=ref.label if ref else None,
+        law_texts=laws_for_type(ctype),
     )
     out = result.to_dict()
     out["rule_findings"] = len(rule_findings)

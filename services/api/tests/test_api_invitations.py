@@ -66,6 +66,7 @@ async def test_invitation_list_accept_and_activate(client: AsyncClient) -> None:
     # The invitee can read the text before joining; strangers can't
     pv = await client.get(f"{API}/contracts/invitations/{item['party_id']}/preview", headers=b)
     assert pv.status_code == 200 and "Chilonzor" in str(pv.json()["sections"])
+    assert "warnings" in pv.json() and "risk_counts" in pv.json()
     r = await client.get(f"{API}/contracts/invitations/{item['party_id']}/preview", headers=stranger)
     assert r.json()["error"]["code"] == "invite_phone_mismatch"
     r = await client.post(f"{API}/contracts/invitations/{item['party_id']}/accept", headers=stranger)

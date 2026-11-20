@@ -17,7 +17,7 @@ from app.core.ratelimit import get_limiter
 from app.modules.anchoring import service as anchoring
 from app.modules.anchoring.models import LeafKind
 from app.modules.approvals import service as approvals
-from app.modules.contracts import service
+from app.modules.contracts import negotiation, service
 from app.modules.contracts.models import (
     ApprovalMethod,
     Contract,
@@ -124,9 +124,6 @@ class AnswersPatch(BaseModel):
 
 class GenerateIn(BaseModel):
     language: Literal["uz", "ru"] = "uz"
-    acknowledge_red: bool = Field(
-        default=False, description="Qizil (qonunga zid) ogohlantirishlarni tushunganini tasdiqlash"
-    )
 
 
 class VersionOut(BaseModel):
@@ -298,7 +295,17 @@ async def invitation_preview(
     party = await service._open_invitation(db, user, party_id)
     c = await db.get(Contract, party.contract_id)
     assert c is not None
-    return await service.preview(db, c, language=language)
+    content = await service.preview(db, c, language=language)
+    report = await service.validate(db, c)
+    # the invitee sees the risky/illegal points *before* joining
+    return {
+        **content,
+        "warnings": [
+            {k: f.get(k) for k in ("severity", "message", "law_ref", "fix_suggestion", "clause_index")}
+            for f in report["findings"]
+        ],
+        "risk_counts": report["summary"]["counts"],
+    }
 
 
 @router.post(
@@ -324,11 +331,11 @@ async def get_contract(contract_id: uuid.UUID, db: DB, user: CurrentUser) -> Con
 @router.patch("/contracts/{contract_id}/answers", summary="Savolnoma javoblari (+ real vaqt tekshiruvi)")
 async def patch_answers(contract_id: uuid.UUID, body: AnswersPatch, db: DB, user: CurrentUser) -> dict[str, Any]:
     c, party = await service.load_for(db, contract_id, user)
-    service.require_editor(c, user, party)
-    return await service.patch_answers(
+    return await negotiation.update_answers(
         db,
         c,
         user,
+        party,
         answers=body.answers,
         merge=body.merge,
         selected_clauses=(
@@ -385,8 +392,9 @@ async def validate_contract(contract_id: uuid.UUID, db: DB, user: CurrentUser) -
 @router.post("/contracts/{contract_id}/generate", summary="DOCX/PDF generatsiya (yangi versiya)")
 async def generate(contract_id: uuid.UUID, body: GenerateIn, db: DB, user: CurrentUser) -> dict[str, Any]:
     c, party = await service.load_for(db, contract_id, user)
-    service.require_editor(c, user, party)
-    v, report = await service.generate(db, c, user, language=body.language, acknowledge_red=body.acknowledge_red)
+    negotiation.check_can_generate(c, user, party)
+    v, report = await service.generate(db, c, user, language=body.language)
+    await negotiation.after_generate(db, c, user, v.number, v.sha256)
     return {"version": VersionOut.model_validate(v).model_dump(mode="json"), "report": report}
 
 

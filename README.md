@@ -3,7 +3,7 @@
 «Huquqiy xizmat platformasi — Dasturiy struktura» hujjati asosida qurilgan modulli monolit.
 Platforma faqat **shartnoma** yo'nalishiga qaratilgan: «Shartnoma tuz», «Shartnomani tekshir» va ularni bog'lovchi
 qatlamlar (tasdiqlash, majburiyat va eslatmalar, yurist arxivi). «Mening yo'riqnomam» moduli olib tashlangan.
-Backend (`services/api`): 115 ta API operatsiyasi, 106 avtomatik test; web ilova — `apps/web`.
+Backend (`services/api`): 132 ta API operatsiyasi, 112 avtomatik test; web ilova — `apps/web`.
 Hujjatlar xeshi Polygon blokcheyniga Merkle ildizi orqali qayd etiladi — [docs/blockchain.md](docs/blockchain.md).
 
 ```
@@ -33,7 +33,7 @@ lexlab-platform/
 │   │       ├── audit/           # append-only, hash-zanjirli audit log
 │   │       └── anchoring/       # blokcheyn qaydi: Merkle partiyalar, relayer (gasless), isbot paketlari
 │   ├── alembic/             # migratsiyalar (Postgres'da audit uchun trigger)
-│   └── tests/               # 106 ta test (E-IMZO emulyatori, xotiradagi EVM, soxta LLM — haqiqiy AI chaqirilmaydi)
+│   └── tests/               # 112 ta test (E-IMZO emulyatori, xotiradagi EVM, soxta LLM — haqiqiy AI chaqirilmaydi)
 ├── packages/legal-content/  # shartnoma turlari, qoidalar, bandlar kutubxonasi, BHM/bayramlar (JSON)
 ├── packages/contracts/      # LexLabAnchor.sol (Solidity) + kompilyatsiya qilingan ABI/bytecode
 ├── packages/web-sdk/        # lexlab-api.js — web ilova uchun JS klient (/sdk/lexlab-api.js)
@@ -80,6 +80,11 @@ foydalanuvchi matnni `PUT /scans/{id}/text` bilan tasdiqlaydi.
 **Ikki tomon:** A tomon `POST /contracts/{id}/invite` bilan B ni telefon raqami bo'yicha taklif qiladi;
 B o'sha raqam bilan (SMS-kod) kirib `GET /contracts/invitations` da taklifni ko'radi, matnni qo'shilishdan oldin o'qiydi
 (`/invitations/{party_id}/preview`), qabul qiladi yoki rad etadi. Har bosqichda ikkala tomonga bildirishnoma boradi.
+Kelishuv: har tomon faqat o'z ma'lumotini (`party_a.*` / `party_b.*`) tahrirlaydi, umumiy shartlarni ikkalasi;
+norozilik va qarshi taklif (`/objections`, qabul/rad/qaytarib olish), har o'zgarish oldingi roziliklarni bekor qiladi.
+Ikkala tomon bir xil shartlarga `/agree` bersa, umumiy shartnoma avtomatik yaratiladi; qonunga zid shart bo'lsa — yaratilmaydi.
+Hammasi imzolagach shartnoma har bir tomonning shaxsiy arxiviga (`/archive`) saqlanadi; `GET /contracts/{id}/negotiation`
+ekranga kerakli hamma narsani (keyingi qadam, maydon egalari, ogohlantirishlar) beradi.
 
 **Shablonlar:** shartnoma turlari `packages/legal-content/contract_types/*.json`. Manba `source.kind` bilan belgilanadi:
 `lexuz` — lex.uz'dagi rasmiy namunaviy shakl (mehnat shartnomasi), `organization` — tashkilotning o'z shabloni

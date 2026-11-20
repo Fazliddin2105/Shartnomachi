@@ -1,0 +1,793 @@
+{
+  "code": "vehicle_exchange",
+  "title_uz": "Avtotransport vositasini ayirboshlash shartnomasi",
+  "title_ru": "Договор мены автотранспортного средства",
+  "description": "Fuqarolar o‘rtasida avtomobillarni ayirboshlash (notarial shakl; ikkinchi taraf vakil orqali ham qatnashishi mumkin). Tashkilot shabloni asosida.",
+  "form_requirement": "simple",
+  "form_rules": [],
+  "detect_keywords": [
+    "avtotransport",
+    "ayirboshla",
+    "davlat raqami belgisi",
+    "dvigatel raqami",
+    "kuzov raqami",
+    "qayd etish guvohnomasi",
+    "мена",
+    "транспортн"
+  ],
+  "source": {
+    "kind": "organization",
+    "title": "Avtotransport vositasini ayirboshlash shartnomasi (notarial shakl, tashkilot shabloni)",
+    "file": "Avtotransport_vositasini_ayirboshlash_shartnomasi.docx",
+    "sha256": "bdb51a086dbfc18d45f2b97352a39b1d0b13aa829380d9335befdac1aed93fe5",
+    "imported_at": "2026-11-20",
+    "note": "Matn so‘zma-so‘z; asl shaklda Ikkinchi taraf ishonchnoma bo‘yicha vakil orqali — bu variant tanlov sifatida saqlangan, «o‘zi ishtirok etadi» varianti qo‘shilgan. Notarius ma’lumotlari ixtiyoriy."
+  },
+  "questionnaire": {
+    "meta_fields": {
+      "amount": "value_a",
+      "starts_on": "contract_date"
+    },
+    "sections": [
+      {
+        "key": "notary",
+        "title": "Notarial ma’lumotlar",
+        "fields": [
+          {
+            "key": "notarial_district",
+            "label": "Notarial okrug nomi",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "contract_date",
+            "label": "Shartnoma tasdiqlangan sana",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "notary",
+            "label": "Notarius nomi / notarial idora va manzili",
+            "type": "string",
+            "hint": "Notarius to‘ldirishi mumkin — bo‘sh qoldiring"
+          }
+        ]
+      },
+      {
+        "key": "party_a",
+        "title": "Birinchi taraf",
+        "fields": [
+          {
+            "key": "party_a.name",
+            "label": "Birinchi taraf — F.I.Sh.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.address",
+            "label": "Birinchi taraf — doimiy ro‘yxatdagi manzil (ko‘cha/mahalla)",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.house",
+            "label": "Birinchi taraf — uy raqami",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.birth_year",
+            "label": "Birinchi taraf — tug‘ilgan yili",
+            "type": "number",
+            "required": true,
+            "min": 1900,
+            "max": 2030
+          },
+          {
+            "key": "party_a.passport_series",
+            "label": "Birinchi taraf — pasport/ID-karta seriyasi",
+            "type": "string",
+            "required": true,
+            "pattern": "^[A-Z]{2}$",
+            "hint": "Masalan: AA"
+          },
+          {
+            "key": "party_a.passport_number",
+            "label": "Birinchi taraf — pasport/ID-karta raqami",
+            "type": "string",
+            "required": true,
+            "pattern": "^\\d{7}$"
+          },
+          {
+            "key": "party_a.passport_issued_by",
+            "label": "Birinchi taraf — pasportni bergan IIB",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.passport_issued_date",
+            "label": "Birinchi taraf — pasport berilgan sana",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "party_a.pinfl",
+            "label": "Birinchi taraf — JShShIR",
+            "type": "string",
+            "required": true,
+            "pattern": "^\\d{14}$"
+          },
+          {
+            "key": "party_a.phone",
+            "label": "Birinchi taraf — telefon",
+            "type": "string",
+            "required": true,
+            "pattern": "^\\+?998\\d{9}$"
+          }
+        ]
+      },
+      {
+        "key": "party_b",
+        "title": "Ikkinchi taraf",
+        "fields": [
+          {
+            "key": "b_via_representative",
+            "label": "Ikkinchi taraf qanday ishtirok etadi",
+            "type": "enum",
+            "required": true,
+            "side": "B",
+            "options": [
+              {
+                "value": "no",
+                "label": "O‘zi ishtirok etadi"
+              },
+              {
+                "value": "yes",
+                "label": "Ishonchnoma asosida vakil orqali"
+              }
+            ]
+          },
+          {
+            "key": "party_b.name",
+            "label": "Ikkinchi taraf — F.I.Sh.",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.address",
+            "label": "Ikkinchi taraf — doimiy ro‘yxatdagi manzil (ko‘cha/mahalla)",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.house",
+            "label": "Ikkinchi taraf — uy raqami",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.birth_year",
+            "label": "Ikkinchi taraf — tug‘ilgan yili",
+            "type": "number",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "no"
+              ]
+            },
+            "min": 1900,
+            "max": 2030
+          },
+          {
+            "key": "party_b.passport_series",
+            "label": "Ikkinchi taraf — pasport/ID-karta seriyasi",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "no"
+              ]
+            },
+            "pattern": "^[A-Z]{2}$",
+            "hint": "Masalan: AA"
+          },
+          {
+            "key": "party_b.passport_number",
+            "label": "Ikkinchi taraf — pasport/ID-karta raqami",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "no"
+              ]
+            },
+            "pattern": "^\\d{7}$"
+          },
+          {
+            "key": "party_b.passport_issued_by",
+            "label": "Ikkinchi taraf — pasportni bergan IIB",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "no"
+              ]
+            }
+          },
+          {
+            "key": "party_b.passport_issued_date",
+            "label": "Ikkinchi taraf — pasport berilgan sana",
+            "type": "date",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "no"
+              ]
+            }
+          },
+          {
+            "key": "party_b.pinfl",
+            "label": "Ikkinchi taraf — JShShIR",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "no"
+              ]
+            },
+            "pattern": "^\\d{14}$"
+          }
+        ]
+      },
+      {
+        "key": "representative",
+        "title": "Ikkinchi taraf vakili (ishonchnoma bo‘yicha)",
+        "fields": [
+          {
+            "key": "party_b.rep.name",
+            "label": "Vakil — F.I.Sh.",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            }
+          },
+          {
+            "key": "party_b.rep.address",
+            "label": "Vakil — doimiy ro‘yxatdagi manzil (ko‘cha/mahalla)",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            }
+          },
+          {
+            "key": "party_b.rep.house",
+            "label": "Vakil — uy raqami",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            }
+          },
+          {
+            "key": "party_b.rep.birth_year",
+            "label": "Vakil — tug‘ilgan yili",
+            "type": "number",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            },
+            "min": 1900,
+            "max": 2030
+          },
+          {
+            "key": "party_b.rep.passport_series",
+            "label": "Vakil — pasport/ID-karta seriyasi",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            },
+            "pattern": "^[A-Z]{2}$",
+            "hint": "Masalan: AA"
+          },
+          {
+            "key": "party_b.rep.passport_number",
+            "label": "Vakil — pasport/ID-karta raqami",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            },
+            "pattern": "^\\d{7}$"
+          },
+          {
+            "key": "party_b.rep.passport_issued_by",
+            "label": "Vakil — pasportni bergan IIB",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            }
+          },
+          {
+            "key": "party_b.rep.passport_issued_date",
+            "label": "Vakil — pasport berilgan sana",
+            "type": "date",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            }
+          },
+          {
+            "key": "party_b.rep.pinfl",
+            "label": "Vakil — JShShIR",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            },
+            "pattern": "^\\d{14}$"
+          },
+          {
+            "key": "party_b.poa_notary",
+            "label": "Ishonchnomani qayd etgan notarius",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            }
+          },
+          {
+            "key": "party_b.poa_date",
+            "label": "Ishonchnoma sanasi",
+            "type": "date",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            }
+          },
+          {
+            "key": "party_b.poa_reg_no",
+            "label": "Ishonchnoma reyestr raqami",
+            "type": "string",
+            "required_if": {
+              "field": "b_via_representative",
+              "in": [
+                "yes"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "key": "vehicle_a",
+        "title": "Birinchi tarafning avtomobili",
+        "fields": [
+          {
+            "key": "party_a.vehicle.make",
+            "label": "Birinchi taraf avtomobili — rusumi (markasi)",
+            "type": "string",
+            "required": true,
+            "hint": "Masalan: Chevrolet Cobalt"
+          },
+          {
+            "key": "party_a.vehicle.year",
+            "label": "Birinchi taraf avtomobili — ishlab chiqarilgan yili",
+            "type": "number",
+            "required": true,
+            "min": 1950,
+            "max": 2030
+          },
+          {
+            "key": "party_a.vehicle.engine_no",
+            "label": "Birinchi taraf avtomobili — dvigatel raqami",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.vehicle.body_no",
+            "label": "Birinchi taraf avtomobili — kuzov raqami",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.vehicle.chassis_no",
+            "label": "Birinchi taraf avtomobili — shassi raqami",
+            "type": "string",
+            "hint": "Bo‘lmasa, bo‘sh qoldiring"
+          },
+          {
+            "key": "party_a.vehicle.color",
+            "label": "Birinchi taraf avtomobili — rangi",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.vehicle.plate",
+            "label": "Birinchi taraf avtomobili — davlat raqami belgisi",
+            "type": "string",
+            "required": true,
+            "hint": "Masalan: 01 A 123 BC"
+          },
+          {
+            "key": "party_a.vehicle.hp",
+            "label": "Birinchi taraf avtomobili — dvigatel quvvati (ot kuchi)",
+            "type": "number",
+            "required": true,
+            "min": 1
+          },
+          {
+            "key": "party_a.vehicle.reg_issuer",
+            "label": "Birinchi taraf avtomobili — qayd guvohnomasini bergan organ (IIB YHXX / RO‘ va IOB / TRIB)",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.vehicle.reg_date",
+            "label": "Birinchi taraf avtomobili — qayd guvohnomasi berilgan sana",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "party_a.vehicle.reg_series",
+            "label": "Birinchi taraf avtomobili — qayd guvohnomasi seriyasi",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_a.vehicle.reg_number",
+            "label": "Birinchi taraf avtomobili — qayd guvohnomasi raqami",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "vehicle_b",
+        "title": "Ikkinchi tarafning avtomobili",
+        "fields": [
+          {
+            "key": "party_b.vehicle.make",
+            "label": "Ikkinchi taraf avtomobili — rusumi (markasi)",
+            "type": "string",
+            "required": true,
+            "hint": "Masalan: Chevrolet Cobalt"
+          },
+          {
+            "key": "party_b.vehicle.year",
+            "label": "Ikkinchi taraf avtomobili — ishlab chiqarilgan yili",
+            "type": "number",
+            "required": true,
+            "min": 1950,
+            "max": 2030
+          },
+          {
+            "key": "party_b.vehicle.engine_no",
+            "label": "Ikkinchi taraf avtomobili — dvigatel raqami",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.vehicle.body_no",
+            "label": "Ikkinchi taraf avtomobili — kuzov raqami",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.vehicle.chassis_no",
+            "label": "Ikkinchi taraf avtomobili — shassi raqami",
+            "type": "string",
+            "hint": "Bo‘lmasa, bo‘sh qoldiring"
+          },
+          {
+            "key": "party_b.vehicle.color",
+            "label": "Ikkinchi taraf avtomobili — rangi",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.vehicle.plate",
+            "label": "Ikkinchi taraf avtomobili — davlat raqami belgisi",
+            "type": "string",
+            "required": true,
+            "hint": "Masalan: 01 A 123 BC"
+          },
+          {
+            "key": "party_b.vehicle.hp",
+            "label": "Ikkinchi taraf avtomobili — dvigatel quvvati (ot kuchi)",
+            "type": "number",
+            "required": true,
+            "min": 1
+          },
+          {
+            "key": "party_b.vehicle.reg_issuer",
+            "label": "Ikkinchi taraf avtomobili — qayd guvohnomasini bergan organ (IIB YHXX / RO‘ va IOB / TRIB)",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.vehicle.reg_date",
+            "label": "Ikkinchi taraf avtomobili — qayd guvohnomasi berilgan sana",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "party_b.vehicle.reg_series",
+            "label": "Ikkinchi taraf avtomobili — qayd guvohnomasi seriyasi",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "party_b.vehicle.reg_number",
+            "label": "Ikkinchi taraf avtomobili — qayd guvohnomasi raqami",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      {
+        "key": "terms",
+        "title": "Baholash va xarajatlar",
+        "fields": [
+          {
+            "key": "value_a",
+            "label": "Birinchi taraf avtomobilining kelishilgan qiymati (so‘m)",
+            "type": "number",
+            "required": true,
+            "min": 1
+          },
+          {
+            "key": "value_b",
+            "label": "Ikkinchi taraf avtomobilining kelishilgan qiymati (so‘m)",
+            "type": "number",
+            "required": true,
+            "min": 1
+          },
+          {
+            "key": "expenses_paid_by",
+            "label": "Rasmiylashtirish xarajatlarini kim to‘laydi",
+            "type": "enum",
+            "required": true,
+            "options": [
+              {
+                "value": "A",
+                "label": "Birinchi taraf"
+              },
+              {
+                "value": "B",
+                "label": "Ikkinchi taraf"
+              },
+              {
+                "value": "both",
+                "label": "Taraflar teng"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "template": {
+    "title": "AVTOTRANSPORT VOSITASINI AYIRBOSHLASH SHARTNOMASI",
+    "header": "",
+    "subheader": "{{ a.notarial_district }}\n{{ a.contract_date | date_long }}\n{{ a.notary or '________________________________________' }}",
+    "preamble": "Biz — {{ party_a.address }} manzilidagi {{ party_a.house }}-uyda doimiy ro‘yxatda (propiskada) turuvchi, {{ party_a.birth_year }}-yilda tug‘ilgan {{ party_a.name }} (pasport/ID-karta seriyasi {{ party_a.passport_series }} raqami {{ party_a.passport_number }}, {{ party_a.passport_issued_by }} tomonidan {{ party_a.passport_issued_date | date }}-yilda berilgan, JShShIR: {{ party_a.pinfl }}, tel.: {{ party_a.phone }}) bir tarafdan va {% if a.b_via_representative == 'yes' %}{{ party_b.address }} manzilidagi {{ party_b.house }}-uyda doimiy ro‘yxatda turuvchi {{ party_b.name }} nomidan {{ party_b.poa_notary }} xususiy amaliyot bilan shug‘ullanuvchi notarius tomonidan {{ party_b.poa_date | date }}-yilda {{ party_b.poa_reg_no }}-sonli reyestr raqami bilan qayd etilgan ishonchnomaga asosan harakat qiluvchi — {{ party_b.rep.address }} manzilida yashovchi, {{ party_b.rep.birth_year }}-yilda tug‘ilgan {{ party_b.rep.name }} (pasport/ID-karta seriyasi {{ party_b.rep.passport_series }} raqami {{ party_b.rep.passport_number }}, {{ party_b.rep.passport_issued_by }} tomonidan {{ party_b.rep.passport_issued_date | date }}-yilda berilgan, JShShIR: {{ party_b.rep.pinfl }}){% else %}{{ party_b.address }} manzilidagi {{ party_b.house }}-uyda doimiy ro‘yxatda (propiskada) turuvchi, {{ party_b.birth_year }}-yilda tug‘ilgan {{ party_b.name }} (pasport/ID-karta seriyasi {{ party_b.passport_series }} raqami {{ party_b.passport_number }}, {{ party_b.passport_issued_by }} tomonidan {{ party_b.passport_issued_date | date }}-yilda berilgan, JShShIR: {{ party_b.pinfl }}){% endif %} ikkinchi tarafdan ushbu shartnomani quyidagilar haqida tuzdik:",
+    "party_titles": {
+      "A": "BIRINCHI TARAF",
+      "B": "IKKINCHI TARAF"
+    },
+    "clauses": [
+      {
+        "key": "subject",
+        "category": "subject",
+        "title": "",
+        "body": "1. Men — {{ party_a.name }} hamda men — {% if a.b_via_representative == 'yes' %}{{ party_b.rep.name }}{% else %}{{ party_b.name }}{% endif %} o‘zaro kelishgan holda quyidagi avtotransport vositalarimizni o‘zaro ayirboshladik:\n— Birinchi tarafga tegishli bo‘lgan: rusumi (markasi) {{ party_a.vehicle.make }}, ishlab chiqarilgan yili {{ party_a.vehicle.year }}-yil, dvigatel raqami {{ party_a.vehicle.engine_no }}, kuzov raqami {{ party_a.vehicle.body_no }}, shassi raqami {{ party_a.vehicle.chassis_no or '—' }}, rangi {{ party_a.vehicle.color }}, davlat raqami belgisi {{ party_a.vehicle.plate }}, dvigatel quvvati {{ party_a.vehicle.hp }} ot kuchiga ega bo‘lgan avtotransport vositasi;\n— Ikkinchi tarafga tegishli bo‘lgan: rusumi (markasi) {{ party_b.vehicle.make }}, ishlab chiqarilgan yili {{ party_b.vehicle.year }}-yil, dvigatel raqami {{ party_b.vehicle.engine_no }}, kuzov raqami {{ party_b.vehicle.body_no }}, shassi raqami {{ party_b.vehicle.chassis_no or '—' }}, rangi {{ party_b.vehicle.color }}, davlat raqami belgisi {{ party_b.vehicle.plate }}, dvigatel quvvati {{ party_b.vehicle.hp }} ot kuchiga ega bo‘lgan avtotransport vositasi."
+      },
+      {
+        "key": "ownership",
+        "category": "subject",
+        "title": "",
+        "body": "2. Mulk huquqini tasdiqlovchi hujjatlar:\n— ayirboshlanayotgan {{ party_a.vehicle.make }} rusumli avtotransport vositasi Birinchi tarafga {{ party_a.vehicle.reg_issuer }} tomonidan {{ party_a.vehicle.reg_date | date }}-yilda berilgan seriyasi {{ party_a.vehicle.reg_series }} raqami {{ party_a.vehicle.reg_number }} bo‘lgan transport vositasini qayd etish guvohnomasiga asosan tegishli;\n— ayirboshlanayotgan {{ party_b.vehicle.make }} rusumli avtotransport vositasi Ikkinchi taraf ({{ party_b.name }})ga {{ party_b.vehicle.reg_issuer }} tomonidan {{ party_b.vehicle.reg_date | date }}-yilda berilgan seriyasi {{ party_b.vehicle.reg_series }} raqami {{ party_b.vehicle.reg_number }} bo‘lgan transport vositasini qayd etish guvohnomasiga asosan tegishli."
+      },
+      {
+        "key": "valuation",
+        "category": "price",
+        "title": "",
+        "body": "3. Ayirboshlanayotgan avtotransport vositalari taraflar tomonidan:\n— {{ party_a.vehicle.make }} rusumli avtotransport vositasi — {{ a.value_a | money }} ({{ a.value_a | words }}) so‘mga;\n— {{ party_b.vehicle.make }} rusumli avtotransport vositasi — {{ a.value_b | money }} ({{ a.value_b | words }}) so‘mga baholandi."
+      },
+      {
+        "key": "equal",
+        "category": "price",
+        "title": "",
+        "body": "4. Avtotransport vositalarining almashinuvi qo‘shimcha to‘lovlarsiz (teng qiymatda) o‘tkazildi."
+      },
+      {
+        "key": "transfer",
+        "category": "delivery",
+        "title": "",
+        "body": "5. Mazkur shartnomaga asosan:\n— Birinchi taraf ({{ party_a.name }}) egaligiga rusumi {{ party_b.vehicle.make }}, ishlab chiqarilgan yili {{ party_b.vehicle.year }}-yil, dvigatel raqami {{ party_b.vehicle.engine_no }}, kuzov raqami {{ party_b.vehicle.body_no }}, shassi raqami {{ party_b.vehicle.chassis_no or '—' }}, rangi {{ party_b.vehicle.color }}, davlat raqami belgisi {{ party_b.vehicle.plate }}, dvigatel quvvati {{ party_b.vehicle.hp }} ot kuchiga ega bo‘lgan avtotransport vositasi o‘tadi;\n— Ikkinchi taraf ({{ party_b.name }}) egaligiga rusumi {{ party_a.vehicle.make }}, ishlab chiqarilgan yili {{ party_a.vehicle.year }}-yil, dvigatel raqami {{ party_a.vehicle.engine_no }}, kuzov raqami {{ party_a.vehicle.body_no }}, shassi raqami {{ party_a.vehicle.chassis_no or '—' }}, rangi {{ party_a.vehicle.color }}, davlat raqami belgisi {{ party_a.vehicle.plate }}, dvigatel quvvati {{ party_a.vehicle.hp }} ot kuchiga ega bo‘lgan avtotransport vositasi o‘tadi."
+      },
+      {
+        "key": "clean_title",
+        "category": "warranty",
+        "title": "",
+        "body": "6. Mazkur shartnoma imzolangunga qadar ayirboshlanayotgan avtotransport vositalari boshqa shaxsga o‘tkazilmagan, garovga qo‘yilmagan, nizoda yo‘q va ayirboshlanishi taqiqlanmagan."
+      },
+      {
+        "key": "expenses",
+        "category": "price",
+        "title": "",
+        "body": "7. Mazkur shartnomani rasmiylashtirish uchun sarflanadigan xarajatlarni {% if a.expenses_paid_by == 'A' %}{{ party_a.name }}{% elif a.expenses_paid_by == 'B' %}{{ party_b.name }}{% else %}taraflar teng miqdorda{% endif %} to‘ladi."
+      },
+      {
+        "key": "registration",
+        "category": "term",
+        "title": "",
+        "body": "8. Ushbu shartnoma O‘zbekiston Respublikasi IIVning tegishli YHXX organlarida 10 kun ichida belgilangan tartibda ro‘yxatdan o‘tkazilishi shart. Mazkur talabni bajarmaslik qonun hujjatlariga muvofiq javobgarlikka tortishga olib keladi."
+      },
+      {
+        "key": "declarations",
+        "category": "other",
+        "title": "",
+        "body": "9. Biz — taraflar shartnoma matnini to‘liq o‘qib chiqdik, uning mazmuni va mohiyati, huquqiy oqibatlari hamda O‘zbekiston Respublikasi Fuqarolik kodeksining 113–128-moddalari mazmuni notarius tomonidan tushuntirildi va bizga tushunarli, shartnomaning mazmuni bizning asl xohish-istaklarimizga mos keladi. Mazkur shartnomani tuzib, imzolaganimizda muomala layoqatiga ega bo‘lganimizni, o‘z xatti-harakatlarimiz ahamiyatini to‘liq tushunganligimizni, hech kim bizni aldamaganligini, shartnomani tuzib, imzolash haqida zo‘rlamaganligini, tazyiq o‘tkazmaganligini, ushbu bitimni tuzishga majbur qilishga olib kelgan og‘ir holatlar yo‘qligini bildiramiz."
+      },
+      {
+        "key": "copies",
+        "category": "term",
+        "title": "",
+        "body": "10. Ushbu shartnoma taraflar tomonidan uch nusxada tuzilib, imzolandi; ulardan bir nusxasi {{ a.notary or '________________________________________' }}da saqlanadi, qolgan nusxalari taraflarga berildi."
+      }
+    ],
+    "requisites": {
+      "title": "IMZOLAR:",
+      "labels": {
+        "A": [
+          [
+            "name",
+            "F.I.Sh."
+          ]
+        ],
+        "B": [
+          [
+            "name",
+            "F.I.Sh."
+          ]
+        ]
+      },
+      "signature": {
+        "A": [
+          "______________________________",
+          "(Birinchi taraf F.I.Sh. va imzosi)"
+        ],
+        "B": [
+          "______________________________",
+          "(Ikkinchi taraf / vakil F.I.Sh. va imzosi)"
+        ]
+      }
+    },
+    "closing": "Notariusning tasdiqlov yozuvi: ________________________________________________\nReyestr raqami: ______________     Undirilgan davlat boji / to‘lov: ______________________\nNotarius: ____________________________________________   (imzo, M.O‘.)"
+  },
+  "required_elements": [
+    {
+      "code": "vehicles",
+      "title": "Avtomobillar rekvizitlari (rusum, dvigatel, kuzov raqami)",
+      "patterns": [
+        "dvigatel",
+        "kuzov",
+        "rusum",
+        "двигател",
+        "кузов"
+      ]
+    },
+    {
+      "code": "registration",
+      "title": "Avtomobillarni qayd etish guvohnomalari",
+      "patterns": [
+        "guvohnoma",
+        "свидетельств"
+      ]
+    },
+    {
+      "code": "valuation",
+      "title": "Avtomobillarning kelishilgan qiymati",
+      "patterns": [
+        "so‘m",
+        "so'm",
+        "сум",
+        "baho"
+      ]
+    }
+  ],
+  "obligation_templates": [
+    {
+      "title": "Olingan avtomobilni YHXXda qayta ro‘yxatdan o‘tkazish (10 kun)",
+      "party": "A",
+      "kind": "duty",
+      "clause_ref": "8",
+      "due": {
+        "type": "offset_days",
+        "start_field": "contract_date",
+        "days": 10
+      }
+    },
+    {
+      "title": "Olingan avtomobilni YHXXda qayta ro‘yxatdan o‘tkazish (10 kun)",
+      "party": "B",
+      "kind": "duty",
+      "clause_ref": "8",
+      "due": {
+        "type": "offset_days",
+        "start_field": "contract_date",
+        "days": 10
+      }
+    }
+  ],
+  "legal_refs": [
+    {
+      "law_ref": "FK 497-modda. Ayirboshlash shartnomasi",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-183895",
+      "code": "fk2",
+      "number": "497"
+    },
+    {
+      "law_ref": "FK 498-modda. Ayirboshlash shartnomasi boʻyicha baho va xarajatlar",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-183898",
+      "code": "fk2",
+      "number": "498"
+    },
+    {
+      "law_ref": "FK 499-modda. Ayirboshlash shartnomasiga muvofiq tovarni topshirish majburiyatini muqobil bajarish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-183902",
+      "code": "fk2",
+      "number": "499"
+    },
+    {
+      "law_ref": "FK 500-modda. Ayirboshlanadigan tovarlarga boʻlgan mulk huquqining oʻtishi",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-183904",
+      "code": "fk2",
+      "number": "500"
+    },
+    {
+      "law_ref": "FK 501-modda. Ayirboshlash shartnomasi boʻyicha olingan tovarni olib qoʻyganlik uchun javobgarlik",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-183906",
+      "code": "fk2",
+      "number": "501"
+    },
+    {
+      "law_ref": "FK 134-modda. Ishonchnoma",
+      "lex_url": "https://lex.uz/uz/docs/-111189#-153566",
+      "code": "fk1",
+      "number": "134"
+    },
+    {
+      "law_ref": "FK 139-modda. Ishonchnomaning muddati",
+      "lex_url": "https://lex.uz/uz/docs/-111189#-153601",
+      "code": "fk1",
+      "number": "139"
+    }
+  ]
+}

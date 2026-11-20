@@ -106,8 +106,9 @@ async def seed_contract_types(db: AsyncSession) -> dict[str, ContractType]:
 async def seed_rules(db: AsyncSession, types: dict[str, ContractType], *, approve: bool) -> int:
     n = 0
     for r in _load("rules/rules.json")["rules"]:
-        if await db.scalar(select(LegalRule.id).where(LegalRule.code == r["code"])):
-            continue
+        existing = await db.scalar(select(LegalRule).where(LegalRule.code == r["code"]))
+        if existing is not None and not (existing.meta or {}).get("demo"):
+            continue  # expert-managed rule: the CMS workflow owns it
         payload = {
             k: r.get(k)
             for k in (
@@ -126,6 +127,12 @@ async def seed_rules(db: AsyncSession, types: dict[str, ContractType], *, approv
         payload["tests"] = r.get("tests", [])
         check_definition(payload)  # seed content must pass its own tests
         ct = r.get("contract_type")
+        if existing is not None:
+            # demo content follows legal-content (e.g. article references re-checked against lex.uz)
+            for k, v in payload.items():
+                setattr(existing, k, v)
+            existing.contract_type_id = types[ct].id if ct else None
+            continue
         db.add(
             LegalRule(
                 **payload,

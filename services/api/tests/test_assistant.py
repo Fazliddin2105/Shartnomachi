@@ -134,3 +134,12 @@ async def test_stir_lookup(client: AsyncClient) -> None:
 async def test_web_sdk_is_served(client: AsyncClient) -> None:
     r = await client.get("/sdk/lexlab-api.js")
     assert r.status_code == 200 and "global.LexLab = LexLab" in r.text
+
+
+async def test_web_sdk_is_revalidated(client: AsyncClient) -> None:
+    r = await client.get("/sdk/lexlab-api.js")
+    assert r.headers["cache-control"] == "no-cache" and "laws:" in r.text
+
+
+async def test_favicon_does_not_404(client: AsyncClient) -> None:
+    assert (await client.get("/favicon.ico")).status_code == 204
