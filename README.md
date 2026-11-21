@@ -1,4 +1,26 @@
-# LexLab — Shartnoma platformasi
+# Shartnomachi.uz
+
+**Tuz • Tekshir • Tasdiqla • Nazorat qil • Isbotla** — O‘zbekiston qonunlariga mos onlayn shartnoma platformasi.
+
+🌐 **Demo:** https://lexlab-platform.vercel.app &nbsp;·&nbsp; 📥 **Taqdimot:** [Shartnomachi.uz.pptx](Shartnomachi.uz.pptx)
+
+## 📊 Taqdimot
+
+![1-slayd](Prizintatsiya/slayd-01.jpg)
+![2-slayd](Prizintatsiya/slayd-02.jpg)
+![3-slayd](Prizintatsiya/slayd-03.jpg)
+![4-slayd](Prizintatsiya/slayd-04.jpg)
+![5-slayd](Prizintatsiya/slayd-05.jpg)
+![6-slayd](Prizintatsiya/slayd-06.jpg)
+![7-slayd](Prizintatsiya/slayd-07.jpg)
+![8-slayd](Prizintatsiya/slayd-08.jpg)
+![9-slayd](Prizintatsiya/slayd-09.jpg)
+![10-slayd](Prizintatsiya/slayd-10.jpg)
+![11-slayd](Prizintatsiya/slayd-11.jpg)
+
+---
+
+## Texnik tavsif
 
 «Huquqiy xizmat platformasi — Dasturiy struktura» hujjati asosida qurilgan modulli monolit.
 Platforma faqat **shartnoma** yo'nalishiga qaratilgan: «Shartnoma tuz», «Shartnomani tekshir» va ularni bog'lovchi
