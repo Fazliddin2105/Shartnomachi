@@ -2,21 +2,9 @@
 
 **Tuz • Tekshir • Tasdiqla • Nazorat qil • Isbotla** — O‘zbekiston qonunlariga mos onlayn shartnoma platformasi.
 
-🌐 **Demo:** https://lexlab-platform.vercel.app &nbsp;·&nbsp; 📥 **Taqdimot:** [Shartnomachi.uz.pptx](Shartnomachi.uz.pptx)
+🌐 **Demo:** https://lexlab-platform.vercel.app
 
-## 📊 Taqdimot
-
-![1-slayd](Prizintatsiya/slayd-01.jpg)
-![2-slayd](Prizintatsiya/slayd-02.jpg)
-![3-slayd](Prizintatsiya/slayd-03.jpg)
-![4-slayd](Prizintatsiya/slayd-04.jpg)
-![5-slayd](Prizintatsiya/slayd-05.jpg)
-![6-slayd](Prizintatsiya/slayd-06.jpg)
-![7-slayd](Prizintatsiya/slayd-07.jpg)
-![8-slayd](Prizintatsiya/slayd-08.jpg)
-![9-slayd](Prizintatsiya/slayd-09.jpg)
-![10-slayd](Prizintatsiya/slayd-10.jpg)
-![11-slayd](Prizintatsiya/slayd-11.jpg)
+📄 **Taqdimot (PDF):** [Prizintatsiya/Shartnomachi.uz.pdf](Prizintatsiya/Shartnomachi.uz.pdf)
 
 ---
 
