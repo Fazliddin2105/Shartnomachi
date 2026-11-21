@@ -55,6 +55,28 @@ class Clause:
         }
 
 
+_TITLE_WORD = re.compile(r"shartnoma|шартнома|договор|kelishuv|келишув|соглашени", re.IGNORECASE)
+
+
+def document_title(text: str) -> str | None:
+    """The contract's own name from its heading, e.g. «PULLIK TIBBIY XIZMAT KO'RSATISH SHARTNOMASI»
+    -> «Pullik tibbiy xizmat ko'rsatish shartnomasi». Looks at the first lines only."""
+    lines = [ln.strip() for ln in (text or "").split("\n") if ln.strip()][:8]
+    for i, ln in enumerate(lines):
+        if not _TITLE_WORD.search(ln) or len(ln) > 160 or re.match(r"^\d+(\.\d+)*[.)]\s", ln):
+            continue
+        title = ln
+        # «ISHGA QABUL QILISH TO'G'RISIDA» / «MEHNAT SHARTNOMASI» split over two heading lines
+        if i > 0 and lines[i - 1].isupper() and len(lines[i - 1]) < 80 and not _TITLE_WORD.search(lines[i - 1]):
+            title = f"{lines[i - 1]} {ln}"
+        title = re.sub(r"\s*№\s*\S*$", "", re.sub(r"\s+", " ", title)).strip(" .:-—")
+        letters = [c for c in title if c.isalpha()]
+        if letters and sum(c.isupper() for c in letters) / len(letters) > 0.8:
+            title = title[:1].upper() + title[1:].lower()
+        return title[:160] or None
+    return None
+
+
 def segment(text: str, *, max_len: int = 1500) -> list[Clause]:
     lines = text.split("\n")
     blocks: list[tuple[str | None, str | None, list[str]]] = []

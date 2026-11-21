@@ -169,22 +169,50 @@ async def review(
     return out
 
 
-async def ask(*, clauses: list[dict[str, Any]], findings: list[str], question: str) -> dict[str, Any]:
+async def ask(
+    *,
+    clauses: list[dict[str, Any]],
+    findings: list[str],
+    question: str,
+    contract_type: str | None = None,
+    law_texts: list[str] | None = None,
+) -> dict[str, Any]:
     ans = await llm.ask_json(
-        prompts.ASK_SYSTEM, prompts.ask_user(clauses=clauses, findings=findings, question=question), max_tokens=900
+        prompts.ASK_SYSTEM,
+        prompts.ask_user(
+            clauses=clauses, findings=findings, question=question, contract_type=contract_type, law_texts=law_texts
+        ),
+        max_tokens=1100,
     )
     d = ans.data
     conf = _f(d.get("confidence"))
     refs = [r for r in (d.get("clause_refs") or []) if isinstance(r, int) and 0 <= r < len(clauses)]
+    answer = _s(d.get("answer"), 4000) or "Javob olinmadi."
     return {
-        "answer": _s(d.get("answer"), 4000) or "Javob olinmadi.",
+        "answer": answer,
         "clause_refs": refs,
+        "clauses": [{"index": r, "text": _s(clauses[r].get("text"), 400)} for r in refs[:5]],
+        "law_refs": _law_refs(d.get("law_refs"), answer, law_texts),
         "confidence": conf,
         "consult_lawyer": bool(d.get("consult_lawyer")) or conf < get_settings().llm_min_confidence,
         "model": ans.model,
         "masked": ans.masked,
         "disclaimer": "AI javobi ma'lumot uchun; yuridik maslahat o'rnini bosmaydi.",
     }
+
+
+def _law_refs(raw: Any, answer: str, law_texts: list[str] | None) -> list[dict[str, Any]]:
+    """Articles the answer cites — only those that were actually given to the model (no invented numbers)."""
+    from app.modules.laws import corpus
+
+    given = " ".join(t.split("]", 1)[0] for t in law_texts or [])
+    text = " ; ".join(str(x) for x in raw if isinstance(x, str | int)) if isinstance(raw, list) else ""
+    out: list[dict[str, Any]] = []
+    for a in corpus.resolve(f"{text} ; {answer}"):
+        tag = f"{a['short']} {a['number']}-modda"
+        if tag in given and all(o["ref"] != tag for o in out):
+            out.append({"ref": tag, "title": a["title"], "url": a["url"]})
+    return out[:6]
 
 
 # --- deterministic comparison with the official (lex.uz) template --------------------------------

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai import llm
 from app.ai import service as ai
+from app.core.config import get_settings
 from app.core.errors import AppError, Conflict, NotFound, ValidationFailed
 from app.core.timeutils import utcnow
 from app.db.session import session_scope
@@ -237,6 +238,8 @@ async def analyze(db: AsyncSession, job: ScanJob) -> None:
         "duties": sum(1 for r in rows if r.kind == FindingKind.DUTY),
         "rights": sum(1 for r in rows if r.kind == FindingKind.RIGHT),
         "contract_type": job.contract_type_code,
+        "contract_type_title": ctype.title_uz if ctype else None,
+        "document_title": analysis.document_title(text),
         "type_detected": job.type_detected,
         "categories": sorted({c.category for c in clauses if c.category}),
         "template_check": template_check,
@@ -245,6 +248,31 @@ async def analyze(db: AsyncSession, job: ScanJob) -> None:
     job.ai_summary = {}
     job.status, job.analyzed_at, job.error = ScanStatus.DONE, utcnow(), None
     await db.flush()
+
+
+async def _document_info(db: AsyncSession, job: ScanJob) -> dict[str, Any]:
+    """Which contract this report is about: its own heading, the detected type and the uploaded file."""
+    summ = job.summary or {}
+    type_title = summ.get("contract_type_title")
+    if type_title is None and job.contract_type_code:
+        ctype = await db.scalar(select(ContractType).where(ContractType.code == job.contract_type_code))
+        type_title = ctype.title_uz if ctype else None
+    title = summ.get("document_title") if "document_title" in summ else analysis.document_title(job.ocr_text or "")
+    filename = None
+    if job.file_id:
+        from app.modules.files.models import StoredFile
+
+        f = await db.get(StoredFile, job.file_id)
+        filename = f.original_name if f else None
+    return {
+        "title": title or type_title or filename or "Shartnoma",
+        "heading": title,
+        "type_code": job.contract_type_code,
+        "type_title": type_title,
+        "type_detected": job.type_detected,
+        "filename": filename,
+        "clauses": job.clauses_count,
+    }
 
 
 async def report(db: AsyncSession, job: ScanJob) -> dict[str, Any]:
@@ -283,6 +311,7 @@ async def report(db: AsyncSession, job: ScanJob) -> dict[str, Any]:
     return {
         "id": str(job.id),
         "status": job.status.value,
+        "document": await _document_info(db, job),
         "overall": {
             "risk_level": job.risk_level,
             "risk_score": job.risk_score,
@@ -379,15 +408,22 @@ async def obligations_from_scan(db: AsyncSession, job: ScanJob, user: User) -> l
 
 
 def _ai_finding(job: ScanJob, issue: ai.AIIssue, clause_text: str | None) -> ScanFinding:
-    kind = FindingKind.RISKY if issue.severity == "yellow" else FindingKind.ADVICE
-    prefix = "AI: ehtimoliy qonunbuzarlik — yurist tekshirsin. " if issue.ai_severity == "red" else "AI: "
+    # In the scanner (analysis only, nothing is blocked) a confident «contrary to law» verdict of the
+    # model is shown as illegal; in the contract builder only the rule engine can block generation.
+    illegal = issue.ai_severity == "red" and issue.confidence >= get_settings().llm_min_confidence
+    if illegal:
+        kind, severity, prefix = FindingKind.ILLEGAL, "red", "AI: "
+    else:
+        kind = FindingKind.RISKY if issue.severity == "yellow" else FindingKind.ADVICE
+        severity = issue.severity
+        prefix = "AI: ehtimoliy qonunbuzarlik — yurist tekshirsin. " if issue.ai_severity == "red" else "AI: "
     return ScanFinding(
         job_id=job.id,
         clause_index=issue.clause_index,
         clause_text=clause_text,
         kind=kind,
         source="ai",
-        severity=issue.severity,
+        severity=severity,
         rule_code=None,
         law_ref=issue.law_ref,
         explanation=f"{prefix}{issue.title}. {issue.explanation}".strip(),
@@ -435,9 +471,18 @@ async def ai_review(job_id: uuid.UUID) -> None:
             log.warning("ai_review_failed", extra={"job_id": str(job_id), "error": e.code})
             return
         await db.execute(delete(ScanFinding).where(ScanFinding.job_id == job.id, ScanFinding.source == "ai"))
+        ai_rows = []
         for issue in result.issues:
             text = clauses[issue.clause_index].text if issue.clause_index is not None else None
-            db.add(_ai_finding(job, issue, text))
+            ai_rows.append(_ai_finding(job, issue, text))
+            db.add(ai_rows[-1])
+        # overall risk now also reflects what the AI found (it can only go up)
+        kinds = [r.kind for r in rule_rows] + [r.kind for r in ai_rows]
+        level, score = analysis.risk(
+            kinds.count(FindingKind.ILLEGAL), kinds.count(FindingKind.RISKY), kinds.count(FindingKind.MISSING)
+        )
+        if score > (job.risk_score or 0):
+            job.risk_level, job.risk_score = level, score
         data = result.to_dict()
         job.ai_status, job.ai_summary = (
             "done",
@@ -479,6 +524,15 @@ async def ask(db: AsyncSession, job: ScanJob, question: str) -> dict[str, Any]:
         raise ValidationFailed("Scan is not analysed yet", code="scan_not_done")
     clauses = [{"index": c.index, "text": c.text} for c in analysis.segment(job.ocr_text)]
     rows = await db.scalars(select(ScanFinding).where(ScanFinding.job_id == job.id, ScanFinding.severity.is_not(None)))
+    ctype = (
+        await db.scalar(select(ContractType).where(ContractType.code == job.contract_type_code))
+        if job.contract_type_code
+        else None
+    )
     return await ai.ask(
-        clauses=clauses, findings=[f"[{r.clause_index}] {r.explanation}" for r in rows], question=question
+        clauses=clauses,
+        findings=[f"[{r.clause_index}] {r.explanation}" for r in rows],
+        question=question,
+        contract_type=ctype.title_uz if ctype else None,
+        law_texts=contracts_service.law_context(ctype, question),
     )

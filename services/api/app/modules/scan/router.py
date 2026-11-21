@@ -43,6 +43,13 @@ class ScanOut(BaseModel):
         """0..100 for the risk gauge (banded by risk_level)."""
         return analysis.risk_percent(self.risk_level, self.risk_score)
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def title(self) -> str | None:
+        """The contract's own name (heading) or its detected type — for history lists."""
+        s = self.summary or {}
+        return s.get("document_title") or s.get("contract_type_title")
+
 
 class ScanText(BaseModel):
     text: str = Field(min_length=50, max_length=300_000)

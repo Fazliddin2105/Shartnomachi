@@ -128,10 +128,11 @@
     const res = await request('GET', path, { raw: true, query });
     const blob = await res.blob();
     const cd = res.headers.get('Content-Disposition') || '';
+    const star = cd.match(/filename\*=UTF-8''([^;]+)/i);
     const m = cd.match(/filename="?([^";]+)"?/);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = (m && m[1]) || fallbackName;
+    a.download = (star && decodeURIComponent(star[1])) || (m && m[1]) || fallbackName;
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
@@ -320,6 +321,25 @@
     update: (id, body) => patch(`/archive/${id}`, body),
     download: (item) => download(`/contracts/${item.contract_id}/versions/${item.version}/download`,
       `shartnoma-v${item.version}.docx`, { format: 'docx' }),
+    /** Payment receipts / addenda filed by the user. archiveId (optional) = one signed contract */
+    documents: (archiveId) => get('/archive/documents', archiveId ? { archive_id: archiveId, limit: 100 } : { limit: 100 }),
+    /**
+     * Add a receipt / document: {title, kind: 'receipt'|'addendum'|'claim'|'other', description?, amount?,
+     * docDate? (YYYY-MM-DD), archiveId?, file? (File: PDF, JPG/PNG, DOCX)}
+     */
+    addDocument(doc) {
+      const form = new FormData();
+      form.append('title', doc.title || '');
+      form.append('kind', doc.kind || 'receipt');
+      if (doc.description) form.append('description', doc.description);
+      if (doc.amount !== undefined && doc.amount !== null && doc.amount !== '') form.append('amount', String(doc.amount));
+      if (doc.docDate) form.append('doc_date', doc.docDate);
+      if (doc.archiveId) form.append('archive_id', doc.archiveId);
+      if (doc.file) form.append('file', doc.file);
+      return request('POST', '/archive/documents', { form });
+    },
+    downloadDocument: (doc) => download(`/archive/documents/${doc.id}/file`, (doc.file && doc.file.name) || 'hujjat'),
+    deleteDocument: (id) => del(`/archive/documents/${id}`),
   };
 
   const scans = {
@@ -411,7 +431,33 @@
       profile: (body) => put('/me/profile', body),
     },
     dashboard: () => get('/dashboard'),
-    assistant: { situation: (text) => post('/assistant/situation', { text }) },
+    assistant: {
+      situation: (text) => post('/assistant/situation', { text }),
+      /**
+       * «Shartnomachi AI» chat. messages: [{role:'user'|'assistant', content}] (last = user question; the server
+       * keeps nothing — send the recent history each time). options: {contractId?, page?}
+       * -> {answer, law_refs:[{ref,title,url}], action:{type,type_code,label}|null, consult_lawyer, disclaimer}
+       */
+      chat: (messages, options) => post('/assistant/chat', {
+        messages,
+        contract_id: (options && options.contractId) || null,
+        page: (options && options.page) || null,
+      }),
+    },
+    /** Application to a mediator (O'RQ-482): the platform drafts it as DOCX, nothing is sent anywhere. */
+    mediation: {
+      list: () => get('/mediation/requests'),
+      /** form: {applicant_name, respondent_name, subject, description, claims, desired_outcome, amount, city,
+       *  mediator_name, mediator_org, ...}; contractId prefills parties & subject from that contract */
+      create: (form, contractId) => post('/mediation/requests', Object.assign({}, form || {}, { contract_id: contractId || null })),
+      get: (id) => get(`/mediation/requests/${id}`),
+      /** null or '' clears a field */
+      update: (id, form) => patch(`/mediation/requests/${id}`, form),
+      remove: (id) => del(`/mediation/requests/${id}`),
+      /** AI: neutral statement, claims, compromise options, law_refs (lex.uz) — suggestions only, not saved to the form */
+      aiHelp: (id) => post(`/mediation/requests/${id}/ai`),
+      downloadDocx: (id) => download(`/mediation/requests/${id}/docx`, 'mediatorga_ariza.docx'),
+    },
     lookup: { stir: (stir) => get(`/lookup/stir/${encodeURIComponent(String(stir).trim())}`) },
     types: {
       list: () => request('GET', '/contract-types', { auth: false }),
@@ -438,7 +484,7 @@
       search: (q, code) => request('GET', '/laws/search', { auth: false, query: { q, code } }),
       resolve: (ref) => request('GET', '/laws/resolve', { auth: false, query: { ref } }),
     },
-    version: '1.2.0',
+    version: '1.4.0',
   };
 
   global.LexLab = LexLab;

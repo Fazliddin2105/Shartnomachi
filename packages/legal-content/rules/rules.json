@@ -500,7 +500,7 @@
       "rule_json": {
         "field": "clause.text",
         "op": "regex",
-        "value": "(sudga murojaat qilish|da'vo (qilish|berish)) huquqidan voz kech|отказ\\w* от права на обращение в суд"
+        "value": "(?i)(sudga murojaat qilish|da'vo (qilish|berish)) huquqidan[^.;]{0,30}(voz kech|mahrum)|sudga murojaat qilish(ga| huquqi)?[^.;]{0,20}(taqiqlan|yo'l qo'yilmaydi|mumkin emas)|отказ\\w* от права на обращение в суд|лиша\\w*[^.;]{0,20}права на обращение в суд"
       },
       "message": "Band sud himoyasi huquqidan voz kechishni nazarda tutadi. FK 9-moddaga ko‘ra huquqni amalga oshirishdan voz kechish bu huquqning bekor bo‘lishiga olib kelmaydi — bunday shart sudga murojaat qilishga to‘sqinlik qilmaydi.",
       "fix_suggestion": "Bandni olib tashlang: nizolar sud tartibida hal qilinishi mumkinligini ko'rsating.",
@@ -525,6 +525,26 @@
             }
           },
           "expect": false
+        },
+        {
+          "name": "mahrum",
+          "context": {
+            "clause": {
+              "text": "7.2. Nizolar sudga murojaat qilish huquqidan mutlaqo mahrum etilgan holda faqat rahbar tomonidan hal etiladi.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "taqiqlanadi",
+          "context": {
+            "clause": {
+              "text": "Buyurtmachiga sudga murojaat qilish taqiqlanadi.",
+              "index": 0
+            }
+          },
+          "expect": true
         }
       ],
       "lex_url": "https://lex.uz/uz/docs/-111189#-150408",
@@ -1838,6 +1858,359 @@
         {
           "code": "fk1",
           "number": "139"
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_RES_TERM_OVER_5Y",
+      "contract_type": "rent_residential",
+      "scope": "clause",
+      "severity": "red",
+      "rule_json": {
+        "all": [
+          {
+            "field": "clause.text",
+            "op": "regex",
+            "value": "(?i)muddat|срок"
+          },
+          {
+            "field": "clause.text",
+            "op": "number_in_text_gt",
+            "value": 5,
+            "pattern": "(?<![\\d.,/])(\\d{1,2})\\s*(?:\\([^)]{0,20}\\)\\s*)?(?:yil|йил|год|лет)"
+          }
+        ]
+      },
+      "message": "Uy-joy ijarasi muddati besh yildan ortiq — FK 612-moddaga ko‘ra uy-joyni ijaraga berish shartnomasi besh yildan ortiq bo‘lmagan muddatga tuziladi.",
+      "fix_suggestion": "Muddatni 5 yilgacha qisqartiring; muddat tugagach ijaraga oluvchi yangi muddatga tuzishda imtiyozli huquqqa ega.",
+      "law_ref": "FK 612-modda. Uy-joyni ijaraga berish shartnomasining muddati",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186525",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "612"
+        }
+      ],
+      "tests": [
+        {
+          "name": "7 yil",
+          "context": {
+            "clause": {
+              "text": "2. Ijara muddati 7 (yetti) yil.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "1 yil",
+          "context": {
+            "clause": {
+              "text": "Ijara muddati 1 yil.",
+              "index": 0
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "ru",
+          "context": {
+            "clause": {
+              "text": "Срок найма 10 лет.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "sana",
+          "context": {
+            "clause": {
+              "text": "Ijara muddati 01.02.2026 yildan 01.02.2027 yilgacha.",
+              "index": 0
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "2026 yil",
+          "context": {
+            "clause": {
+              "text": "Shartnoma muddati 2026 yil 1-martgacha.",
+              "index": 0
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_RES_LANDLORD_TERMINATION",
+      "contract_type": "rent_residential",
+      "scope": "clause",
+      "severity": "red",
+      "rule_json": {
+        "field": "clause.text",
+        "op": "regex",
+        "value": "(?i)\\bijaraga beruvchi\\s[^.;]{0,80}(bir tomonlama|istalgan vaqtda|o'z xohishiga ko'ra|sudsiz)[^.;]{0,80}bekor|наймодател\\w*\\s[^.;]{0,80}(одностороннем|в любое время)[^.;]{0,60}растор"
+      },
+      "message": "Ijaraga beruvchiga uy-joy ijarasini bir tomonlama bekor qilish huquqi berilgan — FK 615-moddaga ko‘ra ijaraga beruvchining talabi bilan shartnoma faqat qonunda sanab o‘tilgan asoslarda va sud tartibida bekor qilinadi.",
+      "fix_suggestion": "Bandni o‘zgartiring: shartnoma tomonlar kelishuvi bilan yoki FK 615-moddadagi asoslarda sud tartibida bekor qilinadi; ijaraga oluvchi uch oy oldin yozma ogohlantirib bekor qilishga haqli.",
+      "law_ref": "FK 615-modda. Ijara shartnomasini bekor qilish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186540",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "615"
+        }
+      ],
+      "tests": [
+        {
+          "name": "istalgan vaqtda",
+          "context": {
+            "clause": {
+              "text": "4. Ijaraga beruvchi istalgan vaqtda 10 kun oldin ogohlantirib shartnomani bir tomonlama bekor qilishi mumkin.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "ijarachi",
+          "context": {
+            "clause": {
+              "text": "Ijaraga oluvchi uch oy oldin ogohlantirib shartnomani bekor qilishi mumkin.",
+              "index": 0
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "ijarachi ogohlantiradi",
+          "context": {
+            "clause": {
+              "text": "6.2. Ijarachi Ijaraga beruvchini kamida 90 kun oldin yozma ravishda ogohlantirib, shartnomani istalgan vaqtda bekor qilishga haqli.",
+              "index": 0
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "sud tartibida",
+          "context": {
+            "clause": {
+              "text": "6.3. Ijaraga beruvchining talabi bilan shartnoma faqat qonunda nazarda tutilgan hollarda sud tartibida bekor qilinishi mumkin.",
+              "index": 0
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_RENTP_TERM_OVER_5Y",
+      "contract_type": "rent_private",
+      "scope": "clause",
+      "severity": "red",
+      "rule_json": {
+        "all": [
+          {
+            "field": "clause.text",
+            "op": "regex",
+            "value": "(?i)muddat|срок"
+          },
+          {
+            "field": "clause.text",
+            "op": "number_in_text_gt",
+            "value": 5,
+            "pattern": "(?<![\\d.,/])(\\d{1,2})\\s*(?:\\([^)]{0,20}\\)\\s*)?(?:yil|йил|год|лет)"
+          }
+        ]
+      },
+      "message": "Uy-joy ijarasi muddati besh yildan ortiq — FK 612-moddaga ko‘ra uy-joyni ijaraga berish shartnomasi besh yildan ortiq bo‘lmagan muddatga tuziladi.",
+      "fix_suggestion": "Muddatni 5 yilgacha qisqartiring; muddat tugagach ijaraga oluvchi yangi muddatga tuzishda imtiyozli huquqqa ega.",
+      "law_ref": "FK 612-modda. Uy-joyni ijaraga berish shartnomasining muddati",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186525",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "612"
+        }
+      ],
+      "tests": [
+        {
+          "name": "7 yil",
+          "context": {
+            "clause": {
+              "text": "2. Ijara muddati 7 (yetti) yil.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "1 yil",
+          "context": {
+            "clause": {
+              "text": "Ijara muddati 1 yil.",
+              "index": 0
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "ru",
+          "context": {
+            "clause": {
+              "text": "Срок найма 10 лет.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "sana",
+          "context": {
+            "clause": {
+              "text": "Ijara muddati 01.02.2026 yildan 01.02.2027 yilgacha.",
+              "index": 0
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "2026 yil",
+          "context": {
+            "clause": {
+              "text": "Shartnoma muddati 2026 yil 1-martgacha.",
+              "index": 0
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_RENTP_LANDLORD_TERMINATION",
+      "contract_type": "rent_private",
+      "scope": "clause",
+      "severity": "red",
+      "rule_json": {
+        "field": "clause.text",
+        "op": "regex",
+        "value": "(?i)\\bijaraga beruvchi\\s[^.;]{0,80}(bir tomonlama|istalgan vaqtda|o'z xohishiga ko'ra|sudsiz)[^.;]{0,80}bekor|наймодател\\w*\\s[^.;]{0,80}(одностороннем|в любое время)[^.;]{0,60}растор"
+      },
+      "message": "Ijaraga beruvchiga uy-joy ijarasini bir tomonlama bekor qilish huquqi berilgan — FK 615-moddaga ko‘ra ijaraga beruvchining talabi bilan shartnoma faqat qonunda sanab o‘tilgan asoslarda va sud tartibida bekor qilinadi.",
+      "fix_suggestion": "Bandni o‘zgartiring: shartnoma tomonlar kelishuvi bilan yoki FK 615-moddadagi asoslarda sud tartibida bekor qilinadi; ijaraga oluvchi uch oy oldin yozma ogohlantirib bekor qilishga haqli.",
+      "law_ref": "FK 615-modda. Ijara shartnomasini bekor qilish",
+      "lex_url": "https://lex.uz/uz/docs/-180552#-186540",
+      "lex_doc_id": "-180552",
+      "law_articles": [
+        {
+          "code": "fk2",
+          "number": "615"
+        }
+      ],
+      "tests": [
+        {
+          "name": "istalgan vaqtda",
+          "context": {
+            "clause": {
+              "text": "4. Ijaraga beruvchi istalgan vaqtda 10 kun oldin ogohlantirib shartnomani bir tomonlama bekor qilishi mumkin.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "ijarachi",
+          "context": {
+            "clause": {
+              "text": "Ijaraga oluvchi uch oy oldin ogohlantirib shartnomani bekor qilishi mumkin.",
+              "index": 0
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "ijarachi ogohlantiradi",
+          "context": {
+            "clause": {
+              "text": "6.2. Ijarachi Ijaraga beruvchini kamida 90 kun oldin yozma ravishda ogohlantirib, shartnomani istalgan vaqtda bekor qilishga haqli.",
+              "index": 0
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "sud tartibida",
+          "context": {
+            "clause": {
+              "text": "6.3. Ijaraga beruvchining talabi bilan shartnoma faqat qonunda nazarda tutilgan hollarda sud tartibida bekor qilinishi mumkin.",
+              "index": 0
+            }
+          },
+          "expect": false
+        }
+      ]
+    },
+    {
+      "code": "CLAUSE_FOREIGN_CURRENCY_CASH",
+      "scope": "clause",
+      "severity": "red",
+      "rule_json": {
+        "field": "clause.text",
+        "op": "regex",
+        "value": "(?i)(AQSh dollar|dollar|USD|yevro|evro|EUR|rubl|chet el valyuta|valyuta)[^.;]{0,40}naqd|naqd[^.;]{0,25}(valyuta|dollar|USD|yevro|evro)|наличн\\w*[^.;]{0,25}(валют|доллар|USD|евро)|(доллар|USD|евро|валют)\\w*[^.;]{0,40}наличн"
+      },
+      "message": "To'lov chet el valyutasida naqd pulda belgilangan. FK 94-moddaga ko'ra O'zbekistonda qonuniy to'lov vositasi so'm; chet el valyutasida hisob-kitob faqat qonunchilikda belgilangan hollarda mumkin (FK 245-modda: summa valyuta ekvivalentida ko'rsatilishi, lekin so'mda to'lanishi mumkin).",
+      "fix_suggestion": "To'lov summasini so'mda belgilang (kerak bo'lsa, «to'lov kunidagi Markaziy bank kursi bo'yicha ... AQSh dollari ekvivalentida, so'mda» deb yozing).",
+      "law_ref": "FK 94-modda. Pul (valyuta); FK 245-modda. Pul majburiyatlarining valyutasi",
+      "lex_url": "https://lex.uz/uz/docs/-111189#-152894",
+      "lex_doc_id": "-111189",
+      "law_articles": [
+        {
+          "code": "fk1",
+          "number": "94"
+        },
+        {
+          "code": "fk1",
+          "number": "245"
+        }
+      ],
+      "tests": [
+        {
+          "name": "dollar naqd",
+          "context": {
+            "clause": {
+              "text": "4.1. To'lov 500 (besh yuz) AQSh dollari (naqd valyutada)ni tashkil etadi.",
+              "index": 0
+            }
+          },
+          "expect": true
+        },
+        {
+          "name": "ekvivalent so'mda",
+          "context": {
+            "clause": {
+              "text": "To'lov AQSh dollari ekvivalentida so'mda bank orqali amalga oshiriladi.",
+              "index": 0
+            }
+          },
+          "expect": false
+        },
+        {
+          "name": "so'm naqd",
+          "context": {
+            "clause": {
+              "text": "To'lov 3 000 000 so'm naqd pulda amalga oshiriladi.",
+              "index": 0
+            }
+          },
+          "expect": false
         }
       ]
     }

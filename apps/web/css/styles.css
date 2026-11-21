@@ -1015,12 +1015,25 @@ button, input, select, textarea {
   overflow: visible;
 }
 
-.hp-gauge-label-top,
+.hp-gauge-label-top {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  fill: var(--amber-gauge);
+}
+
 .hp-gauge-label-bottom {
   font-family: var(--font-sans);
-  font-size: 23px;
+  font-size: 18px;
   font-weight: 800;
+  letter-spacing: -0.01em;
   fill: var(--amber-gauge);
+}
+
+#dash-gauge-arc,
+#dash-gauge-needle {
+  transition: all 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hp-gauge-scale-hint {
@@ -2364,4 +2377,276 @@ button, input, select, textarea {
   font-size: 12px;
   color: var(--text-muted);
   margin-top: 2px;
+}
+
+/* ==================== Xavf ranglari: qonunga zid = qizil, qaltis = sariq, maslahat = yashil ==================== */
+.hp-kpi-green { background: #F0FDF4; color: #166534; }
+.hp-clause-alert.hp-sev-red { background: #FEF2F2; border: 1px solid rgba(220, 38, 38, 0.22); border-left: 4px solid #DC2626; }
+.hp-clause-alert.hp-sev-yellow { background: #FFFBEB; border: 1px solid rgba(217, 119, 6, 0.22); border-left: 4px solid #D97706; }
+.hp-clause-alert.hp-sev-green { background: #F0FDF4; border: 1px solid rgba(22, 163, 74, 0.22); border-left: 4px solid #16A34A; cursor: default; }
+.hp-rule-green { background: #F0FDF4; border-left: 4px solid #16A34A; color: #14532D; }
+.hp-ai-answer-meta { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; font-size: 12.5px; }
+.hp-ai-answer-quote { padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.6); font-size: 12.5px; }
+
+body.dark-mode .hp-kpi-green { background: rgba(22, 163, 74, 0.14); color: #86EFAC; }
+body.dark-mode .hp-clause-alert.hp-sev-red { background: rgba(220, 38, 38, 0.12); }
+body.dark-mode .hp-clause-alert.hp-sev-yellow { background: rgba(217, 119, 6, 0.12); }
+body.dark-mode .hp-clause-alert.hp-sev-green { background: rgba(22, 163, 74, 0.12); }
+body.dark-mode .hp-rule-green { background: rgba(22, 163, 74, 0.12); color: #BBF7D0; }
+body.dark-mode .hp-ai-answer-quote { background: rgba(15, 23, 42, 0.35); }
+.hp-clause-advice { display: block; margin: 6px 0 10px; padding: 9px 12px; border-radius: 8px; background: #DCFCE7; border: 1px solid #86EFAC; border-left: 4px solid #16A34A; color: #15803D; font-size: 12.8px; font-weight: 600; line-height: 1.5; }
+.hp-clause-advice .hp-pill-badge { margin-right: 6px; padding: 2px 8px; font-size: 11px; }
+body.dark-mode .hp-clause-advice { background: rgba(22, 163, 74, 0.18); border-color: rgba(134, 239, 172, 0.35); color: #86EFAC; }
+
+/* ==================== «Shartnomachi AI» Floating Chat ==================== */
+.hp-chat-fab {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: none;
+  background: var(--navy-primary);
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  z-index: 1050;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+.hp-chat-fab[hidden] { display: none !important; }
+.hp-chat-fab:hover {
+  background: var(--navy-hover);
+  transform: translateY(-2px);
+}
+.hp-chat-fab svg {
+  width: 24px;
+  height: 24px;
+}
+
+.hp-chat-panel {
+  position: fixed;
+  right: 22px;
+  bottom: 86px;
+  width: 390px;
+  max-width: calc(100vw - 28px);
+  height: 540px;
+  max-height: calc(100vh - 110px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1050;
+}
+.hp-chat-panel[hidden] { display: none !important; }
+
+.hp-chat-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--bg-input);
+}
+.hp-chat-header-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+.hp-chat-header-title strong {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+.hp-chat-header-title .hp-pill-badge {
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.hp-chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.hp-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hp-chat-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hp-chat-empty-greeting {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+}
+.hp-chat-chip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hp-chat-example-chip {
+  text-align: left;
+  padding: 8px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.hp-chat-example-chip:hover {
+  background: var(--bg-input);
+  border-color: var(--blue-accent);
+}
+
+.hp-chat-msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 92%;
+}
+.hp-chat-msg-user {
+  align-self: flex-end;
+}
+.hp-chat-msg-assistant {
+  align-self: flex-start;
+}
+.hp-chat-bubble {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.hp-chat-msg-user .hp-chat-bubble {
+  background: var(--navy-primary);
+  color: #FFFFFF;
+  border-bottom-right-radius: 3px;
+  white-space: pre-wrap;
+}
+.hp-chat-msg-assistant .hp-chat-bubble {
+  background: var(--bg-input);
+  color: var(--text-main);
+  border: 1px solid var(--border-light);
+  border-bottom-left-radius: 3px;
+}
+.hp-chat-answer-text {
+  white-space: pre-wrap;
+}
+.hp-chat-laws {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px dashed var(--border-color);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hp-chat-action-wrap {
+  margin-top: 8px;
+}
+
+.hp-chat-form {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hp-chat-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.hp-chat-input-row textarea.hp-input {
+  flex: 1;
+  min-height: 40px;
+  max-height: 96px;
+  resize: none;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.hp-chat-disclaimer {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+body.dark-mode .hp-chat-fab {
+  background: var(--blue-accent);
+  color: #FFFFFF;
+}
+body.dark-mode .hp-chat-panel {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+body.dark-mode .hp-chat-header {
+  background: var(--bg-input);
+  border-bottom-color: var(--border-color);
+}
+body.dark-mode .hp-chat-msg-user .hp-chat-bubble {
+  background: var(--blue-accent);
+  color: #FFFFFF;
+}
+body.dark-mode .hp-chat-msg-assistant .hp-chat-bubble {
+  background: var(--bg-input);
+  color: var(--text-main);
+  border-color: var(--border-color);
+}
+body.dark-mode .hp-chat-example-chip {
+  background: var(--bg-input);
+  border-color: var(--border-color);
+  color: var(--text-main);
+}
+
+@media (max-width: 640px) {
+  .hp-chat-fab {
+    width: 46px;
+    height: 46px;
+    right: 14px;
+    bottom: 74px;
+  }
+  .hp-chat-fab svg {
+    width: 21px;
+    height: 21px;
+  }
+  .hp-chat-panel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 78vh;
+    max-height: 78vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
 }

@@ -38,6 +38,7 @@ SOURCES: dict[str, dict[str, str]] = {
         "short": "IHHQ",
         "title": "«Iste’molchilarning huquqlarini himoya qilish to‘g‘risida»gi Qonun",
     },
+    "mediation": {"doc_id": "-3805227", "short": "MQ", "title": "«Mediatsiya to‘g‘risida»gi Qonun (O‘RQ-482)"},
 }
 
 _ART = re.compile(r"^(\d{1,4})(?:[\.‐\-–]?\d{0,2})?-modda\.?\s*(.*)$", re.IGNORECASE)
@@ -194,7 +195,53 @@ def prompt_block(arts: list[dict[str, Any]]) -> list[str]:
     return [f"[{a['short']} {a['number']}-modda. {a['title']}] {a['text']}" for a in arts]
 
 
-_REF = re.compile(r"\b(FK|MK|IHHQ)\s*(\d{1,4})", re.IGNORECASE)
+# words that say nothing about *which* article a question is about
+_QSTOP = {
+    "qancha", "qanday", "qachon", "qaysi", "nima", "nimaga", "nega", "uchun", "bilan", "bo'lsa", "bo'yicha",
+    "qonun", "qonunga", "qonunda", "shartnoma", "shartnomada", "shartnomasi", "shartnomani", "mumkin",
+    "kerak", "bormi", "yo'qmi", "emas", "yoki", "agar", "menga", "mening", "meni", "bizning", "ushbu", "kodeks",
+    "kodeksi", "modda", "moddasi", "bo'ladi", "bo'lishi", "qilish", "qiladi", "qilsa", "beradi", "olish", "kim",
+    "hamda", "lekin", "ammo", "bunda", "boshqa", "tomon", "tomonidan", "tomonlar",
+}
+
+
+def _norm_q(text: str) -> str:
+    return re.sub(r"[ʻʼ’‘`]", "'", (text or "").lower())
+
+
+@lru_cache(maxsize=16)
+def _index(code: str) -> tuple[tuple[str, str, str], ...]:
+    return tuple((a["number"], _norm_q(a["title"]), _norm_q(a["text"])) for a in load(code)["articles"])
+
+
+def related(
+    question: str, *, codes: list[str] | None = None, limit: int = 4, max_chars: int = 900
+) -> list[dict[str, Any]]:
+    """Articles most relevant to a free-text question (word stems, title weighted) — for AI answers."""
+    words = [w for w in re.split(r"[^\w']+", _norm_q(question)) if len(w) >= 4 and w not in _QSTOP]
+    stems = list(dict.fromkeys(w[:5] if len(w) >= 7 else w[:4] for w in words))
+    if not stems:
+        return []
+    need = min(2, len(stems))
+    hits: list[tuple[int, str, str]] = []
+    for code in [c for c in (codes or available()) if c in available()]:
+        for number, title, text in _index(code):
+            matched = [s for s in stems if s in title or s in text]
+            if len(matched) < need:
+                continue
+            score = 10 * len(matched) + sum(4 * title.count(s) + min(text.count(s), 5) for s in matched)
+            hits.append((score, code, number))
+    hits.sort(key=lambda h: -h[0])
+    out = []
+    for _, code, number in hits[:limit]:
+        a = article(code, number)
+        if len(a["text"]) > max_chars:
+            a["text"] = a["text"][:max_chars].rsplit(" ", 1)[0] + " …"
+        out.append(a)
+    return out
+
+
+_REF = re.compile(r"\b(FK|MK|IHHQ|MQ)\s*(\d{1,4})", re.IGNORECASE)
 
 
 def resolve(ref_text: str) -> list[dict[str, Any]]:

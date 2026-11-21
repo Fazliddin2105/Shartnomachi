@@ -69,7 +69,10 @@ async def test_calculators(client: AsyncClient) -> None:
         },
     )
     assert r.json()["days_overdue"] == 59 and r.json()["amount"] == "100000.00"
-    assert (await client.get(f"{API}/calc/bhm", params={"on_date": "2026-01-15"})).json()["amount"] == "375000.00"
+    bhm = {d: (await client.get(f"{API}/calc/bhm", params={"on_date": d})).json()["amount"] for d in
+           ("2025-01-15", "2026-01-15", "2026-08-31", "2026-09-01", "2026-11-21")}
+    assert bhm == {"2025-01-15": "375000.00", "2026-01-15": "412000.00", "2026-08-31": "412000.00",
+                   "2026-09-01": "440000.00", "2026-11-21": "440000.00"}  # PF-115: 440 000 from 01.09.2026
     # the removed guide module is really gone
     assert (await client.get(f"{API}/guides")).status_code == 404
 

@@ -315,7 +315,7 @@
             <div class="hp-card hp-ai-analysis-card">
               <div class="hp-card-header">
                 <div>
-                  <div class="hp-card-eyebrow" data-i18n="ai_analysis_eyebrow">AI Shartnoma tahlili (Ijara shartnomasi #42)</div>
+                  <div class="hp-card-eyebrow" data-i18n="ai_analysis_eyebrow">AI Shartnoma tahlili</div>
                   <h3 class="hp-card-title" data-i18n="ai_analysis_title">Shartnomani tekshir</h3>
                 </div>
                 <button type="button" class="hp-btn-outline-sm" data-goto="scanner">To'liq tekshiruv →</button>
@@ -324,21 +324,41 @@
               <div class="hp-ai-analysis-body">
                 <!-- Yarim-aylana xavf spidometri -->
                 <div class="hp-gauge-box">
-                  <svg class="hp-gauge-svg" viewBox="0 0 200 148">
+                  <svg class="hp-gauge-svg" viewBox="0 0 200 152">
                     <defs>
                       <linearGradient id="riskArcGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#D97706"/>
-                        <stop offset="55%" stop-color="#F59E0B"/>
-                        <stop offset="100%" stop-color="#FBBF24"/>
+                        <stop offset="0%" stop-color="#F59E0B"/>
+                        <stop offset="55%" stop-color="#D97706"/>
+                        <stop offset="100%" stop-color="#EA580C"/>
                       </linearGradient>
+                      <linearGradient id="gaugeCenterBg" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFBEB"/>
+                        <stop offset="100%" stop-color="#FFFFFF"/>
+                      </linearGradient>
+                      <filter id="needleShadow" x="-40%" y="-40%" width="180%" height="180%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="2.2" flood-color="#0F172A" flood-opacity="0.18"/>
+                      </filter>
                     </defs>
-                    <path d="M 36 132 A 75 75 0 1 1 164 132" fill="none" stroke="#E2E8F0" stroke-width="13" stroke-linecap="round"/>
-                    <path id="dash-gauge-arc" d="M 36 132 A 75 75 0 1 1 164 132" fill="none" stroke="url(#riskArcGrad)" stroke-width="13" stroke-linecap="round" stroke-dasharray="335" stroke-dashoffset="118"/>
-                    <g id="dash-gauge-needle" transform="translate(100, 82) rotate(18)">
-                      <polygon points="0,-62 -5.5,-48 5.5,-48" fill="#0F172A"/>
+                    <!-- Ichki dekorativ shkala -->
+                    <path d="M 50 123.5 A 58.5 58.5 0 1 1 150 123.5" fill="none" stroke="#E2E8F0" stroke-width="1.5" stroke-dasharray="2.5 4.5" stroke-linecap="round"/>
+                    <!-- Markaziy yumshoq fon -->
+                    <circle cx="100" cy="93" r="46" fill="url(#gaugeCenterBg)" stroke="#FEF3C7" stroke-width="1.2"/>
+                    <!-- Asosiy kulrang yo'lak -->
+                    <path d="M 36 132 A 75 75 0 1 1 164 132" pathLength="100" fill="none" stroke="#E2E8F0" stroke-width="13" stroke-linecap="round"/>
+                    <!-- To'luvchi rangli yoy -->
+                    <path id="dash-gauge-arc" d="M 36 132 A 75 75 0 1 1 164 132" pathLength="100" fill="none" stroke="url(#riskArcGrad)" stroke-width="13" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="50"/>
+                    <!-- Strelka / Ko'rsatkich (yoy markazi 100, 92.9 atrofida aylanadi) -->
+                    <g id="dash-gauge-needle" transform="translate(100, 92.9) rotate(0)" filter="url(#needleShadow)">
+                      <path d="M -5.2 -64 L 5.2 -64 L 0 -53.5 Z" fill="#D97706"/>
+                      <circle cx="0" cy="-75" r="8.5" fill="#FFFFFF" stroke="#D97706" stroke-width="3.5"/>
+                      <circle cx="0" cy="-75" r="2.8" fill="#0F172A"/>
                     </g>
-                    <text x="100" y="95" text-anchor="middle" class="hp-gauge-label-top" id="dash-gauge-line1">O'rta</text>
-                    <text x="100" y="119" text-anchor="middle" class="hp-gauge-label-bottom" id="dash-gauge-line2">xavf</text>
+                    <!-- Markaziy yozuv -->
+                    <text x="100" y="89" text-anchor="middle" class="hp-gauge-label-top" id="dash-gauge-line1">O'rtacha</text>
+                    <text x="100" y="111" text-anchor="middle" class="hp-gauge-label-bottom" id="dash-gauge-line2">xavf</text>
+                    <!-- Shkala chetlari -->
+                    <text x="34" y="148" text-anchor="middle" class="hp-gauge-scale-hint">0%</text>
+                    <text x="166" y="148" text-anchor="middle" class="hp-gauge-scale-hint">100%</text>
                   </svg>
                 </div>
 
@@ -350,28 +370,20 @@
 
                   <!-- Band 1: Qonunga zid -->
                   <div class="hp-clause-alert hp-clause-illegal" id="dash-clause-1">
-                    <div class="hp-clause-main-row">
-                      <span class="hp-pill-badge hp-pill-danger" data-i18n="badge_illegal">Qonunga zid</span>
-                      <p class="hp-clause-text" id="dash-clause-1-text">Kechikkanlik jarimasi (penya) chegaradan yuqori (1.5% / kun)</p>
+                    <div class="hp-clause-top">
+                      <span class="hp-pill-badge hp-pill-danger" data-i18n="illegal_badge">Qonunga zid</span>
+                      <strong class="hp-clause-name">4.2-band — Muddatidan oldin jarima</strong>
                     </div>
-                    <div class="hp-clause-actions-row">
-                      <span class="hp-decision-feedback" id="dash-clause-1-status"></span>
-                      <div class="hp-clause-btns">
-                        <button type="button" class="hp-btn-navy-sm" data-clause-action="agree" data-i18n="btn_agree">Roziman</button>
-                        <button type="button" class="hp-btn-outline-sm" data-clause-action="object" data-i18n="btn_object">E'tiroz</button>
-                      </div>
-                    </div>
-                    <div class="hp-clause-detail-collapse" id="dash-clause-1-detail" hidden>
-                      <strong>To'g'rilangan qonuniy band:</strong> Kechiktirilgan har bir kun uchun penya 0,1% (jami 25% gacha) etib belgilandi.
-                    </div>
+                    <p class="hp-clause-desc">Ijarachidan 3 oylik ijara haqini jarima sifatida ushlab qolish sharti — <strong>Fuqarolik kodeksi 326-moddasiga zid</strong>.</p>
                   </div>
 
-                  <!-- Band 2: Qaltis band -->
+                  <!-- Band 2: Qaltis -->
                   <div class="hp-clause-alert hp-clause-risky" id="dash-clause-2">
-                    <div class="hp-clause-main-row">
-                      <span class="hp-pill-badge hp-pill-warning" data-i18n="badge_risky">Qaltis band</span>
-                      <p class="hp-clause-text" id="dash-clause-2-text">Ogohlantirishsiz 24 soatda bir tomonlama bekor qilish huquqi</p>
+                    <div class="hp-clause-top">
+                      <span class="hp-pill-badge hp-pill-warning" data-i18n="risky_badge">Qaltis</span>
+                      <strong class="hp-clause-name">7.1-band — Bir tomonlama narx oshirish</strong>
                     </div>
+                    <p class="hp-clause-desc">Ijara beruvchi ogohlantirmasdan narxni oshirishi mumkinligi ko'rsatilgan — kamida <strong>30 kun oldin yozma xabarnoma</strong> talab etiladi.</p>
                   </div>
                 </div>
               </div>
@@ -471,7 +483,7 @@
                 <h3 class="hp-card-title" data-i18n="bhm_calc_title">Davlat boji (BHM) kalkulyatori</h3>
               </div>
 
-              <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">BHM sonini tanlang (1 BHM = 375 000 so'm):</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">BHM sonini tanlang (1 BHM = <span id="bhm-rate-text">440 000</span> so'm):</div>
               <div class="hp-bhm-input-wrap">
                 <input
                   type="number"
@@ -495,7 +507,7 @@
               <div class="hp-bhm-footer">
                 <div class="hp-bhm-result-box">
                   <span class="hp-bhm-caption" data-i18n="bhm_amount_label">To'lanadigan davlat boji:</span>
-                  <strong class="hp-bhm-value" id="bhm-calculated-output">375 000 so'm</strong>
+                  <strong class="hp-bhm-value" id="bhm-calculated-output">440 000 so'm</strong>
                 </div>
                 <button type="button" class="hp-btn-navy" id="btn-bhm-calculate" data-i18n="btn_calculate">Hisoblash</button>
               </div>
@@ -627,7 +639,7 @@
               <span class="hp-pill-badge hp-pill-warning" id="scan-report-risk-badge">O'rta xavf</span>
             </div>
 
-            <div class="hp-scan-kpi-row" style="grid-template-columns:1fr 1fr;">
+            <div class="hp-scan-kpi-row" style="grid-template-columns:1fr 1fr 1fr;">
               <div class="hp-scan-kpi hp-kpi-red">
                 <span class="hp-kpi-num" id="scan-count-illegal">1</span>
                 <span class="hp-kpi-label">Qonunga zid band (o'zgartirish shart)</span>
@@ -635,6 +647,10 @@
               <div class="hp-scan-kpi hp-kpi-amber">
                 <span class="hp-kpi-num" id="scan-count-risky">1</span>
                 <span class="hp-kpi-label">Qaltis band (e'tibor bering)</span>
+              </div>
+              <div class="hp-scan-kpi hp-kpi-green">
+                <span class="hp-kpi-num" id="scan-count-advice">0</span>
+                <span class="hp-kpi-label">Maslahat (tavsiya)</span>
               </div>
             </div>
 
@@ -696,6 +712,16 @@
             </table>
           </div>
         </div>
+
+        <div class="hp-card" style="margin-top:18px;" id="mediation-requests-card">
+          <div class="hp-card-header">
+            <h3 class="hp-card-title">Mediatorga arizalarim</h3>
+            <button type="button" class="hp-btn-navy-sm" id="btn-new-mediation">+ Yangi ariza</button>
+          </div>
+          <div class="hp-obligations-full-list" id="mediation-requests-list">
+            <div class="hp-text-muted" style="text-align:center;padding:16px;">Hozircha ariza yo'q</div>
+          </div>
+        </div>
       </main>
 
       <!-- ==================== 5-SAHIFA: ESLATMALAR ==================== -->
@@ -745,14 +771,35 @@
               <div class="hp-form-group">
                 <label for="cs-type">Hujjat turi</label>
                 <select id="cs-type" class="hp-input">
-                  <option value="To'lov cheki">To'lov cheki / Kvitansiya</option>
-                  <option value="Qo'shimcha kelishuv">Qo'shimcha kelishuv</option>
-                  <option value="Talabnoma">Rasmiy talabnoma</option>
+                  <option value="receipt">To'lov cheki / Kvitansiya</option>
+                  <option value="addendum">Qo'shimcha kelishuv</option>
+                  <option value="claim">Rasmiy talabnoma</option>
+                  <option value="other">Boshqa hujjat</option>
                 </select>
               </div>
               <div class="hp-form-group">
+                <label for="cs-archive">Qaysi shartnomaga tegishli</label>
+                <select id="cs-archive" class="hp-input">
+                  <option value="">— shartnomaga bog'lanmagan —</option>
+                </select>
+              </div>
+              <div class="hp-form-row-2">
+                <div class="hp-form-group">
+                  <label for="cs-amount">Summa (so'm)</label>
+                  <input type="text" id="cs-amount" class="hp-input" inputmode="decimal" placeholder="Masalan: 3 000 000" />
+                </div>
+                <div class="hp-form-group">
+                  <label for="cs-date">Sana</label>
+                  <input type="date" id="cs-date" class="hp-input" />
+                </div>
+              </div>
+              <div class="hp-form-group">
+                <label for="cs-file">Fayl (chek rasmi, PDF yoki DOCX)</label>
+                <input type="file" id="cs-file" class="hp-input" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,application/pdf,image/*" />
+              </div>
+              <div class="hp-form-group">
                 <label for="cs-desc">Qisqacha izoh</label>
-                <textarea id="cs-desc" class="hp-input" rows="3" placeholder="Summa va to'lov sanasini yozing..." required></textarea>
+                <textarea id="cs-desc" class="hp-input" rows="3" placeholder="Masalan: Click orqali to'landi, to'lov raqami 123456"></textarea>
               </div>
               <button type="submit" class="hp-btn-navy" style="width:100%;">Arxivga saqlash</button>
             </form>
@@ -808,6 +855,36 @@
 
   <!-- TOAST XABARNOMALAR -->
   <div class="hp-toast-container" id="hp-toast-container" aria-live="polite"></div>
+
+  <!-- ==================== «SHARTNOMACHI AI» FLOATING CHAT ==================== -->
+  <button type="button" class="hp-chat-fab" id="hp-chat-fab" title="Shartnomachi AI" aria-label="Shartnomachi AI" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      <path d="M12 7v4"/>
+      <path d="M10 9h4"/>
+    </svg>
+  </button>
+
+  <aside class="hp-chat-panel" id="hp-chat-panel" role="dialog" aria-label="Shartnomachi AI" hidden>
+    <div class="hp-chat-header">
+      <div class="hp-chat-header-title">
+        <strong>Shartnomachi AI</strong>
+        <span class="hp-pill-badge hp-pill-neutral" id="hp-chat-context-chip" hidden></span>
+      </div>
+      <div class="hp-chat-header-actions">
+        <button type="button" class="hp-text-link-btn" id="hp-chat-clear">Tozalash</button>
+        <button type="button" class="hp-modal-close" id="hp-chat-close" aria-label="Yopish">✕</button>
+      </div>
+    </div>
+    <div class="hp-chat-messages" id="hp-chat-messages"></div>
+    <form class="hp-chat-form" id="hp-chat-form">
+      <div class="hp-chat-input-row">
+        <textarea id="hp-chat-input" class="hp-input" rows="2" placeholder="Savolingizni yozing... (Enter — yuborish)"></textarea>
+        <button type="submit" class="hp-btn-navy-sm" id="hp-chat-send">Yuborish</button>
+      </div>
+      <div class="hp-chat-disclaimer" id="hp-chat-disclaimer">AI javobi ma'lumot uchun; yuridik maslahat o'rnini bosmaydi.</div>
+    </form>
+  </aside>
 
   <script src="/sdk/lexlab-api.js"></script>
   <script src="js/app.js"></script>

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-PROMPT_VERSION = "2026-11-20.4"
+PROMPT_VERSION = "2026-11-21.1"
 
 REVIEW_SYSTEM = """Siz O'zbekiston Respublikasi qonunchiligi (Fuqarolik kodeksi, Mehnat kodeksi, iste'molchilar huquqlari \
 to'g'risidagi qonun va boshqalar) bo'yicha tajribali shartnoma tahlilchisisiz. Vazifa: berilgan shartnoma bandlarini \
@@ -49,11 +49,13 @@ severity: red — qonunga zid (bekor bo'lishi mumkin), yellow — qonuniy, lekin
 blue — maslahat/noaniqlik."""
 
 ASK_SYSTEM = """Siz shartnoma bo'yicha savollarga javob beruvchi huquqiy yordamchisiz (O'zbekiston qonunchiligi).
-QOIDALAR: faqat berilgan shartnoma matni va tekshiruv natijalariga tayaning; javobda tegishli band raqamlarini \
-ko'rsating; bilmasangiz yoki matnda yo'q bo'lsa, ochiq ayting va yurist bilan maslahatlashishni tavsiya qiling; \
-qonun moddasi raqamini taxmin qilmang. [NAME_1] kabi yashirilgan belgilarni o'zgartirmang.
-Javob faqat JSON: {"answer": "o'zbek tilida javob", "clause_refs": [kvadrat qavsdagi indekslar, masalan [3] uchun 3], "confidence": 0.0, \
-"consult_lawyer": true|false}"""
+QOIDALAR: berilgan shartnoma matni, tekshiruv natijalari va berilgan qonun moddalari (lex.uz) matniga tayaning; \
+avval shartnomada nima yozilganini (band raqami bilan), keyin qonun nima deyishini ayting; \
+qonun moddasini faqat berilgan ro'yxatdan keltiring, boshqa modda raqamini taxmin qilmang; \
+shartnomada bo'sh qoldirilgan joy bo'lsa, buni ayting va qonundagi umumiy qoidani tushuntiring; \
+javob aniq va qisqa (3-6 gap), oddiy tilda; [NAME_1] kabi yashirilgan belgilarni o'zgartirmang.
+Javob faqat JSON: {"answer": "o'zbek tilida javob", "clause_refs": [kvadrat qavsdagi indekslar, masalan [3] uchun 3], \
+"law_refs": ["FK 544", ...], "confidence": 0.0, "consult_lawyer": true|false}"""
 
 
 SITUATION_SYSTEM = """Siz O'zbekistondagi shartnomalar platformasining yordamchisisiz. Foydalanuvchi o'z vaziyatini \
@@ -115,16 +117,93 @@ def review_user(
     return "\n".join(parts)
 
 
-def ask_user(*, clauses: list[dict[str, object]], findings: list[str], question: str) -> str:
-    return "\n".join(
-        [
-            "Shartnoma bandlari:",
-            clauses_block(clauses, 12000),
-            "",
-            "Tekshiruv natijalari:",
-            "\n".join(f"- {f}" for f in findings) or "- yo'q",
-            "",
-            f"Savol: {question}",
-            "Javobni JSON formatida qaytaring.",
-        ]
-    )
+def ask_user(
+    *,
+    clauses: list[dict[str, object]],
+    findings: list[str],
+    question: str,
+    contract_type: str | None = None,
+    law_texts: list[str] | None = None,
+) -> str:
+    parts = [f"Shartnoma turi: {contract_type}"] if contract_type else []
+    parts += [
+        "Shartnoma bandlari:",
+        clauses_block(clauses, 12000),
+        "",
+        "Tekshiruv natijalari:",
+        "\n".join(f"- {f}" for f in findings) or "- yo'q",
+    ]
+    if law_texts:
+        parts += ["", "O'zbekiston qonunchiligi (lex.uz, amaldagi tahrir) — tegishli moddalar matni:", *law_texts]
+    parts += ["", f"Savol: {question}", "Javobni JSON formatida qaytaring."]
+    return "\n".join(parts)
+
+
+# --- «Shartnomachi AI»: the site-wide chat assistant ----------------------------------------------------
+
+CHAT_SYSTEM = """Siz «Shartnomachi AI» — O'zbekistondagi LexLab shartnomalar platformasining yordamchisisiz.
+Vazifa: foydalanuvchining shartnomalar, nizolar, mediatsiya va O'zbekiston qonunchiligi (fuqarolik, mehnat, \
+iste'molchilar huquqlari, mediatsiya) bo'yicha savollariga oddiy, aniq tilda javob berish va platformadagi keyingi \
+qadamni taklif qilish.
+QOIDALAR: javob o'zbek tilida (lotin), 2-6 gap; qonun moddasini faqat quyida berilgan lex.uz matnlaridan keltiring, \
+boshqa modda raqamini taxmin qilmang; berilgan matnda javob bo'lmasa, ochiq ayting va yurist bilan maslahatlashishni \
+tavsiya qiling; foydalanuvchining shartnomasi berilgan bo'lsa, unga band raqami bilan tayaning; \
+[NAME_1] kabi yashirilgan belgilarni o'zgartirmang; yuridik xulosa emas, axborot berayotganingizni unutmang.
+action — platformadagi keyingi qadam (kerak bo'lmasa null): "builder" (yangi shartnoma tuzish, type_code bilan), \
+"scanner" (tayyor shartnomani tekshirish), "mediation" (nizo bo'yicha mediatorga ariza tayyorlash), \
+"contracts" (shartnomalarim), "archive" (arxiv), "reminders" (to'lov eslatmalari).
+Javob faqat JSON: {"answer": "...", "law_refs": ["FK 544", ...], \
+"action": {"type": "builder"|"scanner"|"mediation"|"contracts"|"archive"|"reminders", "type_code": "..."|null}|null, \
+"confidence": 0.0}"""
+
+
+def chat_user(
+    *,
+    history: list[dict[str, str]],
+    question: str,
+    catalog: str,
+    law_texts: list[str] | None,
+    contract: str | None = None,
+    page: str | None = None,
+) -> str:
+    parts = ["Platformadagi shartnoma turlari (type_code: nomi):", catalog]
+    if page:
+        parts += ["", f"Foydalanuvchi hozir turgan sahifa: {page}"]
+    if contract:
+        parts += ["", "Foydalanuvchining shartnomasi:", contract]
+    if law_texts:
+        parts += ["", "O'zbekiston qonunchiligi (lex.uz, amaldagi tahrir) — tegishli moddalar matni:", *law_texts]
+    if history:
+        parts += ["", "Oldingi suhbat:"]
+        parts += [f"{'Foydalanuvchi' if m['role'] == 'user' else 'Shartnomachi AI'}: {m['content']}" for m in history]
+    parts += ["", f"Savol: {question}", "Javobni JSON formatida qaytaring."]
+    return "\n".join(parts)
+
+
+# --- mediation request helper -----------------------------------------------------------------------------
+
+MEDIATION_SYSTEM = """Siz O'zbekistonda nizolarni mediatsiya orqali hal qilishga yordam beruvchi huquqiy yordamchisiz \
+(«Mediatsiya to'g'risida»gi Qonun, O'RQ-482). Vazifa: foydalanuvchi yozgan nizo tavsifidan mediatorga ariza uchun \
+xolis, hurmatli va aniq matn tayyorlash va murosa variantlarini taklif qilish.
+QOIDALAR: o'zbek tilida (lotin); ayblovchi yoki haqoratli so'zlarsiz, faktlarga tayanib yozing; ikkinchi tomonni \
+kamsitmang; qonun moddasini faqat berilgan lex.uz matnlaridan keltiring; [NAME_1] kabi belgilarni o'zgartirmang; \
+o'ylab topilgan fakt, sana yoki summa qo'shmang.
+Javob faqat JSON: {"subject": "nizo predmeti, 1 gap", "statement": "nizo mazmuni, 3-8 gap", \
+"claims": ["arizachining talabi", ...], "options": ["murosa varianti", ...], "law_refs": ["MQ 29", "FK 544", ...], \
+"confidence": 0.0}"""
+
+
+def mediation_user(*, form: dict[str, object], contract: str | None, law_texts: list[str] | None) -> str:
+    parts = [
+        f"Nizo predmeti (foydalanuvchi yozgani): {form.get('subject') or '-'}",
+        f"Nizo tavsifi: {form.get('description') or '-'}",
+        f"Arizachining talablari: {form.get('claims') or '-'}",
+        f"Kutilgan natija: {form.get('desired_outcome') or '-'}",
+        f"Nizo summasi: {form.get('amount') or '-'}",
+    ]
+    if contract:
+        parts += ["", "Nizo kelib chiqqan shartnoma:", contract]
+    if law_texts:
+        parts += ["", "O'zbekiston qonunchiligi (lex.uz) — tegishli moddalar matni:", *law_texts]
+    parts.append("\nJavobni JSON formatida qaytaring.")
+    return "\n".join(parts)

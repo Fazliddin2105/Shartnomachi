@@ -996,4 +996,25 @@ async def ai_ask(db: AsyncSession, c: Contract, question: str) -> dict[str, Any]
 
     clauses = await _clauses_for_ai(db, c)
     report = await validate(db, c)
-    return await ai.ask(clauses=clauses, findings=[f["message"] for f in report["findings"]], question=question)
+    ctype = c.contract_type
+    return await ai.ask(
+        clauses=clauses,
+        findings=[f["message"] for f in report["findings"]],
+        question=question,
+        contract_type=ctype.title_uz if ctype else None,
+        law_texts=law_context(ctype, question),
+    )
+
+
+def law_context(ctype: ContractType | None, question: str | None = None) -> list[str] | None:
+    """Articles of the contract type plus those most relevant to the user's question (lex.uz text)."""
+    from app.modules.laws import corpus
+
+    arts = corpus.articles_for(ctype.legal_refs, max_chars=700) if ctype else []
+    if question:
+        codes = sorted({r["code"] for r in (ctype.legal_refs or []) if r.get("code")}) if ctype else []
+        seen = {(a["code"], str(a["number"])) for a in arts}
+        for a in corpus.related(question, codes=codes or None, limit=4):
+            if (a["code"], str(a["number"])) not in seen:
+                arts.append(a)
+    return corpus.prompt_block(arts) or None

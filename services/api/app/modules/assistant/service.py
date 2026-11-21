@@ -151,6 +151,7 @@ async def dashboard(db: AsyncSession, user: User) -> dict[str, Any]:
         last_scan = {
             "id": str(last.id),
             "created_at": last.created_at.isoformat(),
+            "title": (rep.get("document") or {}).get("title"),
             "contract_type_code": last.contract_type_code,
             "risk_level": o.get("risk_level"),
             "risk_percent": o.get("risk_percent"),

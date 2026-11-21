@@ -255,3 +255,23 @@ class ArchivedContract(UUIDPk, Base):
     note: Mapped[str | None] = mapped_column(EncryptedString)  # private note of this user
     tags: Mapped[list[str]] = mapped_column(JSONType, default=list)
     archived_at: Mapped[datetime] = mapped_column(default=utcnow, index=True)
+
+
+class ArchiveDocument(UUIDPk, Base):
+    """A payment receipt / addendum / claim the user files in their personal archive, optionally attached
+    to one of their signed contracts. The file is stored encrypted (files module); its SHA-256 proves integrity."""
+
+    __tablename__ = "archive_documents"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    archive_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("archived_contracts.id", ondelete="SET NULL"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(32), default="receipt")  # receipt | addendum | claim | other
+    title: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str | None] = mapped_column(EncryptedString)
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    currency: Mapped[str] = mapped_column(String(3), default="UZS")
+    doc_date: Mapped[date | None] = mapped_column(Date)
+    file_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("files.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(default=utcnow, index=True)

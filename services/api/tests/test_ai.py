@@ -184,12 +184,14 @@ async def test_scan_ai_review_masks_pii_and_never_blocks(client: AsyncClient, fa
 
     rep = (await client.get(f"{API}/scans/{scan['id']}/report", headers=user)).json()
     assert rep["ai"]["status"] == "done" and rep["ai"]["model"] == "fake-qwen" and rep["ai"]["masked"] is True
-    ai_cards = [f for f in rep["risky_clauses"] + rep["advice"] if f["source"] == "ai"]
+    ai_cards = [f for f in rep["red_clauses"] + rep["risky_clauses"] + rep["advice"] if f["source"] == "ai"]
     titles = " ".join(f["explanation"] for f in ai_cards)
-    assert "ehtimoliy qonunbuzarlik" in titles  # AI "red" shown as advisory, not as an illegal clause
-    assert all(f["source"] != "ai" for f in rep["red_clauses"])  # only rules can declare a clause illegal
+    # a confident AI "contrary to law" verdict is shown red in the scanner (analysis only), flagged for a lawyer
+    ai_red = [f for f in rep["red_clauses"] if f["source"] == "ai"]
+    assert len(ai_red) == 1 and "Shaxsiy hayotga aralashuv" in ai_red[0]["explanation"]
+    assert ai_red[0]["needs_lawyer"] and ai_red[0]["suggestion"] == "Bandni olib tashlang."
+    assert rep["overall"]["risk_level"] == "high"
     assert "Takroriy" not in titles  # duplicate of a rule finding dropped
-    assert any(f["needs_lawyer"] for f in ai_cards)
 
     async with session_scope() as db:
         note = await db.scalar(select(Notification).where(Notification.type == "scan.ai_ready"))

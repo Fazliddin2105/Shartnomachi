@@ -10,6 +10,16 @@
       "amount": 375000,
       "valid_from": "2024-08-01",
       "legal_ref": "Prezident farmoni (tekshirilsin)"
+    },
+    {
+      "amount": 412000,
+      "valid_from": "2025-08-01",
+      "legal_ref": "Prezident farmoni (tekshirilsin)"
+    },
+    {
+      "amount": 440000,
+      "valid_from": "2026-09-01",
+      "legal_ref": "O‘zbekiston Respublikasi Prezidentining 23.06.2026 yildagi PF-115-son Farmoni (https://lex.uz/uz/doc-passport/-8283656)"
     }
   ],
   "calendar_2026": [

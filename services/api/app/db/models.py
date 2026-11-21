@@ -14,6 +14,7 @@ from app.modules.contracts.models import (  # noqa: F401
     ContractVersion,
 )
 from app.modules.files.models import StoredFile  # noqa: F401
+from app.modules.mediation.models import MediationRequest  # noqa: F401
 from app.modules.moderation.models import ContentReport, ContentTask  # noqa: F401
 from app.modules.notifications.models import Notification  # noqa: F401
 from app.modules.obligations.models import Obligation, Reminder  # noqa: F401

@@ -2,22 +2,28 @@
 
 from __future__ import annotations
 
+import re
 import uuid
+from datetime import date
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import NotFound
+from app.core.errors import NotFound, ValidationFailed
 from app.core.timeutils import utcnow
 from app.modules.contracts import service
 from app.modules.contracts.models import (
     ArchivedContract,
+    ArchiveDocument,
     Contract,
     ContractApproval,
     ContractVersion,
     PartyRole,
 )
+from app.modules.files import service as files
+from app.modules.files.models import StoredFile
 
 
 def _side(p: Any) -> str | None:
@@ -133,6 +139,7 @@ async def get_item(db: AsyncSession, user_id: uuid.UUID, item_id: uuid.UUID) -> 
         }
         for x in approvals
     ]
+    out["documents"] = await list_documents(db, user_id, archive_id=a.id)
     return out
 
 
@@ -148,3 +155,139 @@ async def update_item(
         a.tags = sorted({t.strip()[:40] for t in tags if t.strip()})[:20]
     c = await db.get(Contract, a.contract_id)
     return item_out(a, c.status.value if c else None)
+
+
+# --- documents filed by the user: payment receipts, addenda, claims -------------------------------------
+
+DOC_KINDS = {
+    "receipt": "To'lov cheki",
+    "addendum": "Qo'shimcha kelishuv",
+    "claim": "Rasmiy talabnoma",
+    "other": "Hujjat",
+}
+
+
+def doc_out(d: ArchiveDocument, f: StoredFile | None, contract_title: str | None = None) -> dict[str, Any]:
+    return {
+        "id": str(d.id),
+        "archive_id": str(d.archive_id) if d.archive_id else None,
+        "contract_title": contract_title,
+        "kind": d.kind,
+        "kind_label": DOC_KINDS.get(d.kind, "Hujjat"),
+        "title": d.title,
+        "description": d.description,
+        "amount": f"{d.amount:.2f}" if d.amount is not None else None,
+        "currency": d.currency,
+        "doc_date": d.doc_date.isoformat() if d.doc_date else None,
+        "created_at": d.created_at.isoformat(),
+        "file": (
+            {
+                "name": f.original_name,
+                "mime": f.mime,
+                "size": f.size,
+                "sha256": f.sha256,
+                "download": f"/api/v1/archive/documents/{d.id}/file",
+            }
+            if f
+            else None
+        ),
+    }
+
+
+async def _own_archive_item(
+    db: AsyncSession, user_id: uuid.UUID, archive_id: uuid.UUID | None
+) -> ArchivedContract | None:
+    if archive_id is None:
+        return None
+    a = await db.get(ArchivedContract, archive_id)
+    if a is None or a.user_id != user_id:
+        raise NotFound("Archive item not found")
+    return a
+
+
+async def add_document(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    *,
+    title: str,
+    kind: str,
+    description: str | None,
+    amount: Decimal | None,
+    doc_date: date | None,
+    archive_id: uuid.UUID | None,
+    file: tuple[bytes, str, str | None] | None,
+) -> dict[str, Any]:
+    title = re.sub(r"\s+", " ", title or "").strip()
+    if len(title) < 2:
+        raise ValidationFailed("Hujjat nomini kiriting", code="doc_title_required")
+    if kind not in DOC_KINDS:
+        raise ValidationFailed("Unknown document kind", code="doc_kind")
+    if amount is not None and amount < 0:
+        raise ValidationFailed("Summa manfiy bo'lishi mumkin emas", code="doc_amount")
+    a = await _own_archive_item(db, user_id, archive_id)
+    stored = None
+    if file is not None:
+        data, name, mime = file
+        if not data:
+            raise ValidationFailed("Fayl bo'sh", code="file_empty")
+        sniffed = files.sniff_mime(data, mime)  # magic bytes, not the browser's claim
+        if not (sniffed.startswith("image/") or sniffed in DOC_MIME):
+            raise ValidationFailed("Faqat PDF, rasm (JPG/PNG) yoki DOCX fayl yuklash mumkin", code="file_type")
+        stored = await files.save_bytes(
+            db, data=data, filename=name, declared_mime=mime, owner_id=user_id, purpose="archive", trusted_mime=sniffed
+        )
+    d = ArchiveDocument(
+        user_id=user_id,
+        archive_id=a.id if a else None,
+        kind=kind,
+        title=title[:255],
+        description=(description or "").strip()[:4000] or None,
+        amount=amount,
+        doc_date=doc_date,
+        file_id=stored.id if stored else None,
+    )
+    db.add(d)
+    await db.flush()
+    return doc_out(d, stored, a.title if a else None)
+
+
+DOC_MIME = {"application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+
+
+async def list_documents(
+    db: AsyncSession, user_id: uuid.UUID, *, archive_id: uuid.UUID | None = None, limit: int = 100, offset: int = 0
+) -> list[dict[str, Any]]:
+    stmt = (
+        select(ArchiveDocument, StoredFile, ArchivedContract.title)
+        .outerjoin(StoredFile, StoredFile.id == ArchiveDocument.file_id)
+        .outerjoin(ArchivedContract, ArchivedContract.id == ArchiveDocument.archive_id)
+        .where(ArchiveDocument.user_id == user_id)
+    )
+    if archive_id is not None:
+        stmt = stmt.where(ArchiveDocument.archive_id == archive_id)
+    stmt = stmt.order_by(ArchiveDocument.created_at.desc()).limit(limit).offset(offset)
+    return [doc_out(d, f, t) for d, f, t in (await db.execute(stmt)).tuples()]
+
+
+async def _own_document(db: AsyncSession, user_id: uuid.UUID, doc_id: uuid.UUID) -> ArchiveDocument:
+    d = await db.get(ArchiveDocument, doc_id)
+    if d is None or d.user_id != user_id:
+        raise NotFound("Document not found")
+    return d
+
+
+async def document_file(db: AsyncSession, user_id: uuid.UUID, doc_id: uuid.UUID) -> tuple[bytes, StoredFile]:
+    d = await _own_document(db, user_id, doc_id)
+    if d.file_id is None:
+        raise NotFound("Bu hujjatga fayl biriktirilmagan", code="doc_no_file")
+    f = await files.get_file(db, d.file_id)
+    return await files.read_bytes(f), f
+
+
+async def delete_document(db: AsyncSession, user_id: uuid.UUID, doc_id: uuid.UUID) -> None:
+    d = await _own_document(db, user_id, doc_id)
+    file_id = d.file_id
+    await db.delete(d)
+    await db.flush()
+    if file_id:
+        await files.delete_file(db, file_id)

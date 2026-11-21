@@ -48,7 +48,7 @@
     dashboardData: null,
     modalLocked: false,
     pushToastShown: false,
-    bhmBaseValue: 375000,
+    bhmBaseValue: 440000, // PF-115 (23.06.2026): 440 000 so'm from 01.09.2026; refreshed from /calc/bhm
     contractFilter: 'all',
     docPreviewLang: 'uz',
 
@@ -67,7 +67,16 @@
 
     // Modal tracking & Polling
     openModalContractId: null,
+    openModalContractTitle: null,
     pollTimer: null,
+
+    // «Shartnomachi AI» Chat & «Mediatorga murojaat» (FRONTEND_GEMINI_5)
+    chatOpen: false,
+    chatHistory: [],
+    chatDisclaimer: "AI javobi ma'lumot uchun; yuridik maslahat o'rnini bosmaydi.",
+    mediationList: [],
+    activeMediation: null,
+    activeMediationAi: null,
 
     // Scanner
     currentScanId: null,
@@ -203,6 +212,7 @@
     state.modalLocked = !!options.locked;
     if (!options.keepContractId) {
       state.openModalContractId = options.contractId || null;
+      state.openModalContractTitle = options.contractId ? (title || null) : null;
     }
     const backdrop = document.getElementById('hp-modal-backdrop');
     const titleEl = document.getElementById('hp-modal-title');
@@ -216,18 +226,21 @@
     if (closeBtn) closeBtn.hidden = state.modalLocked;
     if (footerEl) footerEl.hidden = state.modalLocked || !!options.hideFooter;
     backdrop.hidden = false;
+    updateChatContextChip();
   }
 
   function closeModal(force) {
     if (state.modalLocked && !force) return;
     state.modalLocked = false;
     state.openModalContractId = null;
+    state.openModalContractTitle = null;
     const backdrop = document.getElementById('hp-modal-backdrop');
     const closeBtn = document.getElementById('hp-modal-close');
     const footerEl = document.getElementById('hp-modal-footer');
     if (closeBtn) closeBtn.hidden = false;
     if (footerEl) footerEl.hidden = false;
     if (backdrop) backdrop.hidden = true;
+    updateChatContextChip();
   }
 
   // U2.5: Confirmation modal before every delete
@@ -281,10 +294,16 @@
   // ==================== FRONTEND_GEMINI_4: LAW REFERENCES (lex.uz) ====================
   // A law reference ("FK 615-modda. …") rendered as a link-styled button; the click handler resolves it
   // to the article text published on lex.uz. Existing class only (.hp-clause-expand-link), no new CSS.
+  // Green «Maslahat» box: every recommendation (rule fix, AI suggestion) is shown the same way, in green.
+  function adviceHtml(text, label) {
+    if (!text) return '';
+    return `<div class="hp-clause-advice"><span class="hp-pill-badge hp-pill-success">${esc(label || 'Maslahat')}</span> ${esc(text)}</div>`;
+  }
+
   function lawRefLink(ref, lexUrl) {
     if (!ref) return '';
-    // only real articles (FK/MK/IHHQ + number) or references with a lex.uz link are clickable
-    if (!lexUrl && !/\b(FK|MK|IHHQ)\s*\d/i.test(ref)) return esc(ref);
+    // only real articles (FK/MK/IHHQ/MQ + number) or references with a lex.uz link are clickable
+    if (!lexUrl && !/\b(FK|MK|IHHQ|MQ)\s*\d/i.test(ref)) return esc(ref);
     const urlAttr = lexUrl ? ` data-lex-url="${esc(lexUrl)}"` : '';
     return `<button type="button" class="hp-clause-expand-link" style="padding:0;text-align:left;" data-law-ref="${esc(ref)}"${urlAttr} title="Modda matnini ko'rish (lex.uz)">${esc(ref)}</button>`;
   }
@@ -534,7 +553,10 @@
     const badgeEl = document.getElementById('current-user-badge');
     const fullName = me.profile && me.profile.full_name;
 
-    if (nameEl) nameEl.textContent = fullName || maskPhone(me.phone);
+    if (nameEl) {
+      nameEl.textContent = shortPersonName(fullName) || maskPhone(me.phone);
+      nameEl.title = fullName || 'Ism-familiya kiritilmagan — profilni to\'ldiring';
+    }
     if (badgeEl) {
       badgeEl.textContent = me.identity_verified_via ? 'OneID tasdiqlangan' : 'Telefon tasdiqlangan';
     }
@@ -552,31 +574,82 @@
     renderSettingsProfile(me);
   }
 
+  // ---- Profile: F.I.Sh. is stored as one string «Familiya Ism Otasining ismi» ----
+  const ROLE_LABELS = {
+    citizen: 'Fuqaro', business: 'Tadbirkor (MChJ / YaTT)', lawyer: 'Yurist',
+    editor: 'Kontent muharriri', moderator: 'Moderator', admin: 'Administrator'
+  };
+  const REGIONS = [
+    'Toshkent sh.', 'Toshkent viloyati', 'Andijon viloyati', 'Buxoro viloyati', 'Farg\'ona viloyati',
+    'Jizzax viloyati', 'Xorazm viloyati', 'Namangan viloyati', 'Navoiy viloyati', 'Qashqadaryo viloyati',
+    'Qoraqalpog\'iston Respublikasi', 'Samarqand viloyati', 'Sirdaryo viloyati', 'Surxondaryo viloyati'
+  ];
+  const NAME_PART_RE = /^[\p{L}]+(?:[ '’ʻʼ`.-][\p{L}]+|[’ʻʼ'`.])*$/u;
+
+  function splitFullName(full) {
+    const parts = String(full || '').trim().split(/\s+/).filter(Boolean);
+    return { last: parts[0] || '', first: parts[1] || '', middle: parts.slice(2).join(' ') };
+  }
+
+  function capitalizeName(s) {
+    return String(s || '').trim().replace(/\s+/g, ' ')
+      .split(' ').map(w => (w ? w.charAt(0).toLocaleUpperCase('uz') + w.slice(1) : w)).join(' ');
+  }
+
+  // «Karimov Abdullo Aliyevich» -> «Abdullo K.» (sidebar)
+  function shortPersonName(full) {
+    const n = splitFullName(full);
+    if (!n.last) return '';
+    return n.first ? `${n.first} ${n.last.charAt(0)}.` : n.last;
+  }
+
   function renderSettingsProfile(me) {
     const list = document.querySelector('#view-settings .hp-setting-list');
     if (!list || !me) return;
-    const fullName = (me.profile && me.profile.full_name) || 'Kiritilmagan';
-    const badgeText = me.identity_verified_via ? 'OneID tasdiqlangan' : 'Telefon tasdiqlangan';
+    const prof = me.profile || {};
+    const fullName = prof.full_name || '';
+    const roleLabel = ROLE_LABELS[me.role] || me.role || '—';
+    const badgeText = me.identity_verified_via === 'eimzo' ? 'E-imzo tasdiqlangan'
+      : (me.identity_verified_via ? 'OneID tasdiqlangan' : 'Telefon tasdiqlangan');
     list.innerHTML = `
       <div class="hp-setting-item">
         <div>
-          <strong>${esc(fullName)} (${esc(me.role)})</strong>
-          <p>Telefon: ${esc(me.phone || '—')} · Faol slot: ${esc(LexLab.activeSlot() === 'party_b' ? '2-Tomon' : '1-Tomon')}</p>
+          <strong>${fullName ? esc(fullName) : 'Ism-familiya kiritilmagan'}</strong>
+          <p>${esc(roleLabel)} · Tel: ${esc(me.phone || '—')}${prof.region ? ` · ${esc(prof.region)}` : ''}</p>
+          ${fullName ? '' : `<p style="color:#B45309;">Shartnomalarda va imzo varag'ida to'g'ri ko'rinishi uchun F.I.Sh.ni kiriting.</p>`}
+        </div>
+        <button type="button" class="${fullName ? 'hp-btn-outline-sm' : 'hp-btn-navy-sm'}" data-open-profile>${fullName ? 'O\'zgartirish' : 'Ism-familiyani kiritish'}</button>
+      </div>
+      <div class="hp-setting-item">
+        <div>
+          <strong>Shaxsni tasdiqlash</strong>
+          <p>${me.identity_verified_via ? `Tasdiqlangan: ${esc(formatDateDdMmYyyy(me.identity_verified_at))}` : 'Telefon raqami SMS-kod orqali tasdiqlangan'}</p>
         </div>
         <span class="hp-pill-badge hp-pill-success">${esc(badgeText)}</span>
       </div>
+      <div class="hp-setting-item">
+        <div>
+          <strong>Faol tomon (demo)</strong>
+          <p>Hozir ${esc(LexLab.activeSlot() === 'party_b' ? '2-Tomon' : '1-Tomon')} sifatida ishlayapsiz.</p>
+        </div>
+      </div>
     `;
+    list.querySelectorAll('[data-open-profile]').forEach(b => b.addEventListener('click', openProfileModal));
   }
 
   function openProfileModal() {
     const me = state.me;
     if (!me) return;
-    const currentName = (me.profile && me.profile.full_name) || '';
+    const prof = me.profile || {};
+    const n = splitFullName(prof.full_name);
+    const regionOptions = ['<option value="">— tanlang —</option>']
+      .concat(REGIONS.map(r => `<option value="${esc(r)}"${prof.region === r ? ' selected' : ''}>${esc(r)}</option>`))
+      .join('');
 
     openModal(
       'Foydalanuvchi profili',
       `
-      <form id="profile-edit-form" class="hp-builder-form">
+      <form id="profile-edit-form" class="hp-builder-form" novalidate>
         <div class="hp-form-row-2">
           <div class="hp-form-group">
             <label>Telefon raqami</label>
@@ -584,13 +657,31 @@
           </div>
           <div class="hp-form-group">
             <label>Rol</label>
-            <input type="text" class="hp-input" value="${esc(me.role || 'user')}" disabled />
+            <input type="text" class="hp-input" value="${esc(ROLE_LABELS[me.role] || me.role || '')}" disabled />
           </div>
         </div>
-        <div class="hp-form-group">
-          <label for="profile-fullname-input">F.I.Sh. (To'liq ism)</label>
-          <input type="text" id="profile-fullname-input" class="hp-input" value="${esc(currentName)}" placeholder="Ism va familiyangizni kiriting" required />
+        <div class="hp-form-row-2">
+          <div class="hp-form-group">
+            <label for="profile-last-input">Familiya *</label>
+            <input type="text" id="profile-last-input" class="hp-input" value="${esc(n.last)}" placeholder="Masalan: Karimov" maxlength="60" autocomplete="family-name" />
+          </div>
+          <div class="hp-form-group">
+            <label for="profile-first-input">Ism *</label>
+            <input type="text" id="profile-first-input" class="hp-input" value="${esc(n.first)}" placeholder="Masalan: Abdullo" maxlength="60" autocomplete="given-name" />
+          </div>
         </div>
+        <div class="hp-form-row-2">
+          <div class="hp-form-group">
+            <label for="profile-middle-input">Otasining ismi</label>
+            <input type="text" id="profile-middle-input" class="hp-input" value="${esc(n.middle)}" placeholder="Masalan: Aliyevich" maxlength="80" autocomplete="additional-name" />
+          </div>
+          <div class="hp-form-group">
+            <label for="profile-region-input">Hudud</label>
+            <select id="profile-region-input" class="hp-input">${regionOptions}</select>
+          </div>
+        </div>
+        <span class="hp-field-hint" id="profile-error" style="color:#DC2626;" hidden></span>
+        <span class="hp-field-hint">Shartnomalarda shu ko'rinishda chiqadi: <strong id="profile-preview">${esc(prof.full_name || '—')}</strong></span>
         <div class="hp-builder-actions">
           <button type="submit" class="hp-btn-navy" id="btn-save-profile">Saqlash</button>
         </div>
@@ -600,15 +691,35 @@
 
     const form = document.getElementById('profile-edit-form');
     const btn = document.getElementById('btn-save-profile');
+    const errEl = document.getElementById('profile-error');
+    const val = id => capitalizeName(document.getElementById(id)?.value);
+    const compose = () => [val('profile-last-input'), val('profile-first-input'), val('profile-middle-input')].filter(Boolean).join(' ');
+    const showErr = (msg, focusId) => {
+      if (errEl) { errEl.textContent = msg; errEl.hidden = !msg; }
+      if (focusId) document.getElementById(focusId)?.focus();
+    };
+    form?.addEventListener('input', () => {
+      const p = document.getElementById('profile-preview');
+      if (p) p.textContent = compose() || '—';
+      showErr('');
+    });
     form?.addEventListener('submit', (e) => {
       e.preventDefault();
-      const full_name = (document.getElementById('profile-fullname-input')?.value || '').trim();
+      const last = val('profile-last-input');
+      const first = val('profile-first-input');
+      const middle = val('profile-middle-input');
+      if (!last) return showErr('Familiyani kiriting', 'profile-last-input');
+      if (!first) return showErr('Ismni kiriting', 'profile-first-input');
+      for (const [v, id, label] of [[last, 'profile-last-input', 'Familiya'], [first, 'profile-first-input', 'Ism'], [middle, 'profile-middle-input', 'Otasining ismi']]) {
+        if (v && (!NAME_PART_RE.test(v) || v.length < 2)) return showErr(`${label} faqat harflardan iborat bo'lishi kerak`, id);
+      }
+      const region = document.getElementById('profile-region-input')?.value || null;
       withBusy(btn, async () => {
-        await LexLab.me.profile({ full_name });
+        await LexLab.me.profile({ full_name: compose(), region });
         await loadMe();
         closeModal();
         showToast('Profil ma\'lumotlari saqlandi');
-      }).catch(() => {});
+      }).catch((err) => showErr(LexLab.humanError(err)));
     });
   }
 
@@ -695,6 +806,14 @@
     }).join('');
   }
 
+  function setDashScanEyebrow() {
+    const el = document.querySelector('[data-i18n="ai_analysis_eyebrow"]');
+    if (!el) return;
+    const base = (i18n[state.lang] || i18n.uz).ai_analysis_eyebrow || 'AI Shartnoma tahlili';
+    el.textContent = state.lastScanTitle ? `${base} (${shortTitle(state.lastScanTitle, 48)})` : base;
+    el.title = state.lastScanTitle || '';
+  }
+
   function renderDashboardLastScan(lastScan) {
     const arcEl = document.getElementById('dash-gauge-arc');
     const needleEl = document.getElementById('dash-gauge-needle');
@@ -704,30 +823,36 @@
     const clause2El = document.getElementById('dash-clause-2');
 
     if (!lastScan) {
-      if (arcEl) arcEl.setAttribute('stroke-dashoffset', '300');
-      if (needleEl) needleEl.setAttribute('transform', 'translate(100, 82) rotate(-66)');
-      if (line1El) line1El.textContent = 'Tahlil';
-      if (line2El) line2El.textContent = 'yo\'q';
-
+      state.lastScanTitle = null;
+      setDashScanEyebrow();
+      if (arcEl) arcEl.setAttribute('stroke-dashoffset', '88');
+      if (needleEl) needleEl.setAttribute('transform', 'translate(100, 92.9) rotate(-92.3)');
+      if (line1El) line1El.textContent = "Tahlil";
+      if (line2El) line2El.textContent = "yo'q";
       if (clause1El) {
+        clause1El.hidden = false;
         clause1El.className = 'hp-clause-alert';
         clause1El.innerHTML = `
-          <div class="hp-clause-main-row">
-            <span class="hp-pill-badge hp-pill-neutral">Ma'lumot</span>
-            <p class="hp-clause-text">Hali tahlil yo'q — shartnomani tekshiring</p>
+          <div class="hp-clause-top">
+            <span class="hp-pill-badge">Ma'lumot</span>
+            <strong class="hp-clause-name">Hali tahlil yo'q — shartnomani tekshiring</strong>
           </div>
+          <p class="hp-clause-desc">Shartnomani tekshir bo'limiga o'tib hujjatingizni tahlil qiling.</p>
         `;
       }
       if (clause2El) clause2El.hidden = true;
       return;
     }
 
-    const pct = lastScan.risk_percent ?? 0;
-    const dashOffset = Math.min(300, Math.max(15, 300 - 2.9 * pct));
-    const angle = -66 + 1.35 * pct;
+    state.lastScanTitle = lastScan.title || null;
+    setDashScanEyebrow();
+    const pct = Math.min(100, Math.max(0, Number(lastScan.risk_percent ?? 0)));
+    const dashOffset = Math.min(96, Math.max(0, 100 - pct));
+    const visiblePct = 100 - dashOffset;
+    const angle = (-121.42 + 2.4284 * visiblePct).toFixed(2);
 
     if (arcEl) arcEl.setAttribute('stroke-dashoffset', String(dashOffset));
-    if (needleEl) needleEl.setAttribute('transform', `translate(100, 82) rotate(${angle})`);
+    if (needleEl) needleEl.setAttribute('transform', `translate(100, 92.9) rotate(${angle})`);
 
     const labelParts = String(lastScan.risk_label || 'Past xavf').split(/\s+/);
     if (line1El) line1El.textContent = labelParts[0] || 'Past';
@@ -739,9 +864,8 @@
       if (findings[0]) {
         const f0 = findings[0];
         const isRed = f0.severity === 'red';
-        const pillCls = isRed ? 'hp-pill-danger' : (f0.severity === 'yellow' ? 'hp-pill-warning' : 'hp-pill-neutral');
+        const pillCls = isRed ? 'hp-pill-danger' : (f0.severity === 'yellow' ? 'hp-pill-warning' : 'hp-pill-success');
         const pillText = isRed ? 'Qonunga zid' : (f0.severity === 'yellow' ? 'Qaltis band' : 'Maslahat');
-        const showDetail = f0.user_decision === 'object' && f0.suggestion;
         const feedbackText = f0.user_decision === 'agree'
           ? 'Rozilik bildirildi'
           : (f0.user_decision === 'object' ? 'E\'tiroz bildirildi' : '');
@@ -756,6 +880,7 @@
               ${f0.law_ref ? `<br/><small class="hp-text-muted">${lawRefLink(f0.law_ref)}</small>` : ''}
             </p>
           </div>
+          ${f0.severity !== 'blue' ? adviceHtml(f0.suggestion) : ''}
           <div class="hp-clause-actions-row">
             <span class="hp-decision-feedback" id="dash-clause-1-status">${esc(feedbackText)}</span>
             <div class="hp-clause-btns">
@@ -763,9 +888,7 @@
               <button type="button" class="hp-btn-outline-sm" data-clause-action="object" data-scan-id="${esc(lastScan.id)}" data-finding-id="${esc(f0.id)}">E'tiroz</button>
             </div>
           </div>
-          <div class="hp-clause-detail-collapse" id="dash-clause-1-detail" ${showDetail ? '' : 'hidden'}>
-            ${f0.suggestion ? `<strong>Taklif:</strong> ${esc(f0.suggestion)}` : ''}
-          </div>
+          <div class="hp-clause-detail-collapse" id="dash-clause-1-detail" hidden></div>
         `;
       } else {
         clause1El.className = 'hp-clause-alert';
@@ -782,7 +905,7 @@
       if (findings[1]) {
         const f1 = findings[1];
         const isRed = f1.severity === 'red';
-        const pillCls = isRed ? 'hp-pill-danger' : (f1.severity === 'yellow' ? 'hp-pill-warning' : 'hp-pill-neutral');
+        const pillCls = isRed ? 'hp-pill-danger' : (f1.severity === 'yellow' ? 'hp-pill-warning' : 'hp-pill-success');
         const pillText = isRed ? 'Qonunga zid' : (f1.severity === 'yellow' ? 'Qaltis band' : 'Maslahat');
 
         clause2El.hidden = false;
@@ -795,6 +918,7 @@
               ${f1.law_ref ? `<br/><small class="hp-text-muted">${lawRefLink(f1.law_ref)}</small>` : ''}
             </p>
           </div>
+          ${f1.severity !== 'blue' ? adviceHtml(f1.suggestion) : ''}
         `;
       } else {
         clause2El.hidden = true;
@@ -855,7 +979,7 @@
     try {
       const res = await LexLab.calc.bhm();
       if (res && res.amount) {
-        state.bhmBaseValue = Number(res.amount) || 375000;
+        state.bhmBaseValue = Number(res.amount) || 440000;
       }
     } catch (e) {
       // ignore if not logged in
@@ -866,6 +990,8 @@
   function updateBhmCalculator() {
     const countInput = document.getElementById('bhm-count-input');
     const outputEl = document.getElementById('bhm-calculated-output');
+    const rateEl = document.getElementById('bhm-rate-text');
+    if (rateEl) rateEl.textContent = formatNumberUz(state.bhmBaseValue, 0);
     if (!countInput || !outputEl) return;
 
     const count = Math.max(1, parseFloat(countInput.value) || 1);
@@ -1242,11 +1368,11 @@
       const wContainer = document.querySelector(`#cb-dynamic-questionnaire [data-field-warn="${CSS.escape(key)}"]`);
       if (wContainer && warnings.length > 0) {
         wContainer.innerHTML = warnings.map(w => {
-          const cls = w.severity === 'red' ? 'hp-rule-red' : (w.severity === 'yellow' ? 'hp-rule-amber' : 'hp-rule-blue');
+          const cls = w.severity === 'red' ? 'hp-rule-red' : (w.severity === 'yellow' ? 'hp-rule-amber' : 'hp-rule-green');
           return `
             <div class="hp-rule-item ${cls}" style="margin-top:4px;padding:6px 10px;">
               <strong>${esc(w.message)}</strong>
-              ${w.fix_suggestion ? `<span>${esc(w.fix_suggestion)}</span>` : ''}
+              ${adviceHtml(w.fix_suggestion)}
               ${w.law_ref ? `<span>Asos: ${lawRefLink(w.law_ref, w.lex_url)}</span>` : ''}
             </div>
           `;
@@ -1361,12 +1487,12 @@
     }
 
     (r.findings || []).forEach(f => {
-      const cls = f.severity === 'red' ? 'hp-rule-red' : (f.severity === 'yellow' ? 'hp-rule-amber' : 'hp-rule-blue');
+      const cls = f.severity === 'red' ? 'hp-rule-red' : (f.severity === 'yellow' ? 'hp-rule-amber' : 'hp-rule-green');
       itemsHtml.push(`
         <div class="hp-rule-item ${cls}">
           <strong>${esc(f.message)}</strong>
           ${f.law_ref ? `<span>Asos: ${lawRefLink(f.law_ref, f.lex_url)}</span>` : ''}
-          ${f.fix_suggestion ? `<span>Tavsiya: ${esc(f.fix_suggestion)}</span>` : ''}
+          ${adviceHtml(f.fix_suggestion)}
         </div>
       `);
     });
@@ -1876,6 +2002,7 @@
     const tab = filter === 'all' ? undefined : filter;
     const list = await LexLab.contracts.list(tab);
     renderFullContractsTable(list || []);
+    await loadMediationRequests().catch(() => {});
   }
 
   function renderFullContractsTable(list) {
@@ -1917,7 +2044,43 @@
     }).join('');
   }
 
-  async function openContractModal(contractId) {
+  // Snapshot of what the user typed / received in the open contract modal, so a refresh does not wipe it.
+  function captureModalState() {
+    const body = document.getElementById('hp-modal-body');
+    if (!body) return null;
+    const values = {};
+    body.querySelectorAll('input[id], textarea[id], select[id]').forEach(el => {
+      if (!el.disabled) values[el.id] = el.value;
+    });
+    const ai = document.getElementById('cm-ai-container');
+    const modal = body.closest('.hp-modal');
+    return { values, aiHtml: ai ? ai.innerHTML : '', scrollBody: body.scrollTop, scrollModal: modal ? modal.scrollTop : 0 };
+  }
+
+  function restoreModalState(snap) {
+    if (!snap) return;
+    const body = document.getElementById('hp-modal-body');
+    if (!body) return;
+    Object.entries(snap.values).forEach(([id, v]) => {
+      const el = document.getElementById(id);
+      if (el && !el.disabled && body.contains(el)) el.value = v;
+    });
+    const ai = document.getElementById('cm-ai-container');
+    if (ai && snap.aiHtml) ai.innerHTML = snap.aiHtml;
+    body.scrollTop = snap.scrollBody;
+    const modal = body.closest('.hp-modal');
+    if (modal) modal.scrollTop = snap.scrollModal;
+  }
+
+  async function openContractModal(contractId, opts) {
+    const background = !!(opts && opts.background);
+    if (background) {
+      // never repaint under the user's hands
+      const active = document.activeElement;
+      const body = document.getElementById('hp-modal-body');
+      if (body && active && body.contains(active) && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
+      if (document.querySelector('#hp-modal-body button:disabled')) return; // a request is in flight
+    }
     try {
       const [c, vs, neg, timelineEvents] = await Promise.all([
         LexLab.contracts.get(contractId),
@@ -1925,6 +2088,15 @@
         LexLab.contracts.negotiation(contractId),
         LexLab.contracts.timeline(contractId)
       ]);
+      const sig = JSON.stringify([
+        c.status, c.title, c.updated_at,
+        (c.parties || []).map(p => [p.role, p.display_name, p.invited_at, p.joined_at, p.confirmed_at]),
+        (vs || []).length, neg.next_action,
+        (neg.parties || []).map(p => [p.role, p.agreed, p.invited]),
+        (neg.objections_open || []).length, (timelineEvents || []).length
+      ]);
+      if (background && (state.openModalContractId !== contractId || state.modalSig === sig)) return;
+      const keep = state.openModalContractId === contractId ? captureModalState() : null;
       const latest = (vs && vs[0]) || null;
       const myId = state.me && state.me.id;
       const isOwner = c.owner_id === myId;
@@ -2030,6 +2202,7 @@
             ` : ''}
             <button type="button" class="hp-btn-outline-sm" id="btn-cm-duplicate">Shu asosida yangi shartnoma</button>
             <button type="button" class="hp-btn-outline-sm" id="btn-cm-ai-review">AI tekshiruv</button>
+            ${c.status !== 'draft' ? `<button type="button" class="hp-btn-outline-sm" id="btn-cm-mediation" data-contract-mediation="${esc(c.id)}">Mediatorga murojaat</button>` : ''}
             ${isOwner ? `<button type="button" class="hp-btn-outline-sm" id="btn-cm-delete" style="color:#DC2626;border-color:#FCA5A5;">O'chirish</button>` : ''}
           </div>
 
@@ -2151,8 +2324,10 @@
         completeBtnId: 'btn-cm-complete',
         disputeBtnId: 'btn-cm-dispute'
       });
+      restoreModalState(keep);
+      state.modalSig = sig;
     } catch (e) {
-      handleErr(e);
+      if (!background) handleErr(e);
     }
   }
 
@@ -2251,41 +2426,75 @@
         aiCont.innerHTML = `<div class="hp-rule-item hp-rule-blue"><strong>AI tahlil qilmoqda… (3–15 soniya)</strong></div>`;
         withBusy(aiRevBtn, async () => {
           const rev = await LexLab.contracts.aiReview(cfg.contractId);
-          renderContractAiReview(aiCont, rev);
-        }).catch(() => {
-          aiCont.innerHTML = '';
+          renderContractAiReview(document.getElementById(cfg.aiContainerId) || aiCont, rev);
+        }).catch((e) => {
+          (document.getElementById(cfg.aiContainerId) || aiCont).innerHTML = renderAiErrorHtml(e);
         });
       });
     }
 
     const aiAskBtn = document.getElementById(cfg.aiAskBtnId);
+    const aiAskInput = document.getElementById(cfg.aiAskInputId);
     if (aiAskBtn && aiCont) {
-      aiAskBtn.addEventListener('click', () => {
-        const q = (document.getElementById(cfg.aiAskInputId)?.value || '').trim();
-        if (!q) return;
-        aiCont.innerHTML = `<div class="hp-rule-item hp-rule-blue"><strong>AI javob tayyorlamoqda…</strong></div>`;
+      const ask = () => {
+        const q = (aiAskInput?.value || '').trim();
+        if (q.length < 3) {
+          aiCont.innerHTML = `<div class="hp-rule-item hp-rule-amber"><strong>Savolni yozing</strong><span>Masalan: "Ijara haqini kechiktirsam nima bo'ladi?"</span></div>`;
+          aiAskInput?.focus();
+          return;
+        }
+        if (aiAskBtn.disabled) return;
+        aiCont.innerHTML = `<div class="hp-rule-item hp-rule-blue"><strong><span class="hp-sug-tag">AI</span> Javob tayyorlanmoqda… (3–15 soniya)</strong><span>Savol: ${esc(q)}</span></div>`;
         withBusy(aiAskBtn, async () => {
           const ans = await LexLab.contracts.aiAsk(cfg.contractId, q);
-          aiCont.innerHTML = `
-            <div class="hp-rule-item hp-rule-blue">
-              <strong><span class="hp-sug-tag">AI</span> Javob:</strong>
-              <span>${esc(ans.answer || ans.summary || JSON.stringify(ans))}</span>
-            </div>
-          `;
-        }).catch(() => {
-          aiCont.innerHTML = '';
+          (document.getElementById(cfg.aiContainerId) || aiCont).innerHTML = renderAiAnswerHtml(q, ans);
+        }).catch((e) => {
+          (document.getElementById(cfg.aiContainerId) || aiCont).innerHTML = renderAiErrorHtml(e);
         });
+      };
+      aiAskBtn.addEventListener('click', ask);
+      aiAskInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); ask(); }
       });
     }
+  }
+
+  function renderAiErrorHtml(e) {
+    const code = e && e.code;
+    const msg = code === 'ai_disabled'
+      ? 'AI hozircha o\'chirilgan. Qoidalar tizimi tekshiruvi ishlayveradi.'
+      : (code === 'rate_limited' ? 'So\'rovlar ko\'p bo\'ldi — bir necha daqiqadan keyin qayta urinib ko\'ring.'
+        : LexLab.humanError(e));
+    return `<div class="hp-rule-item hp-rule-red"><strong>AI javob bera olmadi</strong><span>${esc(msg)}</span></div>`;
+  }
+
+  function renderAiAnswerHtml(question, ans) {
+    const a = ans || {};
+    const quotes = (a.clauses || []).map(c => `
+      <div class="hp-ai-answer-quote">[${esc(String(c.index + 1))}-band] ${esc(c.text)}</div>
+    `).join('');
+    const laws = (a.law_refs || []).map(l => `<span>${lawRefLink(l.ref, l.url)} — ${esc(l.title || '')}</span>`).join('');
+    return `
+      <div class="hp-rule-item ${a.consult_lawyer ? 'hp-rule-amber' : 'hp-rule-green'}">
+        <strong><span class="hp-sug-tag">AI</span> ${esc(question)}</strong>
+        <span style="white-space:pre-wrap;">${esc(a.answer || 'Javob olinmadi.')}</span>
+        ${quotes || laws ? `<div class="hp-ai-answer-meta">
+          ${quotes ? `<strong>Shartnomadagi band:</strong>${quotes}` : ''}
+          ${laws ? `<strong>Qonun (lex.uz):</strong>${laws}` : ''}
+        </div>` : ''}
+        ${a.consult_lawyer ? adviceHtml('Aniq xulosa uchun yurist bilan maslahatlashing.') : ''}
+        <span class="hp-text-muted" style="font-size:11.5px;">${esc(a.disclaimer || 'AI javobi ma\'lumot uchun; yuridik maslahat o\'rnini bosmaydi.')}</span>
+      </div>
+    `;
   }
 
   function renderContractAiReview(container, rev) {
     if (!container || !rev) return;
     const issues = (rev.issues || []).map(iss => `
-      <div class="hp-rule-item hp-rule-amber">
+      <div class="hp-rule-item ${iss.severity === 'blue' ? 'hp-rule-green' : 'hp-rule-amber'}">
         <strong><span class="hp-sug-tag">AI</span> ${esc(iss.title || 'Tavsiya')}</strong>
         <span>${esc(iss.explanation || '')}</span>
-        ${iss.suggestion ? `<span>Taklif: ${esc(iss.suggestion)}</span>` : ''}
+        ${adviceHtml(iss.suggestion)}
         ${iss.law_ref ? `<span>Asos: ${lawRefLink(iss.law_ref)}</span>` : ''}
       </div>
     `).join('');
@@ -2367,11 +2576,11 @@
               Ogohlantirishlar (Qizil: ${rc.red || 0}, Qaltis: ${rc.yellow || 0}):
             </div>
             ${warnings.map(w => {
-              const cls = w.severity === 'red' ? 'hp-rule-red' : (w.severity === 'yellow' ? 'hp-rule-amber' : 'hp-rule-blue');
+              const cls = w.severity === 'red' ? 'hp-rule-red' : (w.severity === 'yellow' ? 'hp-rule-amber' : 'hp-rule-green');
               return `
                 <div class="hp-rule-item ${cls}">
                   <strong>${esc(w.message)}</strong>
-                  ${w.fix_suggestion ? `<span>Tavsiya: ${esc(w.fix_suggestion)}</span>` : ''}
+                  ${adviceHtml(w.fix_suggestion)}
                   ${w.law_ref ? `<span>Asos: ${lawRefLink(w.law_ref)}</span>` : ''}
                 </div>
               `;
@@ -2393,6 +2602,12 @@
     const scans = await LexLab.scans.list(10);
     state.scansHistory = scans || [];
     renderScannerHistoryStrip();
+  }
+
+  function shortTitle(t, max) {
+    const m = max || 38;
+    if (!t) return '';
+    return t.length > m ? t.slice(0, m - 1).trimEnd() + '…' : t;
   }
 
   function renderScannerHistoryStrip() {
@@ -2418,7 +2633,7 @@
         ${state.scansHistory.slice(0, 5).map(s => `
           <span style="display:inline-flex;align-items:center;gap:4px;">
             <button type="button" class="hp-btn-outline-sm" data-open-scan="${esc(s.id)}">
-              Tahlil #${esc(String(s.id).slice(0, 6))} (${esc(s.risk_percent ?? 0)}%)
+              ${esc(shortTitle(s.title) || ('Tahlil #' + String(s.id).slice(0, 6)))} (${esc(s.risk_percent ?? 0)}%)
             </button>
             <button type="button" class="hp-btn-outline-sm" data-delete-scan="${esc(s.id)}" title="O'chirish" style="color:#DC2626;">✕</button>
           </span>
@@ -2522,12 +2737,38 @@
     const cardsEl = document.getElementById('scan-decision-cards');
 
     if (titleEl) titleEl.textContent = '2. Tekshiruv xulosasi';
+    renderScanDocMeta(null);
     if (badgeEl) { badgeEl.hidden = true; badgeEl.textContent = ''; }
     if (illegalEl) illegalEl.textContent = '—';
     if (riskyEl) riskyEl.textContent = '—';
+    const adviceEl = document.getElementById('scan-count-advice');
+    if (adviceEl) adviceEl.textContent = '—';
     if (dutiesEl) dutiesEl.innerHTML = '<li class="hp-text-muted">Hali tahlil yo\'q — shartnoma faylini yuklang.</li>';
     if (cardsEl) cardsEl.innerHTML = '';
     document.querySelectorAll('[data-scan-preset]').forEach(b => b.classList.remove('active'));
+  }
+
+  // Under the report title: which file, which contract type was recognised, how many clauses were read.
+  function renderScanDocMeta(doc, docTitle) {
+    const titleEl = document.getElementById('scan-report-doc-title');
+    if (!titleEl) return;
+    let meta = document.getElementById('scan-report-doc-meta');
+    if (!meta) {
+      meta = document.createElement('p');
+      meta.id = 'scan-report-doc-meta';
+      meta.className = 'hp-text-muted';
+      meta.style.cssText = 'font-size:12.5px;margin:-6px 0 12px;';
+      titleEl.closest('.hp-card-header').insertAdjacentElement('afterend', meta);
+    }
+    if (!doc) { meta.hidden = true; meta.textContent = ''; return; }
+    const file = doc.filename || (docTitle && docTitle !== doc.title ? docTitle : '');
+    const parts = [];
+    if (file) parts.push(`Fayl: ${file}`);
+    if (doc.type_title) parts.push(`Turi: ${doc.type_title}${doc.type_detected ? ' (avtomatik aniqlandi)' : ''}`);
+    else parts.push("Turi: aniqlanmadi — umumiy qoidalar bo'yicha tekshirildi");
+    if (doc.clauses) parts.push(`${doc.clauses} ta band o'qildi`);
+    meta.textContent = parts.join(' · ');
+    meta.hidden = false;
   }
 
   function renderScanReport(r, docTitle) {
@@ -2543,9 +2784,14 @@
     const redList = r.red_clauses || [];
     const riskyList = r.risky_clauses || [];
     const missingList = r.missing_elements || [];
+    const adviceList = r.advice || [];
     const dutiesList = r.your_obligations || [];
+    const adviceEl = document.getElementById('scan-count-advice');
+    if (adviceEl) adviceEl.textContent = String(adviceList.length + missingList.length);
 
-    if (titleEl) titleEl.textContent = docTitle || 'Tahlil hisoboti';
+    const doc = r.document || {};
+    if (titleEl) titleEl.textContent = `Tekshirilayotgan shartnoma: ${doc.title || docTitle || 'Shartnoma'}`;
+    renderScanDocMeta(doc, docTitle);
     if (badgeEl) {
       const riskLvl = r.overall.risk_level;
       badgeEl.className = `hp-pill-badge ${riskLvl === 'high' ? 'hp-pill-danger' : (riskLvl === 'medium' ? 'hp-pill-warning' : 'hp-pill-success')}`;
@@ -2580,7 +2826,8 @@
       const allFindings = []
         .concat(redList.map(f => Object.assign({}, f, { _cardType: 'red' })))
         .concat(riskyList.map(f => Object.assign({}, f, { _cardType: 'yellow' })))
-        .concat(missingList.map(f => Object.assign({}, f, { _cardType: 'blue' })));
+        .concat(adviceList.map(f => Object.assign({}, f, { _cardType: 'green' })))
+        .concat(missingList.map(f => Object.assign({}, f, { _cardType: 'green', _missing: true })));
 
       const aiStatus = r.ai && r.ai.status;
       let aiBlockHtml = '';
@@ -2591,9 +2838,10 @@
           </div>
         `;
       } else if (aiStatus === 'done') {
+        const DEV_LABELS = { changed: 'Shablondan o\'zgartirilgan', missing: 'Shablondagi band yo\'q', added: 'Qo\'shimcha band' };
         const devHtml = (r.ai.template_deviations || []).map(d => `
           <div style="margin-top:6px;font-size:12.5px;">
-            <strong>${esc(d.status || 'Farq')}:</strong> ${esc(d.comment || d.template_clause || '')}
+            <strong>${esc(DEV_LABELS[d.status] || 'Farq')}:</strong> ${esc(d.comment || d.template_clause || '')}
           </div>
         `).join('');
         if (r.ai.summary || devHtml) {
@@ -2609,15 +2857,19 @@
 
       const cardsHtml = allFindings.map(f => {
         const isRed = f._cardType === 'red';
-        const isBlue = f._cardType === 'blue';
-        const cardCls = isRed ? 'hp-clause-illegal' : 'hp-clause-risky';
-        const pillCls = isRed ? 'hp-pill-danger' : (isBlue ? 'hp-pill-neutral' : 'hp-pill-warning');
-        const pillLabel = isRed ? 'Qonunga zid' : (isBlue ? 'Yetishmaydi' : 'Qaltis band');
+        const isGreen = f._cardType === 'green';
+        const cardCls = isRed ? 'hp-clause-illegal hp-sev-red' : (isGreen ? 'hp-clause-risky hp-sev-green' : 'hp-clause-risky hp-sev-yellow');
+        const pillCls = isRed ? 'hp-pill-danger' : (isGreen ? 'hp-pill-success' : 'hp-pill-warning');
+        const pillLabel = isRed ? 'Qonunga zid' : (isGreen ? (f._missing ? 'Maslahat · yetishmaydi' : 'Maslahat') : 'Qaltis band');
         const sourceTag = f.source === 'ai'
           ? ' <span class="hp-sug-tag">AI</span>'
           : (f.source === 'template' ? ' <span class="hp-sug-tag">Shablon</span>' : '');
         const explanation = f.ai_explanation || f.explanation || '';
         const decision = f.user_decision;
+        // every illegal / risky clause gets a green «what to do» box under it
+        const advice = f.suggestion || (isRed
+          ? 'Imzolashdan oldin bu bandni qonunga moslab o\'zgartirishni yoki olib tashlashni talab qiling.'
+          : 'Imzolashdan oldin bandni aniqlashtiring yoki o\'zingiz uchun xavfsiz tahrirda kelishib oling.');
 
         return `
           <div class="hp-clause-alert ${cardCls}">
@@ -2627,6 +2879,9 @@
             </div>
             ${f.law_ref ? `<div class="hp-text-muted" style="font-size:12px;margin-bottom:4px;">Huquqiy asos: ${lawRefLink(f.law_ref)}</div>` : ''}
             ${f.clause_text ? `<div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:8px;">"${esc(f.clause_text)}"</div>` : ''}
+            ${isRed && f.source === 'ai' ? `<div class="hp-text-muted" style="font-size:11.5px;margin-bottom:6px;">AI aniqlagan — yakuniy xulosa uchun yurist tasdiqlashi tavsiya etiladi.</div>` : ''}
+            ${isGreen ? adviceHtml(f.suggestion, 'Tavsiya') : `
+            ${adviceHtml(advice)}
             <div class="hp-clause-actions-row">
               <span class="hp-decision-feedback">
                 ${decision === 'agree' ? 'Rozilik bildirildi' : (decision === 'object' ? 'E\'tiroz bildirildi' : '')}
@@ -2635,17 +2890,14 @@
                 <button type="button" class="hp-btn-navy-sm" data-scan-decision="agree" data-finding-id="${esc(f.id)}">Roziman</button>
                 <button type="button" class="hp-btn-outline-sm" data-scan-decision="object" data-finding-id="${esc(f.id)}">E'tiroz</button>
               </div>
-            </div>
-            ${decision === 'object' && f.suggestion ? `
-              <div class="hp-clause-detail-collapse">
-                <strong>Muqobil band:</strong> ${esc(f.suggestion)}
-              </div>
-            ` : ''}
+            </div>`}
           </div>
         `;
       }).join('');
 
-      cardsEl.innerHTML = aiBlockHtml + (cardsHtml || `<div class="hp-rule-item hp-rule-blue"><strong>Xavfli bandlar topilmadi</strong></div>`);
+      const noDanger = !redList.length && !riskyList.length
+        ? `<div class="hp-rule-item hp-rule-green"><strong>Qonunga zid yoki qaltis band topilmadi</strong></div>` : '';
+      cardsEl.innerHTML = aiBlockHtml + noDanger + cardsHtml;
     }
   }
 
@@ -2738,6 +2990,59 @@
     });
   }
 
+  // ---- Archive documents: payment receipts / addenda filed by any user (not only lawyers) ----
+  function fillArchiveContractSelect(form) {
+    const sel = form && form.querySelector('#cs-archive');
+    if (!sel) return;
+    const keep = sel.value;
+    sel.innerHTML = `<option value="">— shartnomaga bog'lanmagan —</option>` + (state.archiveItems || []).map(it =>
+      `<option value="${esc(it.id)}">${esc(shortTitle(it.title, 42))}${it.counterparty ? ` · ${esc(shortTitle(it.counterparty, 24))}` : ''}</option>`
+    ).join('');
+    if (keep && (state.archiveItems || []).some(it => it.id === keep)) sel.value = keep;
+  }
+
+  function formatFileSize(n) {
+    const b = Number(n) || 0;
+    return b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`;
+  }
+
+  function renderArchiveDocItemHtml(d) {
+    const meta = [];
+    if (d.amount) meta.push(`<strong>${esc(formatNumberUz(d.amount))} ${esc(d.currency === 'UZS' ? "so'm" : d.currency)}</strong>`);
+    if (d.doc_date) meta.push(esc(formatDateDdMmYyyy(d.doc_date)));
+    if (d.contract_title) meta.push(`Shartnoma: ${esc(d.contract_title)}`);
+    return `
+      <div class="hp-case-step-card">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+            <span class="hp-sug-tag">${esc(d.kind_label || 'Hujjat')}</span>
+            ${d.file ? `<span class="hp-pill-badge hp-pill-success" title="SHA-256: ${esc(d.file.sha256)}">Fayl saqlangan ✓</span>` : ''}
+            <span style="font-size:12px;color:var(--text-muted);">Qo'shilgan: ${esc(formatDateDdMmYyyy(d.created_at))}</span>
+          </div>
+          <strong style="display:block;font-size:14.5px;margin-bottom:3px;">${esc(d.title)}</strong>
+          ${meta.length ? `<p style="font-size:13px;color:var(--text-secondary);">${meta.join(' · ')}</p>` : ''}
+          ${d.description ? `<p class="hp-text-muted" style="font-size:12.5px;margin-top:3px;">${esc(d.description)}</p>` : ''}
+          ${d.file ? `<p class="hp-text-muted" style="font-size:12px;margin-top:3px;">${esc(d.file.name)} · ${esc(formatFileSize(d.file.size))}</p>` : ''}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${d.file ? `<button type="button" class="hp-btn-navy-sm" data-doc-download="${esc(d.id)}">Yuklab olish</button>` : ''}
+          <button type="button" class="hp-btn-outline-sm" data-doc-delete="${esc(d.id)}" style="color:#DC2626;">O'chirish</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderArchiveDocsHtml(docs) {
+    return `
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border-color);">
+        <strong style="display:block;font-size:15px;margin-bottom:10px;">To'lov cheklari va hujjatlar</strong>
+        ${(docs || []).length === 0
+          ? `<p class="hp-text-muted">Hozircha chek yoki hujjat qo'shilmagan — o'ngdagi forma orqali qo'shing.</p>`
+          : `<div class="hp-case-timeline">${docs.map(renderArchiveDocItemHtml).join('')}</div>`}
+      </div>
+    `;
+  }
+
   // U2.4 Personal Archive + Lawyer Case File Timeline in #view-archive
   async function loadArchiveView(qFilter) {
     const timelineEl = document.getElementById('lawyer-case-timeline');
@@ -2747,15 +3052,17 @@
     if (qFilter !== undefined) state.archiveQuery = qFilter;
 
     const isLawyer = state.me && state.me.role === 'lawyer';
-    setArchiveFormLawyerMode(form, isLawyer);
 
-    const [archiveItems, cases] = await Promise.all([
+    const [archiveItems, cases, docs] = await Promise.all([
       LexLab.archive.list(state.archiveQuery ? { q: state.archiveQuery } : {}),
-      LexLab.cases.list()
+      LexLab.cases.list().catch(() => []),
+      LexLab.archive.documents()
     ]);
 
     state.archiveItems = archiveItems || [];
     state.casesList = cases || [];
+    state.archiveDocs = docs || [];
+    fillArchiveContractSelect(form);
 
     let html = `
       <div style="margin-bottom:14px;">
@@ -2793,6 +3100,7 @@
           }).join('')}
         </div>
       </div>
+      ${renderArchiveDocsHtml(state.archiveDocs)}
     `;
 
     // For lawyers (or if shared cases exist), keep the case-file timeline below Mening arxivim
@@ -2844,6 +3152,9 @@
     try {
       const item = await LexLab.archive.get(itemId);
       const intact = item.integrity && item.integrity.intact;
+      // the modal's download/delete buttons resolve documents from state.archiveDocs
+      const known = new Set((state.archiveDocs || []).map(d => d.id));
+      state.archiveDocs = (state.archiveDocs || []).concat((item.documents || []).filter(d => !known.has(d.id)));
       const sigsHtml = (item.signatures || []).map(s => `
         <div class="hp-ob-row-card" style="padding:10px 14px;">
           <div>
@@ -2867,6 +3178,13 @@
 
           <div class="hp-builder-actions" style="justify-content:flex-start;">
             <button type="button" class="hp-btn-navy-sm" id="btn-arch-modal-dl">DOCX yuklab olish</button>
+          </div>
+
+          <div>
+            <strong style="display:block;font-size:14px;margin-bottom:8px;">Shu shartnoma bo'yicha cheklar va hujjatlar (${(item.documents || []).length})</strong>
+            ${(item.documents || []).length
+              ? `<div class="hp-case-timeline">${item.documents.map(renderArchiveDocItemHtml).join('')}</div>`
+              : `<p class="hp-text-muted" style="font-size:13px;">Hozircha yo'q. "Arxivga yangi to'lov cheki yoki hujjat qo'shish" formasida shu shartnomani tanlab qo'shing.</p>`}
           </div>
 
           <form id="archive-note-form" class="hp-builder-form" style="margin-top:8px;">
@@ -2909,24 +3227,6 @@
       });
     } catch (e) {
       handleErr(e);
-    }
-  }
-
-  function setArchiveFormLawyerMode(form, isAllowed) {
-    if (!form) return;
-    let notice = document.getElementById('lawyer-only-notice');
-    if (!isAllowed) {
-      if (!notice) {
-        notice = document.createElement('div');
-        notice.id = 'lawyer-only-notice';
-        notice.className = 'hp-rule-item hp-rule-amber';
-        notice.innerHTML = `<strong>Ish yuritish faqat tasdiqlangan yuristlar uchun</strong><span>Demo yurist raqami: +998900000004</span>`;
-        form.prepend(notice);
-      }
-      form.querySelectorAll('input, select, textarea, button').forEach(el => { el.disabled = true; });
-    } else {
-      if (notice) notice.remove();
-      form.querySelectorAll('input, select, textarea, button').forEach(el => { el.disabled = false; });
     }
   }
 
@@ -3048,6 +3348,8 @@
       if (dict[key]) el.textContent = dict[key];
     });
 
+    setDashScanEyebrow();
+
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
       const key = el.getAttribute('data-i18n-placeholder');
       if (dict[key]) el.setAttribute('placeholder', dict[key]);
@@ -3060,6 +3362,7 @@
 
   async function reloadAllWidgets() {
     syncSlotButtons();
+    syncChatVisibility();
     if (!LexLab.auth.isLoggedIn(LexLab.activeSlot())) {
       showLoginModal();
       return;
@@ -3069,7 +3372,8 @@
       await Promise.all([
         loadDashboard(),
         loadBhmRate(),
-        initBuilder(state.builderTypeCode)
+        initBuilder(state.builderTypeCode),
+        loadMediationRequests().catch(() => {})
       ]);
       if (state.currentView === 'contracts') await loadFullContracts(state.contractFilter);
       if (state.currentView === 'reminders') await loadObligationsView();
@@ -3078,6 +3382,606 @@
     } catch (e) {
       handleErr(e);
     }
+  }
+
+  // ==================== FRONTEND_GEMINI_5: «SHARTNOMACHI AI» CHAT & «MEDIATORGA MUROJAAT» ====================
+  const CHAT_STORAGE_KEY = 'lexlab.chat.v1';
+  const CHAT_EXAMPLES = [
+    'Kvartirani ijaraga berish uchun nima kerak?',
+    'Qarz bermoqchiman, qanday rasmiylashtiraman?',
+    'Ikkinchi tomon shartnomani bajarmayapti, nima qilay?'
+  ];
+
+  function formatAiFeatureError(e) {
+    const code = e && e.code;
+    const status = e && e.status;
+    if (code === 'ai_disabled' || status === 503) return 'AI hozircha ulanmagan';
+    if (code === 'rate_limited' || code === 'ai_rate_limited' || status === 429) {
+      return "So'rovlar ko'p — birozdan keyin urinib ko'ring";
+    }
+    return window.LexLab ? LexLab.humanError(e) : ((e && e.message) || 'Xato');
+  }
+
+  function loadChatHistoryFromStorage() {
+    try {
+      const raw = sessionStorage.getItem(CHAT_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      state.chatHistory = Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      state.chatHistory = [];
+    }
+  }
+
+  function saveChatHistoryToStorage() {
+    try {
+      sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify((state.chatHistory || []).slice(-20)));
+    } catch (e) {
+      // ignore storage errors
+    }
+  }
+
+  function clearChatHistory() {
+    state.chatHistory = [];
+    try {
+      sessionStorage.removeItem(CHAT_STORAGE_KEY);
+    } catch (e) {
+      // ignore
+    }
+    renderChatMessages();
+  }
+
+  function updateChatContextChip() {
+    const chip = document.getElementById('hp-chat-context-chip');
+    if (!chip) return;
+    if (state.openModalContractId && state.openModalContractTitle) {
+      chip.textContent = `Shartnoma: ${state.openModalContractTitle}`;
+      chip.title = state.openModalContractTitle;
+      chip.hidden = false;
+    } else {
+      chip.textContent = '';
+      chip.hidden = true;
+    }
+  }
+
+  function syncChatVisibility() {
+    const loggedIn = !!(window.LexLab && LexLab.auth.isLoggedIn(LexLab.activeSlot()));
+    const fab = document.getElementById('hp-chat-fab');
+    const panel = document.getElementById('hp-chat-panel');
+    if (fab) fab.hidden = !loggedIn;
+    if (!loggedIn) {
+      state.chatOpen = false;
+      if (panel) panel.hidden = true;
+    } else if (panel) {
+      panel.hidden = !state.chatOpen;
+    }
+    updateChatContextChip();
+  }
+
+  function toggleChatPanel(open) {
+    const loggedIn = !!(window.LexLab && LexLab.auth.isLoggedIn(LexLab.activeSlot()));
+    if (!loggedIn) return;
+    state.chatOpen = typeof open === 'boolean' ? open : !state.chatOpen;
+    const panel = document.getElementById('hp-chat-panel');
+    if (panel) {
+      panel.hidden = !state.chatOpen;
+      if (state.chatOpen) {
+        updateChatContextChip();
+        renderChatMessages();
+        document.getElementById('hp-chat-input')?.focus();
+      }
+    }
+  }
+
+  function renderChatMessages() {
+    const container = document.getElementById('hp-chat-messages');
+    if (!container) return;
+
+    const history = state.chatHistory || [];
+    if (history.length === 0) {
+      container.innerHTML = `
+        <div class="hp-chat-empty">
+          <div class="hp-chat-empty-greeting">
+            Assalomu alaykum! Men <strong>Shartnomachi AI</strong> yordamchisiman. Shartnomalar, nizolar, mediatsiya va O'zR qonunchiligi bo'yicha savolingizni yozing yoki quyidagi namunalardan birini tanlang:
+          </div>
+          <div class="hp-chat-chip-list">
+            ${CHAT_EXAMPLES.map(q => `<button type="button" class="hp-chat-example-chip" data-chat-example="${esc(q)}">${esc(q)}</button>`).join('')}
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = history.map(m => {
+      if (m.role === 'user') {
+        return `
+          <div class="hp-chat-msg hp-chat-msg-user">
+            <div class="hp-chat-bubble">${esc(m.content)}</div>
+          </div>
+        `;
+      }
+      const laws = Array.isArray(m.law_refs) ? m.law_refs : [];
+      const lawsHtml = laws.length > 0
+        ? `
+          <div class="hp-chat-laws">
+            <strong>Qonun (lex.uz):</strong>
+            ${laws.map(r => `<div>${lawRefLink(r.ref, r.url)}${r.title ? ` — ${esc(r.title)}` : ''}</div>`).join('')}
+          </div>
+        `
+        : '';
+      const consultHtml = m.consult_lawyer
+        ? adviceHtml('Aniq xulosa uchun yurist bilan maslahatlashing.')
+        : '';
+      const act = m.action && m.action.type ? m.action : null;
+      const actionHtml = act
+        ? `
+          <div class="hp-chat-action-wrap">
+            <button type="button" class="hp-btn-navy-sm" data-chat-action="${esc(act.type)}" data-chat-type-code="${esc(act.type_code || '')}">
+              ${esc(act.label || 'Davom etish →')}
+            </button>
+          </div>
+        `
+        : '';
+
+      return `
+        <div class="hp-chat-msg hp-chat-msg-assistant">
+          <div class="hp-chat-bubble">
+            <div class="hp-chat-answer-text">${esc(m.content)}</div>
+            ${lawsHtml}
+            ${consultHtml}
+            ${actionHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    container.scrollTop = container.scrollHeight;
+  }
+
+  async function sendChatMessage(rawText) {
+    const text = String(rawText || '').trim();
+    if (!text) return;
+    if (!window.LexLab || !LexLab.assistant || typeof LexLab.assistant.chat !== 'function') {
+      showToast('SDK v1.4.0 yuklanmagan — sahifani Ctrl+F5 bilan yangilang');
+      return;
+    }
+
+    const inputEl = document.getElementById('hp-chat-input');
+    const sendBtn = document.getElementById('hp-chat-send');
+    if (sendBtn && sendBtn.disabled) return;
+    if (inputEl) inputEl.value = '';
+
+    state.chatHistory.push({ role: 'user', content: text });
+    if (state.chatHistory.length > 20) state.chatHistory = state.chatHistory.slice(-20);
+    saveChatHistoryToStorage();
+    renderChatMessages();
+
+    const container = document.getElementById('hp-chat-messages');
+    const typingEl = document.createElement('div');
+    typingEl.className = 'hp-chat-msg hp-chat-msg-assistant';
+    typingEl.id = 'hp-chat-typing';
+    typingEl.innerHTML = `<div class="hp-chat-bubble hp-text-muted">Javob tayyorlanmoqda…</div>`;
+    if (container) {
+      container.appendChild(typingEl);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    const apiMessages = state.chatHistory.slice(-10).map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: String(m.content || '')
+    }));
+
+    if (sendBtn) sendBtn.disabled = true;
+    try {
+      const r = await LexLab.assistant.chat(apiMessages, {
+        contractId: state.openModalContractId || null,
+        page: state.currentView || 'dashboard'
+      });
+      typingEl.remove();
+
+      state.chatHistory.push({
+        role: 'assistant',
+        content: (r && r.answer) || '',
+        law_refs: (r && Array.isArray(r.law_refs)) ? r.law_refs : [],
+        action: (r && r.action) || null,
+        consult_lawyer: !!(r && r.consult_lawyer),
+        disclaimer: (r && r.disclaimer) || ''
+      });
+      if (state.chatHistory.length > 20) state.chatHistory = state.chatHistory.slice(-20);
+      if (r && r.disclaimer) {
+        state.chatDisclaimer = r.disclaimer;
+        const discEl = document.getElementById('hp-chat-disclaimer');
+        if (discEl) discEl.textContent = r.disclaimer;
+      }
+      saveChatHistoryToStorage();
+      renderChatMessages();
+    } catch (e) {
+      typingEl.remove();
+      const msg = formatAiFeatureError(e);
+      showToast(msg);
+      if (container) {
+        const errDiv = document.createElement('div');
+        errDiv.className = 'hp-rule-item hp-rule-red';
+        errDiv.innerHTML = `<strong>Xato</strong><span>${esc(msg)}</span>`;
+        container.appendChild(errDiv);
+        container.scrollTop = container.scrollHeight;
+      }
+    } finally {
+      if (sendBtn) sendBtn.disabled = false;
+    }
+  }
+
+  async function handleChatActionClick(btn) {
+    const actType = btn.getAttribute('data-chat-action');
+    const typeCode = btn.getAttribute('data-chat-type-code');
+    if (!actType) return;
+
+    if (actType === 'mediation') {
+      const contractId = state.openModalContractId || null;
+      await startAndOpenMediation(contractId, btn);
+      return;
+    }
+
+    if (actType === 'builder') {
+      closeModal();
+      navigateTo('builder');
+      await ensureContractTypesLoaded();
+      const resolved = resolveTypeCode(typeCode);
+      if (resolved) {
+        const sel = document.getElementById('cb-type');
+        if (sel) sel.value = resolved;
+        await selectBuilderType(resolved).catch(handleErr);
+      }
+      return;
+    }
+
+    if (['scanner', 'contracts', 'archive', 'reminders'].includes(actType)) {
+      closeModal();
+      navigateTo(actType);
+    }
+  }
+
+  // ---- «Mediatorga murojaat» (O'RQ-482) ----
+  const MEDIATION_FORM_KEYS = [
+    'applicant_name', 'applicant_address', 'applicant_phone',
+    'respondent_name', 'respondent_address', 'respondent_phone',
+    'mediator_name', 'mediator_org',
+    'subject', 'description', 'claims', 'desired_outcome',
+    'amount', 'city'
+  ];
+
+  async function loadMediationRequests() {
+    if (!window.LexLab || !LexLab.mediation) return [];
+    const list = await LexLab.mediation.list();
+    state.mediationList = Array.isArray(list) ? list : [];
+    renderMediationRequestsList(state.mediationList);
+    return state.mediationList;
+  }
+
+  function renderMediationRequestsList(list) {
+    const container = document.getElementById('mediation-requests-list');
+    if (!container) return;
+
+    if (!list || list.length === 0) {
+      container.innerHTML = `<div class="hp-text-muted" style="text-align:center;padding:16px;">Hozircha ariza yo'q</div>`;
+      return;
+    }
+
+    container.innerHTML = list.map(item => {
+      const f = item.form || {};
+      const subj = f.subject || 'Nizo predmeti kiritilmagan';
+      const statusBadge = item.status === 'ready'
+        ? '<span class="hp-pill-badge hp-pill-success">Tayyor</span>'
+        : '<span class="hp-pill-badge hp-pill-neutral">Qoralama</span>';
+      const contractNote = item.contract_title ? `Shartnoma: ${item.contract_title} · ` : '';
+
+      return `
+        <div class="hp-ob-row-card" data-mediation-id="${esc(item.id)}">
+          <div class="hp-ob-left">
+            <div>
+              <strong class="hp-ob-title">${esc(subj)}</strong>
+              <span class="hp-ob-sub">${esc(contractNote)}Sana: ${esc(formatDateDdMmYyyy(item.created_at))}</span>
+            </div>
+          </div>
+          <div class="hp-ob-right">
+            ${statusBadge}
+            <button type="button" class="hp-btn-outline-sm" data-med-open="${esc(item.id)}">Ochish</button>
+            <button type="button" class="hp-btn-navy-sm" data-med-docx="${esc(item.id)}">DOCX</button>
+            <button type="button" class="hp-btn-outline-sm" data-med-delete="${esc(item.id)}" data-med-subject="${esc(subj)}" style="color:#DC2626;border-color:#FCA5A5;">O'chirish</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function startAndOpenMediation(contractId, triggerBtn) {
+    const run = async () => {
+      const m = await LexLab.mediation.create({}, contractId || null);
+      await loadMediationRequests().catch(() => {});
+      openMediationFormModal(m);
+    };
+    if (triggerBtn) {
+      await withBusy(triggerBtn, run).catch(() => {});
+    } else {
+      try { await run(); } catch (e) { handleErr(e); }
+    }
+  }
+
+  function renderMediationMissingHtml(missing) {
+    const arr = Array.isArray(missing) ? missing.filter(Boolean) : [];
+    if (arr.length === 0) return '';
+    return `
+      <div class="hp-rule-item hp-rule-amber">
+        <strong>To'ldirish kerak: ${esc(arr.join(', '))}</strong>
+      </div>
+    `;
+  }
+
+  function renderMediationAiSuggestionHtml(s) {
+    if (!s) return '';
+    const claims = Array.isArray(s.claims) ? s.claims : [];
+    const options = Array.isArray(s.options) ? s.options : [];
+    const laws = Array.isArray(s.law_refs) ? s.law_refs : [];
+
+    return `
+      <div class="hp-rule-item hp-rule-green" id="med-ai-suggestion-box">
+        <strong><span class="hp-sug-tag">AI</span> AI taklifi</strong>
+
+        ${s.subject ? `
+          <div style="margin-top:6px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+              <strong>Nizo predmeti:</strong>
+              <button type="button" class="hp-btn-outline-sm" data-med-apply="subject">Qo'llash</button>
+            </div>
+            <div style="margin-top:2px;">${esc(s.subject)}</div>
+          </div>
+        ` : ''}
+
+        ${s.statement ? `
+          <div style="margin-top:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+              <strong>Nizo mazmuni (xolis bayon):</strong>
+              <button type="button" class="hp-btn-outline-sm" data-med-apply="statement">Qo'llash</button>
+            </div>
+            <div style="margin-top:2px;white-space:pre-wrap;">${esc(s.statement)}</div>
+          </div>
+        ` : ''}
+
+        ${claims.length > 0 ? `
+          <div style="margin-top:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+              <strong>Talablarim:</strong>
+              <button type="button" class="hp-btn-outline-sm" data-med-apply="claims">Qo'llash</button>
+            </div>
+            <ul style="margin:4px 0 0 18px;padding:0;">
+              ${claims.map(c => `<li>${esc(c)}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        ${options.length > 0 ? `
+          <div style="margin-top:8px;">
+            <strong>Murosa variantlari:</strong>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+              ${options.map((opt, idx) => `
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.6);">
+                  <span style="flex:1;">${esc(opt)}</span>
+                  <button type="button" class="hp-btn-outline-sm" data-med-pick-option="${idx}">Tanlash</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${laws.length > 0 ? `
+          <div style="margin-top:8px;">
+            <strong>Qonun (lex.uz):</strong>
+            <div style="display:flex;flex-direction:column;gap:3px;margin-top:2px;">
+              ${laws.map(r => `<div>${lawRefLink(r.ref, r.url)}${r.title ? ` — ${esc(r.title)}` : ''}</div>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${s.disclaimer ? `<span class="hp-text-muted" style="font-size:11.5px;margin-top:6px;">${esc(s.disclaimer)}</span>` : ''}
+      </div>
+    `;
+  }
+
+  function collectMediationFormValues() {
+    const out = {};
+    MEDIATION_FORM_KEYS.forEach(k => {
+      const el = document.getElementById(`med-field-${k}`);
+      if (!el) return;
+      const v = String(el.value || '').trim();
+      out[k] = v === '' ? null : v;
+    });
+    return out;
+  }
+
+  function openMediationFormModal(m) {
+    if (!m) return;
+    state.activeMediation = m;
+    state.activeMediationAi = m.ai_draft || null;
+    const f = m.form || {};
+    const missing = Array.isArray(m.missing) ? m.missing : [];
+
+    openModal(
+      'Mediatorga ariza',
+      `
+      <form id="mediation-request-form" class="hp-builder-form" novalidate>
+        ${m.contract_title ? `<div class="hp-text-muted" style="font-size:13px;">Shartnoma: <strong>${esc(m.contract_title)}</strong></div>` : ''}
+
+        <div class="hp-rule-item hp-rule-blue">
+          <span>Mediatsiya — nizoni sudsiz, betaraf mediator yordamida hal qilish (O'RQ-482). Mediatsiya ixtiyoriy, 30 kungacha davom etadi, mediator xarajati odatda teng bo'linadi. Platforma arizani tayyorlab beradi — uni mediatorga o'zingiz topshirasiz.</span>
+        </div>
+
+        <div id="med-missing-container">${renderMediationMissingHtml(missing)}</div>
+
+        <div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-top:4px;">1. Arizachi (1-taraf)</div>
+        <div class="hp-form-group">
+          <label for="med-field-applicant_name">Arizachi F.I.Sh. / nomi *</label>
+          <input type="text" id="med-field-applicant_name" class="hp-input" value="${esc(f.applicant_name || '')}" required />
+        </div>
+        <div class="hp-form-row-2">
+          <div class="hp-form-group">
+            <label for="med-field-applicant_address">Arizachi manzili</label>
+            <input type="text" id="med-field-applicant_address" class="hp-input" value="${esc(f.applicant_address || '')}" />
+          </div>
+          <div class="hp-form-group">
+            <label for="med-field-applicant_phone">Arizachi telefoni</label>
+            <input type="text" id="med-field-applicant_phone" class="hp-input" value="${esc(f.applicant_phone || '')}" />
+          </div>
+        </div>
+
+        <div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-top:4px;">2. Ikkinchi tomon (2-taraf)</div>
+        <div class="hp-form-group">
+          <label for="med-field-respondent_name">Ikkinchi tomon F.I.Sh. / nomi *</label>
+          <input type="text" id="med-field-respondent_name" class="hp-input" value="${esc(f.respondent_name || '')}" required />
+        </div>
+        <div class="hp-form-row-2">
+          <div class="hp-form-group">
+            <label for="med-field-respondent_address">Ikkinchi tomon manzili</label>
+            <input type="text" id="med-field-respondent_address" class="hp-input" value="${esc(f.respondent_address || '')}" />
+          </div>
+          <div class="hp-form-group">
+            <label for="med-field-respondent_phone">Ikkinchi tomon telefoni</label>
+            <input type="text" id="med-field-respondent_phone" class="hp-input" value="${esc(f.respondent_phone || '')}" />
+          </div>
+        </div>
+
+        <div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-top:4px;">3. Mediator (ixtiyoriy)</div>
+        <div class="hp-form-row-2">
+          <div class="hp-form-group">
+            <label for="med-field-mediator_name">Mediator F.I.Sh.</label>
+            <input type="text" id="med-field-mediator_name" class="hp-input" value="${esc(f.mediator_name || '')}" />
+          </div>
+          <div class="hp-form-group">
+            <label for="med-field-mediator_org">Mediator tashkiloti</label>
+            <input type="text" id="med-field-mediator_org" class="hp-input" value="${esc(f.mediator_org || '')}" />
+          </div>
+        </div>
+
+        <div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-top:4px;">4. Nizo tafsilotlari</div>
+        <div class="hp-form-group">
+          <label for="med-field-subject">Nizo predmeti *</label>
+          <input type="text" id="med-field-subject" class="hp-input" value="${esc(f.subject || '')}" required />
+        </div>
+
+        <div class="hp-form-group">
+          <label for="med-field-description">Nizo mazmuni *</label>
+          <textarea id="med-field-description" class="hp-input" rows="5" required>${esc(f.description || '')}</textarea>
+          <span class="hp-field-hint">kamida 20 belgi</span>
+        </div>
+
+        <div class="hp-form-group">
+          <label for="med-field-claims">Talablarim</label>
+          <textarea id="med-field-claims" class="hp-input" rows="3">${esc(f.claims || '')}</textarea>
+          <span class="hp-field-hint">har biri yangi qatorda</span>
+        </div>
+
+        <div class="hp-form-group">
+          <label for="med-field-desired_outcome">Murosa bo'yicha taklifim</label>
+          <textarea id="med-field-desired_outcome" class="hp-input" rows="3">${esc(f.desired_outcome || '')}</textarea>
+        </div>
+
+        <div class="hp-form-row-2">
+          <div class="hp-form-group">
+            <label for="med-field-amount">Nizo summasi (so'm)</label>
+            <input type="text" id="med-field-amount" class="hp-input" value="${esc(f.amount ?? '')}" />
+          </div>
+          <div class="hp-form-group">
+            <label for="med-field-city">Shahar</label>
+            <input type="text" id="med-field-city" class="hp-input" value="${esc(f.city || '')}" />
+          </div>
+        </div>
+
+        <div id="med-ai-container">${renderMediationAiSuggestionHtml(state.activeMediationAi)}</div>
+
+        <div class="hp-builder-actions" style="justify-content:flex-start;">
+          <button type="button" class="hp-btn-outline" id="btn-med-save">Saqlash</button>
+          <button type="button" class="hp-btn-outline" id="btn-med-ai">AI yordam</button>
+          <button type="button" class="hp-btn-navy" id="btn-med-docx" ${missing.length > 0 ? 'disabled' : ''}>DOCX yuklab olish</button>
+        </div>
+      </form>
+      `
+    );
+
+    const saveBtn = document.getElementById('btn-med-save');
+    const aiBtn = document.getElementById('btn-med-ai');
+    const docxBtn = document.getElementById('btn-med-docx');
+    const missingBox = document.getElementById('med-missing-container');
+    const aiBox = document.getElementById('med-ai-container');
+
+    const saveMediationNow = async () => {
+      const updated = await LexLab.mediation.update(m.id, collectMediationFormValues());
+      state.activeMediation = updated;
+      const miss = Array.isArray(updated.missing) ? updated.missing : [];
+      if (missingBox) missingBox.innerHTML = renderMediationMissingHtml(miss);
+      if (docxBtn) docxBtn.disabled = miss.length > 0;
+      await loadMediationRequests().catch(() => {});
+      return updated;
+    };
+
+    saveBtn?.addEventListener('click', () => {
+      withBusy(saveBtn, async () => {
+        await saveMediationNow();
+        showToast('Ariza saqlandi');
+      }).catch(() => {});
+    });
+
+    aiBtn?.addEventListener('click', async () => {
+      if (aiBtn.disabled) return;
+      aiBtn.disabled = true;
+      try {
+        await saveMediationNow();
+        if (aiBox) {
+          aiBox.innerHTML = `<div class="hp-rule-item hp-rule-blue"><strong><span class="hp-sug-tag">AI</span> AI taklifi tayyorlanmoqda…</strong></div>`;
+        }
+        const s = await LexLab.mediation.aiHelp(m.id);
+        state.activeMediationAi = s;
+        if (aiBox) aiBox.innerHTML = renderMediationAiSuggestionHtml(s);
+        showToast('AI taklifi tayyor');
+      } catch (e) {
+        const msg = formatAiFeatureError(e);
+        if (aiBox) {
+          aiBox.innerHTML = `<div class="hp-rule-item hp-rule-red"><strong>AI yordam</strong><span>${esc(msg)}</span></div>`;
+        }
+        showToast(msg);
+      } finally {
+        aiBtn.disabled = false;
+      }
+    });
+
+    docxBtn?.addEventListener('click', async () => {
+      if (docxBtn.disabled) return;
+      docxBtn.disabled = true;
+      try {
+        const updated = await saveMediationNow();
+        const miss = Array.isArray(updated.missing) ? updated.missing : [];
+        if (miss.length > 0) {
+          if (missingBox) missingBox.innerHTML = renderMediationMissingHtml(miss);
+          showToast(`To'ldirish kerak: ${miss.join(', ')}`);
+          docxBtn.disabled = true;
+          return;
+        }
+        await LexLab.mediation.downloadDocx(m.id);
+        showToast('DOCX yuklab olindi');
+      } catch (e) {
+        if (e && (e.status === 422 || e.code === 'mediation_incomplete')) {
+          const details = Array.isArray(e.details) ? e.details : ((e.details && e.details.missing) || []);
+          if (details.length > 0) {
+            if (missingBox) missingBox.innerHTML = renderMediationMissingHtml(details);
+            showToast(`To'ldirish kerak: ${details.join(', ')}`);
+          } else {
+            handleErr(e);
+          }
+        } else {
+          handleErr(e);
+        }
+      } finally {
+        const curMiss = (state.activeMediation && state.activeMediation.missing) || [];
+        docxBtn.disabled = curMiss.length > 0;
+      }
+    });
   }
 
   // U2.2: Poll every 15s while contract modal or builder is open
@@ -3091,7 +3995,7 @@
           await refreshBuilderPreview();
         }
         if (state.openModalContractId) {
-          await openContractModal(state.openModalContractId);
+          await openContractModal(state.openModalContractId, { background: true });
         }
       } catch (e) {
         // ignore background poll error
@@ -3130,11 +4034,114 @@
         LexLab.useSlot(slot);
         syncSlotButtons();
         state.builderContractId = null;
+        clearChatHistory();
         renderScanEmptyState();
+        syncChatVisibility();
         if (!LexLab.auth.isLoggedIn(slot)) {
           showLoginModal();
         } else {
           await reloadAllWidgets();
+        }
+        return;
+      }
+
+      // FRONTEND_GEMINI_5: Chat example chips & action buttons
+      const chatExBtn = e.target.closest('[data-chat-example]');
+      if (chatExBtn) {
+        await sendChatMessage(chatExBtn.getAttribute('data-chat-example'));
+        return;
+      }
+
+      const chatActBtn = e.target.closest('[data-chat-action]');
+      if (chatActBtn) {
+        await handleChatActionClick(chatActBtn);
+        return;
+      }
+
+      // FRONTEND_GEMINI_5: Mediation entry from contract modal, list & AI suggestions
+      const cmMedBtn = e.target.closest('[data-contract-mediation]');
+      if (cmMedBtn) {
+        const cid = cmMedBtn.getAttribute('data-contract-mediation');
+        await startAndOpenMediation(cid, cmMedBtn);
+        return;
+      }
+
+      const medOpenBtn = e.target.closest('[data-med-open]');
+      if (medOpenBtn) {
+        const mid = medOpenBtn.getAttribute('data-med-open');
+        await withBusy(medOpenBtn, async () => {
+          const m = await LexLab.mediation.get(mid);
+          openMediationFormModal(m);
+        }).catch(() => {});
+        return;
+      }
+
+      const medDocxBtn = e.target.closest('[data-med-docx]');
+      if (medDocxBtn) {
+        const mid = medDocxBtn.getAttribute('data-med-docx');
+        await withBusy(medDocxBtn, async () => {
+          try {
+            await LexLab.mediation.downloadDocx(mid);
+            showToast('DOCX yuklab olindi');
+          } catch (err) {
+            if (err && (err.status === 422 || err.code === 'mediation_incomplete')) {
+              const details = Array.isArray(err.details) ? err.details : [];
+              showToast(details.length ? `To'ldirish kerak: ${details.join(', ')}` : LexLab.humanError(err));
+              const m = await LexLab.mediation.get(mid);
+              openMediationFormModal(m);
+              return;
+            }
+            throw err;
+          }
+        }).catch(() => {});
+        return;
+      }
+
+      const medDelBtn = e.target.closest('[data-med-delete]');
+      if (medDelBtn) {
+        const mid = medDelBtn.getAttribute('data-med-delete');
+        const subj = medDelBtn.getAttribute('data-med-subject') || 'Ariza';
+        confirmDeleteModal(
+          'Arizani o\'chirish',
+          `"${subj}" mediatorga arizasini o'chirishni tasdiqlaysizmi?`,
+          async () => {
+            await LexLab.mediation.remove(mid);
+            closeModal();
+            showToast('Ariza o\'chirildi');
+            await loadMediationRequests();
+          }
+        );
+        return;
+      }
+
+      const medApplyBtn = e.target.closest('[data-med-apply]');
+      if (medApplyBtn && state.activeMediationAi) {
+        const kind = medApplyBtn.getAttribute('data-med-apply');
+        const s = state.activeMediationAi;
+        if (kind === 'subject' && s.subject) {
+          const el = document.getElementById('med-field-subject');
+          if (el) el.value = s.subject;
+          showToast('Nizo predmeti to\'ldirildi — «Saqlash» tugmasini bosing');
+        } else if (kind === 'statement' && s.statement) {
+          const el = document.getElementById('med-field-description');
+          if (el) el.value = s.statement;
+          showToast('Nizo mazmuni to\'ldirildi — «Saqlash» tugmasini bosing');
+        } else if (kind === 'claims' && Array.isArray(s.claims)) {
+          const el = document.getElementById('med-field-claims');
+          if (el) el.value = s.claims.join('\n');
+          showToast('Talablar to\'ldirildi — «Saqlash» tugmasini bosing');
+        }
+        return;
+      }
+
+      const medPickOptBtn = e.target.closest('[data-med-pick-option]');
+      if (medPickOptBtn && state.activeMediationAi && Array.isArray(state.activeMediationAi.options)) {
+        const idx = Number(medPickOptBtn.getAttribute('data-med-pick-option'));
+        const val = state.activeMediationAi.options[idx];
+        if (val) {
+          const el = document.getElementById('med-field-desired_outcome');
+          if (el) el.value = val;
+          showToast('Murosa taklifi tanlandi — «Saqlash» tugmasini bosing');
         }
         return;
       }
@@ -3309,6 +4316,32 @@
         return;
       }
 
+      // Archive documents: download / delete
+      const docDlBtn = e.target.closest('[data-doc-download]');
+      if (docDlBtn) {
+        const doc = (state.archiveDocs || []).find(x => x.id === docDlBtn.getAttribute('data-doc-download'));
+        if (doc) {
+          await withBusy(docDlBtn, async () => {
+            await LexLab.archive.downloadDocument(doc);
+            showToast('Fayl yuklab olindi');
+          }).catch(() => {});
+        }
+        return;
+      }
+      const docDelBtn = e.target.closest('[data-doc-delete]');
+      if (docDelBtn) {
+        const doc = (state.archiveDocs || []).find(x => x.id === docDelBtn.getAttribute('data-doc-delete'));
+        if (doc) {
+          confirmDeleteModal('Hujjatni o\'chirish', `"${doc.title}" hujjati va uning fayli o'chiriladi. Tasdiqlaysizmi?`, async () => {
+            await LexLab.archive.deleteDocument(doc.id);
+            closeModal();
+            showToast('Hujjat o\'chirildi');
+            await loadArchiveView();
+          });
+        }
+        return;
+      }
+
       // Scanner history open & delete (U2.5)
       const openScanBtn = e.target.closest('[data-open-scan]');
       if (openScanBtn) {
@@ -3380,8 +4413,8 @@
           const detailEl = document.getElementById('dash-clause-1-detail');
           if (statusEl) statusEl.textContent = action === 'agree' ? 'Rozilik bildirildi' : 'E\'tiroz bildirildi';
           if (detailEl) {
-            if (action === 'object' && res && res.alternative) {
-              detailEl.innerHTML = `<strong>Taklif:</strong> ${esc(res.alternative)}`;
+            if (action === 'object' && res && res.alternative && !detailEl.parentElement.querySelector('.hp-clause-advice')) {
+              detailEl.innerHTML = adviceHtml(res.alternative, 'Muqobil band');
               detailEl.hidden = false;
             } else {
               detailEl.hidden = action !== 'object';
@@ -3675,40 +4708,53 @@
     // Reminders add button (§9)
     document.getElementById('btn-add-obligation')?.addEventListener('click', openAddObligationModal);
 
-    // Lawyer archive form & export ZIP (§9)
+    // Archive form: any user files a payment receipt / document (+ for lawyers also a case-file step) & export ZIP (§9)
     const caseForm = document.getElementById('case-step-form');
     if (caseForm) {
+      caseForm.setAttribute('novalidate', '');
       caseForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const submitBtn = caseForm.querySelector('button[type="submit"]');
-        const titleEl = document.getElementById('cs-title');
-        const typeEl = document.getElementById('cs-type');
-        const descEl = document.getElementById('cs-desc');
-        if (!titleEl || !descEl) return;
+        const val = id => (document.getElementById(id)?.value || '').trim();
+        const fileEl = document.getElementById('cs-file');
+        const file = fileEl && fileEl.files && fileEl.files[0] ? fileEl.files[0] : null;
+        const title = val('cs-title');
+        const amountRaw = val('cs-amount').replace(/\s+/g, '').replace(',', '.');
+        const maxMb = (state.meta && state.meta.max_upload_mb) || 20;
 
+        let problem = '';
+        if (title.length < 2) problem = 'Hujjat nomini kiriting';
+        else if (amountRaw && !/^\d+(\.\d{1,2})?$/.test(amountRaw)) problem = 'Summa faqat raqam bo\'lishi kerak (masalan: 3000000)';
+        else if (file && file.size > maxMb * 1048576) problem = `Fayl hajmi ${maxMb} MB dan oshmasligi kerak`;
+        else if (file && !/\.(pdf|jpe?g|png|webp|docx)$/i.test(file.name)) problem = 'Faqat PDF, rasm (JPG/PNG) yoki DOCX fayl yuklash mumkin';
+        if (problem) {
+          showToast(problem);
+          return;
+        }
+
+        const kind = val('cs-type') || 'receipt';
         withBusy(submitBtn, async () => {
-          try {
-            let caseId = state.currentCaseId;
-            if (!caseId) {
-              const created = await LexLab.cases.create({ title: 'Asosiy ish' });
-              caseId = created.id;
-              state.currentCaseId = caseId;
-            }
-            await LexLab.cases.addStep(caseId, {
-              title: titleEl.value.trim(),
-              description: descEl.value.trim(),
-              tags: [typeEl ? typeEl.value : 'Hujjat']
-            });
-            titleEl.value = '';
-            descEl.value = '';
-            showToast('Qadam arxivga qo\'shildi');
-            await loadArchiveView();
-          } catch (err) {
-            if (err && err.code === 'lawyer_only') {
-              setArchiveFormLawyerMode(caseForm, false);
-            }
-            throw err;
+          const doc = await LexLab.archive.addDocument({
+            title,
+            kind,
+            description: val('cs-desc'),
+            amount: amountRaw,
+            docDate: val('cs-date'),
+            archiveId: val('cs-archive'),
+            file
+          });
+          // a lawyer's case file also gets the step (+ the evidence file); never blocks the archive entry
+          if (state.me && state.me.role === 'lawyer' && state.currentCaseId) {
+            try {
+              const step = await LexLab.cases.addStep(state.currentCaseId, {
+                title, description: val('cs-desc'), tags: [doc.kind_label || 'Hujjat']
+              });
+              if (file && step && step.id) await LexLab.cases.attach(state.currentCaseId, step.id, file);
+            } catch (err) { /* case file is optional */ }
           }
+          caseForm.reset();
+          showToast(file ? 'Hujjat va fayl arxivga saqlandi' : 'Hujjat arxivga saqlandi');
+          await loadArchiveView();
         }).catch(() => {});
       });
     }
@@ -3750,8 +4796,32 @@
     // Header actions: Logout, Profile, Notifications, Lang, Theme
     document.getElementById('btn-logout')?.addEventListener('click', async () => {
       await LexLab.auth.logout();
+      clearChatHistory();
       renderScanEmptyState();
+      syncChatVisibility();
       showLoginModal();
+    });
+
+    // FRONTEND_GEMINI_5: Floating Chat & "+ Yangi ariza" listeners
+    document.getElementById('hp-chat-fab')?.addEventListener('click', () => toggleChatPanel());
+    document.getElementById('hp-chat-close')?.addEventListener('click', () => toggleChatPanel(false));
+    document.getElementById('hp-chat-clear')?.addEventListener('click', () => clearChatHistory());
+
+    const chatForm = document.getElementById('hp-chat-form');
+    const chatInput = document.getElementById('hp-chat-input');
+    chatForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      sendChatMessage(chatInput?.value || '');
+    });
+    chatInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChatMessage(chatInput.value || '');
+      }
+    });
+
+    document.getElementById('btn-new-mediation')?.addEventListener('click', (e) => {
+      startAndOpenMediation(null, e.currentTarget);
     });
 
     document.getElementById('btn-profile-modal')?.addEventListener('click', openProfileModal);
@@ -3786,13 +4856,25 @@
       LexLab.configure({ baseUrl: 'http://127.0.0.1:8000' });
     }
 
+    loadChatHistoryFromStorage();
+    renderChatMessages();
     initEventListeners();
     syncSlotButtons();
+    syncChatVisibility();
     renderScanEmptyState();
     startNegotiationPolling();
 
+    LexLab.on('login', () => {
+      syncChatVisibility();
+    });
+    LexLab.on('slot', () => {
+      clearChatHistory();
+      syncChatVisibility();
+    });
     LexLab.on('logout', () => {
+      clearChatHistory();
       renderScanEmptyState();
+      syncChatVisibility();
       if (!LexLab.auth.isLoggedIn(LexLab.activeSlot())) {
         showLoginModal();
       }

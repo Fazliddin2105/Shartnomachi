@@ -32,6 +32,7 @@ from app.modules.contracts.negotiation_router import router as negotiation_route
 from app.modules.contracts.router import router as contracts_router
 from app.modules.files.router import router as files_router
 from app.modules.laws.router import router as laws_router
+from app.modules.mediation.router import router as mediation_router
 from app.modules.moderation.router import router as moderation_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.obligations.router import router as obligations_router
@@ -56,7 +57,11 @@ class PublicStaticFiles(StaticFiles):
             self._BLOCKED_SUFFIXES
         ):
             return Response(status_code=404)
-        return await super().get_response(path, scope)
+        response = await super().get_response(path, scope)
+        # the app is updated often during the demo: browsers must revalidate (ETag) instead of using a stale copy
+        if response.status_code in (200, 304):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
 
 
 @asynccontextmanager
@@ -145,6 +150,7 @@ def create_app() -> FastAPI:
         anchoring_router,
         assistant_router,
         laws_router,
+        mediation_router,
     ):
         api.include_router(r)
     app.include_router(api)

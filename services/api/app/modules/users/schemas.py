@@ -70,6 +70,19 @@ class ProfileUpdate(BaseModel):
     region: str | None = Field(default=None, max_length=64)
     address: str | None = Field(default=None, max_length=512)
 
+    @field_validator("full_name")
+    @classmethod
+    def _full_name(cls, v: str | None) -> str | None:
+        """«Familiya Ism [Otasining ismi]»: letters only, extra spaces removed."""
+        if v is None:
+            return None
+        v = re.sub(r"\s+", " ", v).strip()
+        if not re.fullmatch(r"[^\W\d_]+(?:[ '’ʻʼ`.-][^\W\d_]+|[’ʻʼ'`.])*", v):
+            raise ValueError("F.I.Sh. faqat harflardan iborat bo'lishi kerak")
+        if len(v.split(" ")) < 2 or len(v) < 5:
+            raise ValueError("Familiya va ismni to'liq kiriting")
+        return v
+
 
 class CompanyCreate(BaseModel):
     name: str = Field(min_length=2, max_length=255)
